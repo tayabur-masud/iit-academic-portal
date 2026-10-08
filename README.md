@@ -1,1 +1,64 @@
-﻿# IIT Academic Portal
+# IIT Academic Portal
+
+Angular 21 frontend for the IIT Academic Portal. Requires Node.js 24 LTS.
+
+## Development
+
+Start the service first, on the `https` launch profile (see `iit-academic-portal-service/README.md`):
+
+```powershell
+dotnet run --project src/IitAcademicPortal.Api --launch-profile https   # in iit-academic-portal-service
+```
+
+Then, in this folder:
+
+```powershell
+npm ci                         # first time only
+npm start                      # http://localhost:4200
+npm test -- --watch=false      # unit tests (Vitest), single run
+npm run build                  # production build in dist/
+```
+
+`npm start` proxies `/api` to the service at `https://localhost:7286` (see `proxy.conf.json`), so the browser
+talks to one origin and the service's `HttpOnly` session cookie is sent automatically. If sign-in reports
+"The portal could not be reached", the service is not running on the `https` profile. In production, serve the
+app and the API from the same origin (for example, through a reverse proxy).
+
+Sign in with a seeded development account, such as `teacher.coordinator@iit.test`, which shows the role-selection
+step and the role switcher.
+
+## Structure
+
+| Path | Purpose |
+|---|---|
+| `src/styles/tokens.css` | Design tokens from `specs/design-system.md`, declared as the Tailwind theme; the only place color and size values are defined |
+| `src/styles.css` | Tailwind entry point plus shared component classes (buttons, fields, alerts, cards, auth pages) |
+| `src/app/core/auth/` | Auth API client, session state, anti-forgery and session-ended interceptors, route guards |
+| `src/app/features/auth/` | Sign-in, forgot-password, reset-password, and role-selection pages |
+| `src/app/layout/shell/` | Signed-in shell: active role, role switcher, navigation, sign-out |
+| `src/app/pages/` | Role landing pages and the unauthorized, no-role, and not-found states |
+| `src/app/shared/auth-brand/` | Centered IIT logo and portal name used on every authentication screen |
+| `public/images/iit-logo.png` | Approved IIT logo (600×327); do not stretch or recolor it |
+| `public/favicon.ico`, `public/apple-touch-icon.png` | Browser-tab icon (16/32/48px, "IIT" lettermark) and 180px home-screen icon (full logo), generated from the logo per design-system §10 |
+
+## Styling (Tailwind CSS v4)
+
+Tailwind runs through PostCSS (`.postcssrc.json`). Its theme is the design system:
+
+- Colors: only IIT tokens exist (`bg-brand-primary`, `text-error`, `border-control-border`, …). Tailwind's
+  default palette is removed, so `bg-red-500` does not compile.
+- Spacing, radius, and breakpoints use the token scale (`p-4` = 16px, `rounded-md`, `md:` = 48rem).
+  Type utilities: `text-page-title`, `text-heading`, `text-compact`, `text-helper`, `leading-body`.
+- Tokens without a utility namespace use the variable syntax: `max-w-(--content-max-width)`.
+- Reuse the shared component classes (`btn btn-primary`, `field-input`, `alert alert-error`, `card`, …) for
+  design-system components; use utilities for layout. Add a new shared class to `@layer components` in
+  `src/styles.css` rather than repeating long utility lists.
+
+## Security notes
+
+- The service is authoritative for every access decision. Route guards and hidden navigation only shape the
+  experience.
+- State-changing API calls carry an `X-CSRF-Token` header obtained from `/api/auth/anti-forgery-token`. The
+  token is refetched after sign-in and sign-out because the service binds it to the signed-in identity.
+- Sessions do not expire automatically, so the shell always shows **Sign out**.
+- The reset page removes the recovery proof from the address bar as soon as it loads.

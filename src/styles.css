@@ -1,0 +1,168 @@
+/*
+ * Tailwind CSS with the IIT design tokens as its theme (see styles/tokens.css).
+ * Shared component patterns from specs/design-system.md stay as classes in the components layer so
+ * every page reuses them; use utilities for layout and one-off adjustments. Only theme values are used.
+ */
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+@layer base {
+  body {
+    @apply bg-background font-sans text-body font-regular leading-body text-text-primary;
+  }
+
+  h1,
+  h2 {
+    @apply mb-4 font-semibold leading-heading;
+  }
+
+  h1 {
+    @apply text-page-title;
+  }
+
+  h2 {
+    @apply text-heading;
+  }
+
+  p {
+    @apply mb-4;
+  }
+
+  a {
+    @apply font-medium text-brand-primary underline hover:text-brand-primary-hover;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-focus;
+  }
+}
+
+@layer components {
+  .skip-link {
+    @apply absolute left-4 -top-16 z-10 rounded-sm bg-surface px-4 py-2 focus:top-2;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm border border-transparent px-4 font-medium no-underline disabled:cursor-not-allowed;
+    min-height: var(--control-height-lg);
+  }
+
+  .btn-primary {
+    @apply bg-brand-primary text-surface hover:not-disabled:bg-brand-primary-hover hover:not-disabled:text-surface active:not-disabled:bg-brand-primary-active disabled:bg-brand-secondary;
+  }
+
+  .btn-secondary {
+    @apply border-control-border bg-surface text-brand-primary hover:not-disabled:bg-surface-hover active:not-disabled:bg-surface-selected disabled:text-text-disabled;
+  }
+
+  .btn-block {
+    @apply w-full;
+  }
+
+  .spinner {
+    @apply size-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none motion-reduce:border-r-current motion-reduce:opacity-60;
+  }
+
+  /* Forms */
+  .field {
+    @apply mb-6 flex flex-col gap-2;
+  }
+
+  .field-label {
+    @apply font-medium;
+  }
+
+  .field-help {
+    @apply m-0 text-helper text-text-secondary;
+  }
+
+  .field-input {
+    @apply rounded-sm border border-control-border bg-surface px-3 text-text-primary aria-invalid:border-error aria-invalid:shadow-[inset_0_0_0_1px_var(--color-error)];
+    min-height: var(--control-height-lg);
+  }
+
+  /* Field errors carry a decorative error icon (circle with exclamation mark) so the error is not
+     shown by color alone. The message text carries the meaning; the generated icon has no text
+     content, so assistive technology ignores it. */
+  .field-error {
+    @apply m-0 flex items-start gap-1 text-helper font-medium text-error;
+  }
+
+  .field-error::before {
+    content: '';
+    flex: none;
+    width: 1em;
+    height: 1em;
+    /* Centers the icon on the first line of text (line height 1.5). */
+    margin-top: 0.25em;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm-.875 3.5h1.75v5.5h-1.75V3.5Zm0 7h1.75v1.75h-1.75V10.5Z'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  .choice {
+    @apply mb-2 flex cursor-pointer items-center gap-3 rounded-sm border border-control-border px-3 hover:bg-surface-hover has-checked:border-brand-primary has-checked:bg-surface-selected has-checked:font-medium;
+    min-height: var(--control-height-lg);
+  }
+
+  fieldset {
+    @apply mb-6;
+  }
+
+  legend {
+    @apply mb-3;
+  }
+
+  /* Alerts: status is carried by the heading text, not color alone. */
+  .alert {
+    @apply mb-6 rounded-sm border border-l-4 border-current bg-surface px-4 py-3;
+  }
+
+  .alert p {
+    @apply m-0 text-text-primary;
+  }
+
+  .alert-title {
+    @apply block font-semibold;
+  }
+
+  .alert-error {
+    @apply text-error;
+  }
+
+  .alert-success {
+    @apply text-success;
+  }
+
+  .alert-info {
+    @apply text-info;
+  }
+
+  .alert-warning {
+    @apply text-warning;
+  }
+
+  /* Cards and badges */
+  .card {
+    @apply rounded-md border border-border bg-surface p-6;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-sm bg-surface-selected px-3 text-compact font-medium text-brand-primary;
+    min-height: var(--control-height-sm);
+  }
+
+  /* Focused authentication screens (design-system §10). */
+  .auth-page {
+    @apply flex min-h-screen items-start justify-center px-4 pt-6 pb-12 md:pt-12;
+  }
+
+  .auth-card {
+    @apply w-full max-w-md;
+  }
+
+  .auth-footer {
+    @apply mt-6 mb-0;
+  }
+}
