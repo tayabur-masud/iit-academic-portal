@@ -1,0 +1,49 @@
+<main class="auth-page" id="main">
+  <section class="auth-card card" aria-labelledby="select-role-title">
+    <app-auth-brand />
+    <h1 id="select-role-title">Choose a role</h1>
+    <p>Your account has more than one role. Choose the role to work in now. You can switch later from the header.</p>
+
+    @if (errorMessage(); as message) {
+      <div class="alert alert-error" role="alert">
+        <strong class="alert-title">Role not selected</strong>
+        <p>{{ message }}</p>
+      </div>
+    }
+
+    <form (submit)="submit($event)" novalidate [attr.aria-busy]="submitting()">
+      <fieldset [attr.aria-describedby]="submitted() && !selected() ? 'role-error' : null">
+        <legend class="field-label">Role</legend>
+        @for (role of session.availableRoles(); track role) {
+          <label class="choice">
+            <input
+              type="radio"
+              name="role"
+              [value]="role"
+              [checked]="selected() === role"
+              (change)="selected.set(role)"
+            />
+            {{ role }}
+          </label>
+        }
+        @if (submitted() && !selected()) {
+          <p class="field-error" id="role-error">Choose a role to continue.</p>
+        }
+      </fieldset>
+
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="submitting()">
+        @if (submitting()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Opening…
+        } @else {
+          Continue
+        }
+      </button>
+      <p class="sr-only" role="status">{{ submitting() ? 'Opening the selected role…' : '' }}</p>
+    </form>
+
+    <p class="auth-footer">
+      <button type="button" class="btn btn-secondary" (click)="signOut()">Sign out</button>
+    </p>
+  </section>
+</main>

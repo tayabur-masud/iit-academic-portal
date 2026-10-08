@@ -20,13 +20,8 @@ yarn-error.log
 .settings/
 *.sublime-workspace
 
-# Visual Studio Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/mcp.json
+# Visual Studio Code (editor settings stay local)
+.vscode/
 .history/*
 
 # Miscellaneous
@@ -42,3 +37,15 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Additional package-manager logs
+yarn-debug.log*
+pnpm-debug.log*
+
+# Local environment secrets
+.env
+.env.*
+!.env.example

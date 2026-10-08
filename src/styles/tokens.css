@@ -1,0 +1,98 @@
+/*
+ * IIT Academic Portal design tokens — the single shared theme source.
+ * Values mirror specs/design-system.md §15 and keep its token names. Change values only together with
+ * the design-system document. Confirmed brand values: primary #2E3192; secondary #4B4FB0.
+ *
+ * Tokens in a Tailwind namespace live in @theme, so each one is both a CSS variable and a utility
+ * (--color-brand-primary -> bg-brand-primary, --spacing-4 -> p-4, --radius-md -> rounded-md,
+ * --breakpoint-md -> md:). `static` emits every variable so plain CSS can always use var(--…).
+ */
+@theme static {
+  /* Only design-system colors exist: Tailwind's default palette (red-500, …) is removed. */
+  --color-*: initial;
+
+  /* IIT brand colors supplied by the project. */
+  --color-brand-primary: #2e3192;
+  --color-brand-secondary: #4b4fb0;
+  --color-brand-accent: var(--color-brand-primary);
+
+  /* Semantic colors. */
+  --color-background: #f8f9fc;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-disabled: #9ca3af;
+  --color-border: #d1d5db;
+  --color-control-border: #6b7280;
+  --color-divider: #e5e7eb;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-error: #b91c1c;
+  --color-info: #0369a1;
+  --color-focus: #2e3192;
+
+  /* Interaction variants. */
+  --color-brand-primary-hover: #252873;
+  --color-brand-primary-active: #1a1c52;
+  --color-surface-hover: #f2f3fa;
+  --color-surface-selected: #eeeff8;
+
+  /* Typography. */
+  --font-family-primary: 'Roboto', 'Noto Sans Bengali', sans-serif;
+  --font-sans: var(--font-family-primary);
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Spacing (4px base). */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+
+  /* Shape and elevation. */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --shadow-overlay: 0 4px 12px rgba(17, 24, 39, 0.08), 0 1px 3px rgba(17, 24, 39, 0.06);
+
+  /* Breakpoints (sm: md: lg: xl: variants). */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+
+  /* Utility names for the type tokens below (text-page-title, leading-body, …). */
+  --text-page-title: var(--font-size-page-title);
+  --text-heading: var(--font-size-heading);
+  --text-body: var(--font-size-body);
+  --text-compact: var(--font-size-compact);
+  --text-helper: var(--font-size-helper);
+  --leading-heading: var(--line-height-heading);
+  --leading-body: var(--line-height-body);
+}
+
+/* Design-system tokens outside Tailwind's namespaces; use with var(--…) or utilities such as h-(--header-height). */
+:root {
+  --font-size-page-title: 2rem;
+  --font-size-heading: 1.5rem;
+  --font-size-body: 1rem;
+  --font-size-compact: 0.875rem;
+  --font-size-helper: 0.8125rem;
+  --line-height-heading: 1.25;
+  --line-height-body: 1.5;
+
+  --border-width: 1px;
+  --control-height-sm: 2rem;
+  --control-height-md: 2.5rem;
+  --control-height-lg: 2.75rem;
+
+  --content-max-width: 80rem;
+  --sidebar-width: 15rem;
+  --header-height: 3.5rem;
+}

@@ -1,0 +1,75 @@
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header
+  class="flex min-h-(--header-height) flex-wrap items-center gap-4 border-b border-divider bg-surface px-4 py-2 md:flex-nowrap"
+>
+  <button
+    type="button"
+    class="btn btn-secondary md:hidden"
+    aria-controls="app-nav"
+    [attr.aria-expanded]="navOpen()"
+    (click)="toggleNav()"
+  >
+    Menu
+  </button>
+  <span class="font-semibold text-brand-primary">IIT Academic Portal</span>
+
+  <div class="flex w-full flex-wrap items-center gap-3 md:ml-auto md:w-auto">
+    @if (session.availableRoles().length > 1) {
+      <label class="text-compact font-medium" for="role-switcher">Active role</label>
+      <select
+        id="role-switcher"
+        class="field-input"
+        [disabled]="switching()"
+        [attr.aria-busy]="switching()"
+        (change)="switchRole($event)"
+      >
+        @if (!session.activeRole()) {
+          <option value="" disabled selected>Choose a role</option>
+        }
+        @for (role of session.availableRoles(); track role) {
+          <option [value]="role" [selected]="role === session.activeRole()">{{ role }}</option>
+        }
+      </select>
+    } @else if (session.activeRole(); as role) {
+      <span class="badge">Role: {{ role }}</span>
+    }
+    <button type="button" class="btn btn-secondary" [disabled]="signingOut()" (click)="signOut()">
+      Sign out
+    </button>
+  </div>
+</header>
+
+<div class="flex min-h-[calc(100vh-var(--header-height))] flex-col md:flex-row">
+  <nav
+    id="app-nav"
+    aria-label="Main"
+    class="border-b border-divider bg-surface p-4 md:block md:w-(--sidebar-width) md:flex-none md:border-r md:border-b-0"
+    [class.hidden]="!navOpen()"
+  >
+    <ul>
+      @for (item of navItems(); track item.path) {
+        <li>
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="border-brand-primary bg-surface-selected font-semibold text-brand-primary"
+            ariaCurrentWhenActive="page"
+            class="block rounded-sm border-l-3 border-transparent p-3 text-text-primary no-underline hover:bg-surface-hover"
+            >{{ item.label }}</a
+          >
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <main id="main" class="w-full max-w-(--content-max-width) flex-1 px-4 py-6 md:px-6 md:py-8" tabindex="-1">
+    <p class="sr-only" role="status">{{ announcement() }}</p>
+    @if (switchError(); as message) {
+      <div class="alert alert-error" role="alert">
+        <strong class="alert-title">Role not switched</strong>
+        <p>{{ message }}</p>
+      </div>
+    }
+    <router-outlet />
+  </main>
+</div>
