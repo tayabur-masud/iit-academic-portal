@@ -42,10 +42,25 @@ describe('Shell', () => {
     await flushCsrf(http);
   }
 
+  function accountSection(): HTMLElement {
+    return page.querySelector<HTMLElement>('aside section[aria-label="Your account"]')!;
+  }
+
+  it('keeps the active role and sign-out at the bottom of the menu, not in the header', async () => {
+    await render(context(['Teacher', 'Coordinator'], 'Teacher'));
+
+    const sidebar = page.querySelector('aside')!;
+    expect(sidebar.lastElementChild).toBe(accountSection());
+    expect(accountSection().querySelector('#role-switcher')).not.toBeNull();
+    expect(accountSection().textContent).toContain('Sign out');
+    expect(page.querySelector('header')?.textContent).not.toContain('Sign out');
+    expect(page.querySelector('header #role-switcher')).toBeNull();
+  });
+
   it('always offers an explicit sign-out', async () => {
     await render(context(['Student'], 'Student'));
 
-    Array.from(page.querySelectorAll<HTMLButtonElement>('header button')).find((b) => b.textContent?.includes('Sign out'))!.click();
+    Array.from(accountSection().querySelectorAll('button')).find((b) => b.textContent?.includes('Sign out'))!.click();
     await flushCsrf(http);
     http.expectOne({ method: 'DELETE', url: '/api/auth/sessions/current' }).flush(null, { status: 204, statusText: 'No Content' });
     await settle();

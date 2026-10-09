@@ -26,16 +26,6 @@ export const homeRedirectGuard: CanActivateFn = async () => {
   return router.parseUrl(session ? routeForSession(session) : '/login');
 };
 
-/** The role-selection step is only for signed-in users with more than one assigned role. */
-export const roleSelectionGuard: CanActivateFn = async (_route, state) => {
-  const router = inject(Router);
-  const session = await inject(AuthSession).ensureLoaded();
-  if (!session) {
-    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
-  }
-  return session.availableRoles.length > 1 ? true : router.parseUrl(routeForSession(session));
-};
-
 /** A role area opens only when that role is the session's active role. */
 export function activeRoleGuard(role: Role): CanActivateFn {
   return async () => {

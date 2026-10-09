@@ -14,9 +14,9 @@ import { SessionContext, landingWithin, routeForSession } from './auth.models';
 import { CsrfToken } from './csrf-token';
 
 describe('auth models', () => {
-  it('routes a session to its active role, role selection, or the no-role page', () => {
+  it('routes a session to its active role, or the no-role page when it has none', () => {
     expect(routeForSession(context(['Admin'], 'Admin'))).toBe('/admin');
-    expect(routeForSession(context(['Teacher', 'Coordinator'], null))).toBe('/select-role');
+    expect(routeForSession(context(['Teacher', 'Coordinator'], 'Teacher'))).toBe('/teacher');
     expect(routeForSession(context([], null))).toBe('/no-role');
   });
 
@@ -44,8 +44,8 @@ describe('activeRoleGuard', () => {
 
   it('allows the active role', async () => expect(await run(context(['Teacher'], 'Teacher'))).toBe(true));
   it('sends signed-out users to sign in', async () => expect(await run(null)).toBe('/login'));
-  it('asks multi-role users to choose first', async () =>
-    expect(await run(context(['Teacher', 'Coordinator'], null))).toBe('/select-role'));
+  it('sends accounts without a role to the no-role page', async () =>
+    expect(await run(context([], null))).toBe('/no-role'));
   it('denies another active role', async () =>
     expect(await run(context(['Teacher', 'Coordinator'], 'Coordinator'))).toBe('/unauthorized'));
 });
