@@ -5,6 +5,18 @@ import { AuthSession } from '../../core/auth/auth-session';
 import { ROLE_AREAS, Role, landingWithin } from '../../core/auth/auth.models';
 import { problemMessage } from '../../core/http/problem';
 
+interface NavItem {
+  path: string;
+  label: string;
+  /** True when only the exact path counts as the current page, not its sub-pages. */
+  exact: boolean;
+}
+
+/** Pages that belong to one role only, listed under its module. */
+const ROLE_PAGES: Partial<Record<Role, NavItem[]>> = {
+  Admin: [{ path: '/admin/audit', label: 'Audit history', exact: false }],
+};
+
 /** Authenticated application shell: identity, active role, role switching, navigation, sign-out. */
 @Component({
   selector: 'app-shell',
@@ -22,9 +34,13 @@ export class Shell {
   protected readonly announcement = signal('');
 
   /** Navigation is filtered by the active role for presentation; the service still authorizes. */
-  protected readonly navItems = computed(() => {
+  protected readonly navItems = computed<NavItem[]>(() => {
     const role = this.session.activeRole();
-    return role ? [{ path: ROLE_AREAS[role].path, label: ROLE_AREAS[role].module }] : [];
+    if (!role) {
+      return [];
+    }
+    const area: NavItem = { path: ROLE_AREAS[role].path, label: ROLE_AREAS[role].module, exact: true };
+    return [area, ...(ROLE_PAGES[role] ?? [])];
   });
 
   protected toggleNav(): void {

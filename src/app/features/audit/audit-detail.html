@@ -1,0 +1,116 @@
+<p class="mb-4"><a routerLink="/admin/audit">&larr; Back to audit history</a></p>
+
+@if (loading()) {
+  <p class="flex items-center gap-2 text-text-secondary" role="status">
+    <span class="spinner" aria-hidden="true"></span>
+    Loading the audit event…
+  </p>
+} @else if (notFound()) {
+  <div class="alert alert-warning" role="alert">
+    <strong class="alert-title">Event not found</strong>
+    <p>No audit event has that identifier. It may have been mistyped, or the link may be incomplete.</p>
+  </div>
+} @else if (errorMessage(); as message) {
+  <div class="alert alert-error" role="alert">
+    <strong class="alert-title">Audit event not shown</strong>
+    <p>{{ message }}</p>
+    <div class="mt-3">
+      <button type="button" class="btn btn-secondary" (click)="reload()">Try again</button>
+    </div>
+  </div>
+} @else if (event(); as audit) {
+  <h1>Audit event</h1>
+  <p class="max-w-[48rem] text-text-secondary">{{ audit.eventType }}</p>
+
+  <section class="card mb-6" aria-labelledby="facts-title">
+    <h2 id="facts-title">Details</h2>
+    <dl class="grid gap-x-6 gap-y-3 md:grid-cols-[12rem_1fr]">
+      <dt class="font-medium text-text-secondary">Time</dt>
+      <dd class="m-0"><app-utc-timestamp [value]="audit.occurredAtUtc" /></dd>
+
+      <dt class="font-medium text-text-secondary">Category</dt>
+      <dd class="m-0">{{ audit.category === 'security' ? 'Security' : 'Business' }}</dd>
+
+      <dt class="font-medium text-text-secondary">Outcome</dt>
+      <dd class="m-0">{{ outcomeLabel(audit) }}</dd>
+
+      <dt class="font-medium text-text-secondary">Actor</dt>
+      <dd class="m-0 break-all">
+        @if (audit.actorDisplay) {
+          {{ audit.actorDisplay }}
+          <div class="text-helper text-text-secondary">{{ audit.actorUserId }}</div>
+        } @else if (audit.actorUserId) {
+          (account removed)
+          <div class="text-helper text-text-secondary">{{ audit.actorUserId }}</div>
+        } @else {
+          No actor
+        }
+      </dd>
+
+      <dt class="font-medium text-text-secondary">Entity</dt>
+      <dd class="m-0 break-all">
+        @if (audit.entityType || audit.entityId) {
+          {{ audit.entityType }} {{ audit.entityId }}
+        } @else {
+          None
+        }
+      </dd>
+
+      <dt class="font-medium text-text-secondary">Correlation ID</dt>
+      <dd class="m-0 break-all">{{ audit.correlationId ?? 'None' }}</dd>
+
+      <dt class="font-medium text-text-secondary">Source</dt>
+      <dd class="m-0">{{ audit.source ?? 'None' }}</dd>
+
+      <dt class="font-medium text-text-secondary">Event ID</dt>
+      <dd class="m-0 break-all">{{ audit.eventId }}</dd>
+    </dl>
+  </section>
+
+  <section class="card mb-6" aria-labelledby="metadata-title">
+    <h2 id="metadata-title">Context</h2>
+    @if (metadataEntries(audit).length > 0) {
+      <dl class="grid gap-x-6 gap-y-3 md:grid-cols-[12rem_1fr]">
+        @for (entry of metadataEntries(audit); track entry[0]) {
+          <dt class="font-medium text-text-secondary break-all">{{ entry[0] }}</dt>
+          <dd class="m-0 break-all">{{ entry[1] }}</dd>
+        }
+      </dl>
+    } @else {
+      <p class="mb-0">No additional context was recorded for this event.</p>
+    }
+  </section>
+
+  <section class="card" aria-labelledby="changes-title">
+    <h2 id="changes-title">Changes</h2>
+    @if (audit.changes.length > 0) {
+      <div class="relative overflow-x-auto">
+        <table class="w-full min-w-[32rem] border-collapse text-left text-compact">
+          <caption class="sr-only">Fields changed by this event</caption>
+          <thead>
+            <tr class="border-b border-divider text-text-secondary">
+              <th scope="col" class="p-3 font-medium">Field</th>
+              <th scope="col" class="p-3 font-medium">Before</th>
+              <th scope="col" class="p-3 font-medium">After</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (change of audit.changes; track change.fieldName) {
+              <tr class="border-b border-divider last:border-b-0">
+                <th scope="row" class="p-3 text-left font-medium break-all">{{ change.fieldName }}</th>
+                @if (change.changed) {
+                  <td class="p-3 text-text-secondary" colspan="2">Changed. The values are not recorded.</td>
+                } @else {
+                  <td class="p-3 break-all">{{ value(change, 'oldValue') }}</td>
+                  <td class="p-3 break-all">{{ value(change, 'newValue') }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="mb-0">This event does not record field changes.</p>
+    }
+  </section>
+}

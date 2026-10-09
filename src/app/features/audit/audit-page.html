@@ -1,0 +1,186 @@
+<h1>Audit history</h1>
+<p class="max-w-[48rem] text-text-secondary">
+  Security events and mandatory business events recorded by the portal, newest first. All times are shown in UTC.
+</p>
+
+<form [formGroup]="form" (ngSubmit)="apply()" novalidate class="card mb-6" [attr.aria-busy]="loading()">
+  <fieldset class="m-0">
+    <legend class="mb-3 text-heading font-semibold">Filters</legend>
+
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div class="field mb-0">
+        <label class="field-label" for="from">From (UTC)</label>
+        <p class="field-help" id="from-help">Includes this moment.</p>
+        <input
+          id="from"
+          class="field-input"
+          type="datetime-local"
+          formControlName="from"
+          [attr.aria-invalid]="errorsFor('from').length > 0"
+          [attr.aria-describedby]="describedBy('from') ? 'from-help from-error' : 'from-help'"
+        />
+        @for (message of errorsFor('from'); track message) {
+          <p class="field-error" id="from-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field mb-0">
+        <label class="field-label" for="to">To (UTC)</label>
+        <p class="field-help" id="to-help">Does not include this moment.</p>
+        <input
+          id="to"
+          class="field-input"
+          type="datetime-local"
+          formControlName="to"
+          [attr.aria-invalid]="errorsFor('to').length > 0"
+          [attr.aria-describedby]="describedBy('to') ? 'to-help to-error' : 'to-help'"
+        />
+        @for (message of errorsFor('to'); track message) {
+          <p class="field-error" id="to-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field mb-0">
+        <label class="field-label" for="category">Category</label>
+        <select id="category" class="field-input" formControlName="category" [attr.aria-invalid]="errorsFor('category').length > 0">
+          <option value="">Any</option>
+          <option value="security">Security</option>
+          <option value="business">Business</option>
+        </select>
+        @for (message of errorsFor('category'); track message) {
+          <p class="field-error" id="category-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field mb-0">
+        <label class="field-label" for="outcome">Outcome</label>
+        <select id="outcome" class="field-input" formControlName="outcome" [attr.aria-invalid]="errorsFor('outcome').length > 0">
+          <option value="">Any</option>
+          <option value="success">Success</option>
+          <option value="failure">Failure</option>
+          <option value="denied">Denied</option>
+        </select>
+        @for (message of errorsFor('outcome'); track message) {
+          <p class="field-error" id="outcome-error">{{ message }}</p>
+        }
+      </div>
+
+      @for (field of textFields; track field.name) {
+        <div class="field mb-0">
+          <label class="field-label" [for]="field.name">{{ field.label }}</label>
+          @if (field.example) {
+            <p class="field-help" [id]="field.name + '-help'">For example: {{ field.example }}</p>
+          }
+          <input
+            [id]="field.name"
+            class="field-input"
+            type="text"
+            autocomplete="off"
+            [formControlName]="field.name"
+            [attr.aria-invalid]="errorsFor(field.name).length > 0"
+            [attr.aria-describedby]="
+              (field.example ? field.name + '-help ' : '') + (errorsFor(field.name).length > 0 ? field.name + '-error' : '') || null
+            "
+          />
+          @for (message of errorsFor(field.name); track message) {
+            <p class="field-error" [id]="field.name + '-error'">{{ message }}</p>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button type="submit" class="btn btn-primary" [disabled]="loading()">Apply filters</button>
+      <button type="button" class="btn btn-secondary" [disabled]="loading()" (click)="clear()">Clear filters</button>
+    </div>
+  </fieldset>
+</form>
+
+<section aria-labelledby="results-title">
+  <h2 id="results-title">Results</h2>
+  <p class="sr-only" role="status">{{ announcement() }}</p>
+
+  @if (loading()) {
+    <p class="flex items-center gap-2 text-text-secondary">
+      <span class="spinner" aria-hidden="true"></span>
+      Loading audit events…
+    </p>
+  } @else if (errorMessage(); as message) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">Audit events not shown</strong>
+      <p>{{ message }}</p>
+      <div class="mt-3">
+        <button type="button" class="btn btn-secondary" (click)="reload()">Try again</button>
+      </div>
+    </div>
+  } @else if (loaded() && items().length === 0) {
+    <div class="card max-w-[40rem]">
+      <h3 class="mb-2 text-heading font-semibold">
+        {{ filtered() ? 'No events match these filters' : 'No audit events yet' }}
+      </h3>
+      <p class="mb-0">
+        {{
+          filtered()
+            ? 'Widen the date range or clear a filter, then apply the filters again.'
+            : 'Events appear here as people sign in and as features record their activity.'
+        }}
+      </p>
+    </div>
+  } @else if (items().length > 0) {
+    <div class="relative overflow-x-auto rounded-md border border-border bg-surface">
+      <table class="w-full min-w-[52rem] border-collapse text-left text-compact">
+        <caption class="sr-only">
+          Audit events, newest first. Page {{ pageNumber() }}.
+        </caption>
+        <thead>
+          <tr class="border-b border-divider text-text-secondary">
+            <th scope="col" class="p-3 font-medium">Time</th>
+            <th scope="col" class="p-3 font-medium">Event</th>
+            <th scope="col" class="p-3 font-medium">Outcome</th>
+            <th scope="col" class="p-3 font-medium">Actor</th>
+            <th scope="col" class="p-3 font-medium">Entity</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of items(); track event.eventId) {
+            <tr class="border-b border-divider last:border-b-0 hover:bg-surface-hover">
+              <td class="p-3 align-top whitespace-nowrap"><app-utc-timestamp [value]="event.occurredAtUtc" /></td>
+              <td class="p-3 align-top">
+                <a [routerLink]="['/admin/audit', event.eventId]">{{ event.eventType }}</a>
+                <div class="text-helper text-text-secondary">{{ event.category === 'security' ? 'Security' : 'Business' }}</div>
+              </td>
+              <td class="p-3 align-top">
+                <span [class]="outcomeClass(event.outcome)">{{ outcomeLabel(event.outcome) }}</span>
+              </td>
+              <td class="p-3 align-top break-all">
+                @if (event.actorDisplay) {
+                  {{ event.actorDisplay }}
+                } @else if (event.actorUserId) {
+                  (account removed)
+                  <div class="text-helper text-text-secondary">{{ event.actorUserId }}</div>
+                } @else {
+                  <span aria-hidden="true">—</span>
+                  <span class="sr-only">No actor</span>
+                }
+              </td>
+              <td class="p-3 align-top break-all">
+                @if (entityText(event); as entity) {
+                  {{ entity }}
+                } @else {
+                  <span aria-hidden="true">—</span>
+                  <span class="sr-only">No entity</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <nav class="mt-4 flex flex-wrap items-center gap-3" aria-label="Pages of results">
+      <button type="button" class="btn btn-secondary" [disabled]="pageNumber() === 1" (click)="previous()">Previous page</button>
+      <span class="text-compact text-text-secondary" aria-current="page">Page {{ pageNumber() }}</span>
+      <button type="button" class="btn btn-secondary" [disabled]="!nextCursor()" (click)="next()">Next page</button>
+    </nav>
+  }
+</section>

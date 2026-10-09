@@ -35,10 +35,12 @@ default role (Teacher), and the role switcher at the bottom of the menu changes 
 | `src/styles.css` | Tailwind entry point plus shared component classes (buttons, fields, alerts, cards, auth pages) |
 | `src/app/core/auth/` | Auth API client, session state, anti-forgery and session-ended interceptors, route guards |
 | `src/app/features/auth/` | Sign-in, forgot-password, and reset-password pages |
+| `src/app/features/audit/` | Admin-only audit history at `/admin/audit` (search with cursor paging) and `/admin/audit/:eventId` (detail); filters and page position are remembered in memory while an event is open |
 | `src/app/layout/shell/` | Signed-in shell: header, sidebar navigation, and an account section at the bottom of the sidebar (active role or role switcher, sign-out) |
 | `src/app/pages/` | Role landing pages and the unauthorized, no-role, and not-found states |
+| `src/app/shared/utc-timestamp/` | `<app-utc-timestamp>`: every audit time is shown in UTC with an explicit "UTC" label inside a `time` element |
 | `src/app/shared/auth-brand/` | Centered IIT logo and portal name used on every authentication screen |
-| `public/images/iit-logo.png` | Approved IIT logo (600×327); do not stretch or recolor it |
+| `public/images/iit-logo.png` | Approved IIT logo (600×327), shown on the authentication screens and in the signed-in header; do not stretch or recolor it |
 | `public/favicon.ico`, `public/apple-touch-icon.png` | Browser-tab icon (16/32/48px, "IIT" lettermark) and 180px home-screen icon (full logo), generated from the logo per design-system §10 |
 
 ## Styling (Tailwind CSS v4)
@@ -63,3 +65,5 @@ Tailwind runs through PostCSS (`.postcssrc.json`). Its theme is the design syste
 - Sessions end after three hours without activity. **Sign out** stays at the bottom of the sidebar (in the menu on
   mobile) so users on shared devices can end a session at any time.
 - The reset page removes the recovery proof from the address bar as soon as it loads.
+- Audit history is shown only to the active Admin role. Its navigation item is hidden for other roles, but the
+  service decides on every request; a 403 shows a message and no results.
