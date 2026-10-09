@@ -17,10 +17,10 @@ export interface PasswordResetCompletion {
 
 /** Each role's area and its feature-list module. Navigation only; the service enforces access. */
 export const ROLE_AREAS: Record<Role, { path: string; module: string }> = {
-  Admin: { path: '/admin', module: 'Admin Module' },
-  Student: { path: '/student', module: 'Student Module' },
-  Teacher: { path: '/teacher', module: 'Teacher Module' },
-  Coordinator: { path: '/coordinator', module: 'Coordinator Module' },
+  Admin: { path: '/admin', module: 'Dashboard' },
+  Student: { path: '/student', module: 'Dashboard' },
+  Teacher: { path: '/teacher', module: 'Dashboard' },
+  Coordinator: { path: '/coordinator', module: 'Dashboard' },
 };
 
 /** Where a signed-in user belongs before choosing a page. */

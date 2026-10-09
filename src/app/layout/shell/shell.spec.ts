@@ -74,7 +74,30 @@ describe('Shell', () => {
 
     expect(page.querySelector('.badge')?.textContent).toContain('Role: Student');
     expect(page.querySelector('#role-switcher')).toBeNull();
-    expect(page.querySelector('nav')?.textContent).toContain('Student Module');
+    expect(page.querySelector('nav')?.textContent).toContain('Dashboard');
+  });
+
+  it('shows the IIT logo and portal name in the header', async () => {
+    await render(context(['Student'], 'Student'));
+
+    const logo = page.querySelector<HTMLImageElement>('header img')!;
+    expect(logo.getAttribute('src')).toBe('images/iit-logo.png');
+    expect(logo.alt).toBe('IIT, University of Dhaka');
+    expect(page.querySelector('header')?.textContent).toContain('IIT Academic Portal');
+  });
+
+  it('lists audit history under the Admin module only', async () => {
+    await render(context(['Admin', 'Teacher'], 'Admin'));
+    const links = Array.from(page.querySelectorAll('nav a')).map((a) => [a.textContent?.trim(), a.getAttribute('href')]);
+    expect(links).toEqual([
+      ['Dashboard', '/admin'],
+      ['Audit history', '/admin/audit'],
+    ]);
+  });
+
+  it('shows no audit navigation to other roles', async () => {
+    await render(context(['Teacher'], 'Teacher'));
+    expect(page.querySelector('nav')?.textContent).not.toContain('Audit');
   });
 
   it('offers only the assigned roles and marks the active one', async () => {
@@ -98,8 +121,7 @@ describe('Shell', () => {
     fixture.detectChanges();
 
     expect(TestBed.inject(Router).url).toBe('/coordinator');
-    expect(page.querySelector('nav')?.textContent).toContain('Coordinator Module');
-    expect(page.querySelector('nav')?.textContent).not.toContain('Teacher Module');
+    expect(page.querySelector('nav')?.textContent).toContain('Dashboard');
     expect(page.querySelector('[role=status]')?.textContent).toContain('Switched to the Coordinator role');
   });
 

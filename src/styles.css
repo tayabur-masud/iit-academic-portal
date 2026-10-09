@@ -153,6 +153,15 @@
     min-height: var(--control-height-sm);
   }
 
+  /* Status badges: white surface with a border so the text keeps AA contrast. */
+  .badge-success {
+    @apply border border-border bg-surface text-success;
+  }
+
+  .badge-error {
+    @apply border border-border bg-surface text-error;
+  }
+
   /* Focused authentication screens (design-system §10). */
   .auth-page {
     @apply flex min-h-screen items-start justify-center px-4 pt-6 pb-12 md:pt-12;

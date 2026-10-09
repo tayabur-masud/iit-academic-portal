@@ -14,6 +14,13 @@
     >
       Menu
     </button>
+    <img
+      src="images/iit-logo.png"
+      alt="IIT, University of Dhaka"
+      width="600"
+      height="327"
+      class="h-10 w-auto flex-none"
+    />
     <span class="font-semibold text-brand-primary">IIT Academic Portal</span>
   </header>
 
@@ -30,6 +37,7 @@
               <a
                 [routerLink]="item.path"
                 routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: item.exact }"
                 ariaCurrentWhenActive="page"
                 class="block rounded-sm border-l-3 border-transparent p-3 text-text-primary no-underline hover:bg-surface-hover aria-[current=page]:border-brand-primary aria-[current=page]:bg-surface-selected aria-[current=page]:font-semibold aria-[current=page]:text-brand-primary"
                 >{{ item.label }}</a
