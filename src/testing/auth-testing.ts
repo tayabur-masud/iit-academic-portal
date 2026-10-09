@@ -13,7 +13,6 @@ class Stub {}
 /** Destination routes for navigation assertions. */
 export const STUB_ROUTES: Routes = [
   'login',
-  'select-role',
   'no-role',
   'unauthorized',
   'forgot-password',

@@ -100,11 +100,11 @@ describe('Login', () => {
     expect(TestBed.inject(Router).url).toBe('/teacher');
   });
 
-  it('sends a multi-role account to role selection', async () => {
+  it('opens the default role area for a multi-role account without asking for a role', async () => {
     await submitCredentials();
-    http.expectOne('/api/auth/sessions').flush(context(['Teacher', 'Coordinator'], null));
+    http.expectOne('/api/auth/sessions').flush(context(['Teacher', 'Coordinator'], 'Teacher'));
     await settle();
 
-    expect(TestBed.inject(Router).url).toBe('/select-role');
+    expect(TestBed.inject(Router).url).toBe('/teacher');
   });
 });

@@ -24,8 +24,8 @@ talks to one origin and the service's `HttpOnly` session cookie is sent automati
 "The portal could not be reached", the service is not running on the `https` profile. In production, serve the
 app and the API from the same origin (for example, through a reverse proxy).
 
-Sign in with a seeded development account, such as `teacher.coordinator@iit.test`, which shows the role-selection
-step and the role switcher.
+Sign in with a seeded development account, such as `teacher.coordinator@iit.test`. It opens directly in its
+default role (Teacher), and the role switcher at the bottom of the menu changes to Coordinator.
 
 ## Structure
 
@@ -34,8 +34,8 @@ step and the role switcher.
 | `src/styles/tokens.css` | Design tokens from `specs/design-system.md`, declared as the Tailwind theme; the only place color and size values are defined |
 | `src/styles.css` | Tailwind entry point plus shared component classes (buttons, fields, alerts, cards, auth pages) |
 | `src/app/core/auth/` | Auth API client, session state, anti-forgery and session-ended interceptors, route guards |
-| `src/app/features/auth/` | Sign-in, forgot-password, reset-password, and role-selection pages |
-| `src/app/layout/shell/` | Signed-in shell: active role, role switcher, navigation, sign-out |
+| `src/app/features/auth/` | Sign-in, forgot-password, and reset-password pages |
+| `src/app/layout/shell/` | Signed-in shell: header, sidebar navigation, and an account section at the bottom of the sidebar (active role or role switcher, sign-out) |
 | `src/app/pages/` | Role landing pages and the unauthorized, no-role, and not-found states |
 | `src/app/shared/auth-brand/` | Centered IIT logo and portal name used on every authentication screen |
 | `public/images/iit-logo.png` | Approved IIT logo (600×327); do not stretch or recolor it |
@@ -60,5 +60,6 @@ Tailwind runs through PostCSS (`.postcssrc.json`). Its theme is the design syste
   experience.
 - State-changing API calls carry an `X-CSRF-Token` header obtained from `/api/auth/anti-forgery-token`. The
   token is refetched after sign-in and sign-out because the service binds it to the signed-in identity.
-- Sessions do not expire automatically, so the shell always shows **Sign out**.
+- Sessions end after three hours without activity. **Sign out** stays at the bottom of the sidebar (in the menu on
+  mobile) so users on shared devices can end a session at any time.
 - The reset page removes the recovery proof from the address bar as soon as it loads.

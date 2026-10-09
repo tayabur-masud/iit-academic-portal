@@ -1,6 +1,9 @@
 export type Role = 'Admin' | 'Student' | 'Teacher' | 'Coordinator';
 
-/** The account's assigned roles and this session's active role (null until a multi-role user chooses). */
+/**
+ * The account's assigned roles and this session's active role. The service starts every session in the
+ * account's default role, so the active role is null only when no supported role is assigned.
+ */
 export interface SessionContext {
   availableRoles: Role[];
   activeRole: Role | null;
@@ -22,10 +25,7 @@ export const ROLE_AREAS: Record<Role, { path: string; module: string }> = {
 
 /** Where a signed-in user belongs before choosing a page. */
 export function routeForSession(context: SessionContext): string {
-  if (context.activeRole) {
-    return ROLE_AREAS[context.activeRole].path;
-  }
-  return context.availableRoles.length > 0 ? '/select-role' : '/no-role';
+  return context.activeRole ? ROLE_AREAS[context.activeRole].path : '/no-role';
 }
 
 /**
