@@ -30,7 +30,7 @@ describe('AuditPage', () => {
   let http: HttpTestingController;
   let page: HTMLElement;
 
-  async function open(first: Page | null = { items: [event('e1')], nextCursor: null }): Promise<void> {
+  async function open(first: Page | null = { items: [event('e1')], nextCursor: null, page: 1, totalCount: 1, totalPages: 1 }): Promise<void> {
     TestBed.configureTestingModule({ imports: [AuditPage], providers: provideAuthTesting() });
     http = httpMock();
     fixture = TestBed.createComponent(AuditPage);
@@ -69,6 +69,9 @@ describe('AuditPage', () => {
     await open({
       items: [event('e2', { outcome: 'denied', actorDisplay: null, actorUserId: 'gone-1' })],
       nextCursor: null,
+      page: 1,
+      totalCount: 1,
+      totalPages: 1,
     });
 
     expect(page.querySelector('.badge')?.textContent).toContain('Denied');
@@ -76,12 +79,12 @@ describe('AuditPage', () => {
   });
 
   it('explains an empty first page differently from an empty filtered result', async () => {
-    await open({ items: [], nextCursor: null });
+    await open({ items: [], nextCursor: null, page: 1, totalCount: 0, totalPages: 0 });
     expect(page.textContent).toContain('No audit events yet');
 
     type('#eventType', 'nothing');
     page.querySelector('form')!.dispatchEvent(new Event('submit'));
-    http.expectOne((r) => r.params.get('eventType') === 'nothing').flush({ items: [], nextCursor: null });
+    http.expectOne((r) => r.params.get('eventType') === 'nothing').flush({ items: [], nextCursor: null, page: 1, totalCount: 0, totalPages: 0 });
     await settle();
     fixture.detectChanges();
 
@@ -99,8 +102,9 @@ describe('AuditPage', () => {
     expect(request.request.params.get('eventType')).toBe('auth.sign-in');
     expect(request.request.params.get('fromUtc')).toBe('2026-10-01T00:00:00Z');
     expect(request.request.params.has('toUtc')).toBe(false);
+    expect(request.request.params.get('page')).toBe('1');
     expect(request.request.params.has('cursor')).toBe(false);
-    request.flush({ items: [], nextCursor: null });
+    request.flush({ items: [], nextCursor: null, page: 1, totalCount: 0, totalPages: 0 });
   });
 
   it('rejects an end before the start without calling the service', async () => {
@@ -116,22 +120,91 @@ describe('AuditPage', () => {
     expect(page.querySelector('#to')?.getAttribute('aria-invalid')).toBe('true');
   });
 
-  it('pages forward by cursor and back again', async () => {
-    await open({ items: [event('e1')], nextCursor: 'c1' });
-    expect(button('Previous page').disabled).toBe(true);
+  function pager(): HTMLElement {
+    return page.querySelector<HTMLElement>('nav[aria-label="Pages of results"]')!;
+  }
 
-    button('Next page').click();
-    http.expectOne((r) => r.params.get('cursor') === 'c1').flush({ items: [event('e2')], nextCursor: null });
+  function pageButtons(): string[] {
+    return Array.from(pager().querySelectorAll('li')).map((li) => li.textContent!.trim());
+  }
+
+  async function respond(request: (r: { params: { get(n: string): string | null } }) => boolean, body: Page): Promise<void> {
+    http.expectOne((r) => r.url === '/api/audit-events' && request(r)).flush(body);
     await settle();
     fixture.detectChanges();
-    expect(page.textContent).toContain('Page 2');
-    expect(button('Next page').disabled).toBe(true);
+  }
 
-    button('Previous page').click();
-    http.expectOne((r) => !r.params.has('cursor')).flush({ items: [event('e1')], nextCursor: 'c1' });
-    await settle();
+  it('shows numbered pages with the total and the range on screen', async () => {
+    await open({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 1000, totalPages: 40 });
+
+    expect(pageButtons()).toEqual(['Previous page', '1', '2', '3', '…', '40', 'Next page']);
+    expect(page.textContent).toContain('Showing 1 to 1 of 1000 events');
+    expect(pager().querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('1');
+    expect(button('Previous').disabled).toBe(true);
+  });
+
+  it('jumps to a numbered page, the next page and the previous page', async () => {
+    await open({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 1000, totalPages: 40 });
+
+    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
+    await respond((r) => r.params.get('page') === '3', { items: [event('e3')], nextCursor: null, page: 3, totalCount: 1000, totalPages: 40 });
+    expect(pager().querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('3');
+    expect(page.textContent).toContain('Showing 51 to 51 of 1000 events');
+
+    button('Next').click();
+    await respond((r) => r.params.get('page') === '4', { items: [event('e4')], nextCursor: null, page: 4, totalCount: 1000, totalPages: 40 });
+    button('Previous').click();
+    await respond((r) => r.params.get('page') === '3', { items: [event('e3')], nextCursor: null, page: 3, totalCount: 1000, totalPages: 40 });
+    expect(pager().querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('3');
+  });
+
+  it('keeps the current rows on screen, marked busy, while another page loads', async () => {
+    await open({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 1000, totalPages: 40 });
+
+    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
     fixture.detectChanges();
-    expect(page.textContent).toContain('Page 1');
+
+    expect(page.querySelectorAll('tbody tr').length).toBe(1);
+    expect(page.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(page.querySelector('.spinner')).not.toBeNull();
+    // A second click while loading is ignored: only one request is outstanding.
+    pager().querySelector<HTMLButtonElement>('[aria-label="Page 4"]')!.click();
+    await respond((r) => r.params.get('page') === '3', { items: [event('e3')], nextCursor: null, page: 3, totalCount: 1000, totalPages: 40 });
+    expect(page.querySelector('[aria-busy="true"]')).toBeNull();
+  });
+
+  it('can jump straight to the last page, where Next is disabled', async () => {
+    await open({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 1000, totalPages: 40 });
+
+    pager().querySelector<HTMLButtonElement>('[aria-label="Page 40"]')!.click();
+    await respond((r) => r.params.get('page') === '40', { items: [event('e40')], nextCursor: null, page: 40, totalCount: 1000, totalPages: 40 });
+
+    expect(button('Next').disabled).toBe(true);
+    expect(pageButtons()).toEqual(['Previous page', '1', '…', '38', '39', '40', 'Next page']);
+  });
+
+  it('starts again from page 1 when the filters change', async () => {
+    await open({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 1000, totalPages: 40 });
+    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
+    await respond((r) => r.params.get('page') === '3', { items: [event('e3')], nextCursor: null, page: 3, totalCount: 1000, totalPages: 40 });
+
+    type('#eventType', 'auth.sign-in');
+    page.querySelector('form')!.dispatchEvent(new Event('submit'));
+    await respond((r) => r.params.get('page') === '1' && r.params.get('eventType') === 'auth.sign-in', {
+      items: [event('e1')], nextCursor: null, page: 1, totalCount: 50, totalPages: 2,
+    });
+
+    expect(pageButtons()).toEqual(['Previous page', '1', '2', 'Next page']);
+  });
+
+  it('shows the last existing page when the requested page is past the end', async () => {
+    await open({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 60, totalPages: 3 });
+    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
+    await respond((r) => r.params.get('page') === '3', { items: [], nextCursor: null, page: 3, totalCount: 30, totalPages: 2 });
+    // The list was shorter than the pager believed: the screen asks for the last page that exists.
+    await respond((r) => r.params.get('page') === '2', { items: [event('e2')], nextCursor: null, page: 2, totalCount: 30, totalPages: 2 });
+
+    expect(pager().querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('2');
   });
 
   it('shows server validation problems against the field that caused them', async () => {
@@ -166,20 +239,20 @@ describe('AuditPage', () => {
     http = httpMock();
     TestBed.inject(AuditSearchState).save(
       { from: '', to: '', category: 'security', outcome: '', eventType: 'auth.sign-in', actorUserId: '', entityType: '', entityId: '', correlationId: '' },
-      [null, 'c1'],
+      3,
     );
     fixture = TestBed.createComponent(AuditPage);
     page = fixture.nativeElement;
     await fixture.whenStable();
 
     const request = http.expectOne((r) => r.url === '/api/audit-events');
-    expect(request.request.params.get('cursor')).toBe('c1');
+    expect(request.request.params.get('page')).toBe('3');
     expect(request.request.params.get('category')).toBe('security');
-    request.flush({ items: [event('e3')], nextCursor: null });
+    request.flush({ items: [event('e3')], nextCursor: null, page: 3, totalCount: 60, totalPages: 3 });
     await settle();
     fixture.detectChanges();
 
     expect(page.querySelector<HTMLInputElement>('#eventType')?.value).toBe('auth.sign-in');
-    expect(page.textContent).toContain('Page 2');
+    expect(pager().querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('3');
   });
 });
