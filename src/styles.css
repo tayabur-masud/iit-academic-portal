@@ -42,6 +42,10 @@
     @apply absolute left-4 -top-16 z-10 rounded-sm bg-surface px-4 py-2 focus:top-2;
   }
 
+  .full-container {
+    @apply w-full;
+  }
+
   /* Buttons */
   .btn {
     @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm border border-transparent px-4 font-medium no-underline disabled:cursor-not-allowed;
@@ -148,9 +152,38 @@
     @apply rounded-md border border-border bg-surface p-6;
   }
 
+  .card:has(> .card-body) {
+    @apply p-0;
+  }
+
+  .card-body {
+    padding: 30px;
+  }
+
+  .card-title {
+    @apply text-lg leading-7 font-semibold text-text-primary;
+  }
+
+  .card-subtitle {
+    @apply text-sm leading-5 text-text-secondary;
+  }
+
   .badge {
     @apply inline-flex items-center rounded-sm bg-surface-selected px-3 text-compact font-medium text-brand-primary;
     min-height: var(--control-height-sm);
+  }
+
+  .badge-md {
+    @apply rounded-md px-3 py-1 text-sm leading-5 font-semibold text-brand-primary;
+  }
+
+  .badge-pill {
+    @apply rounded-full px-2 py-1 text-xs leading-4;
+    min-height: 1.5rem;
+  }
+
+  .badge-pill-primary {
+    @apply bg-brand-primary text-surface;
   }
 
   /* Status badges: white surface with a border so the text keeps AA contrast. */
@@ -160,6 +193,76 @@
 
   .badge-error {
     @apply border border-border bg-surface text-error;
+  }
+
+  /* List groups */
+  .list-group {
+    @apply m-0 list-none overflow-hidden rounded-lg border border-border bg-surface p-0;
+  }
+
+  .list-group-compact {
+    @apply max-w-xs;
+  }
+
+  .list-group-flush {
+    @apply rounded-none border-0 bg-transparent;
+  }
+
+  .list-group-item {
+    @apply flex min-h-11 items-center justify-between gap-2 border-b border-divider px-4 py-3 text-compact leading-5 font-medium last:border-b-0;
+  }
+
+  .list-group-item-action {
+    @apply -mx-4 -my-3 flex min-h-11 flex-1 items-center justify-between gap-3.5 px-4 py-3 text-text-primary no-underline hover:bg-surface-hover;
+  }
+
+  .list-group-item-total {
+    @apply bg-surface-selected font-semibold;
+  }
+
+  .list-group-flush > .list-group-item {
+    @apply px-0;
+  }
+
+  .list-group-flush .list-group-item-action {
+    @apply mx-0;
+  }
+
+  .list-group-icon {
+    @apply inline-flex shrink-0 items-center justify-center text-text-secondary;
+    margin-inline-end: 0.375rem;
+  }
+
+  .list-marker {
+    @apply m-0 list-disc pl-5 text-compact leading-5 text-text-secondary marker:text-brand-primary;
+  }
+
+  .list-marker > :not(:last-child) {
+    margin-block-end: calc(var(--spacing) * 2);
+  }
+
+  .list-checklist {
+    @apply m-0 list-none p-0 text-compact leading-5;
+  }
+
+  .list-checklist > :not(:last-child) {
+    margin-block-end: calc(var(--spacing) * 3);
+  }
+
+  .list-checklist > li {
+    position: relative;
+    padding-inline-start: 1.75rem;
+  }
+
+  .list-checklist > li::before {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    font-size: 1rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.25rem;
+    color: var(--color-brand-primary);
+    content: '\2713';
   }
 
   /* Focused authentication screens (design-system §10). */
