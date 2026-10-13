@@ -14,7 +14,9 @@ import {
   AuditFilters,
   AuditOutcome,
   EMPTY_FILTERS,
+  PAGE_SIZE,
   hasFilters,
+  pageList,
   toUtcInstant,
 } from './audit.models';
 
@@ -68,15 +70,17 @@ export class AuditPage implements OnInit {
   ] as const;
 
   protected readonly items = signal<AuditEvent[]>([]);
-  protected readonly nextCursor = signal<string | null>(null);
-  /** The cursor that opened each page visited so far; the last entry is the current page. */
-  protected readonly cursors = signal<(string | null)[]>([null]);
+  protected readonly page = signal(1);
+  protected readonly totalPages = signal(0);
+  protected readonly totalCount = signal(0);
   protected readonly loading = signal(false);
   protected readonly loaded = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly problems = signal<Record<string, string[]>>({});
   protected readonly announcement = signal('');
-  protected readonly pageNumber = computed(() => this.cursors().length);
+  protected readonly pages = computed(() => pageList(this.page(), this.totalPages()));
+  protected readonly firstShown = computed(() => (this.page() - 1) * PAGE_SIZE + 1);
+  protected readonly lastShown = computed(() => (this.page() - 1) * PAGE_SIZE + this.items().length);
   protected readonly filtered = signal(false);
 
   private applied: AuditFilters = { ...EMPTY_FILTERS };
@@ -85,7 +89,7 @@ export class AuditPage implements OnInit {
     // Returning from an event restores the filters and page the reviewer was on.
     this.applied = { ...this.state.filters };
     this.form.setValue(this.applied);
-    this.cursors.set([...this.state.cursors]);
+    this.page.set(this.state.page);
     void this.load();
   }
 
@@ -123,7 +127,7 @@ export class AuditPage implements OnInit {
     }
 
     this.applied = values;
-    this.cursors.set([null]);
+    this.page.set(1);
     void this.load();
   }
 
@@ -131,21 +135,14 @@ export class AuditPage implements OnInit {
     this.problems.set({});
     this.form.setValue({ ...EMPTY_FILTERS });
     this.applied = { ...EMPTY_FILTERS };
-    this.cursors.set([null]);
+    this.page.set(1);
     void this.load();
   }
 
-  protected next(): void {
-    const cursor = this.nextCursor();
-    if (cursor) {
-      this.cursors.update((history) => [...history, cursor]);
-      void this.load();
-    }
-  }
-
-  protected previous(): void {
-    if (this.cursors().length > 1) {
-      this.cursors.update((history) => history.slice(0, -1));
+  protected goTo(target: number): void {
+    // Clicks during a load are ignored, not disabled, so the focused button keeps keyboard focus.
+    if (!this.loading() && target !== this.page() && target >= 1 && target <= this.totalPages()) {
+      this.page.set(target);
       void this.load();
     }
   }
@@ -161,15 +158,23 @@ export class AuditPage implements OnInit {
     this.filtered.set(hasFilters(this.applied));
 
     try {
-      const page = await firstValueFrom(this.api.search(this.applied, this.cursors().at(-1) ?? null));
-      this.items.set(page.items);
-      this.nextCursor.set(page.nextCursor);
+      const result = await firstValueFrom(this.api.search(this.applied, this.page()));
+      const totalPages = result.totalPages ?? 0;
+      if (result.items.length === 0 && totalPages > 0 && this.page() > totalPages) {
+        // Events were removed from the match (or the page was stale): show the last page that exists.
+        this.page.set(totalPages);
+        await this.load();
+        return;
+      }
+      this.items.set(result.items);
+      this.totalPages.set(totalPages);
+      this.totalCount.set(result.totalCount ?? result.items.length);
       this.loaded.set(true);
-      this.state.save(this.applied, this.cursors());
+      this.state.save(this.applied, this.page());
       this.announcement.set(
-        page.items.length === 0
+        result.items.length === 0
           ? 'No events match these filters.'
-          : `${page.items.length} ${page.items.length === 1 ? 'event' : 'events'} shown on page ${this.pageNumber()}.`,
+          : `Showing events ${this.firstShown()} to ${this.lastShown()} of ${this.totalCount()}. Page ${this.page()} of ${totalPages}.`,
       );
     } catch (error) {
       this.handleFailure(error);
@@ -181,21 +186,21 @@ export class AuditPage implements OnInit {
   private handleFailure(error: unknown): void {
     // No partial or stale results are shown after a failure.
     this.items.set([]);
-    this.nextCursor.set(null);
+    this.totalPages.set(0);
+    this.totalCount.set(0);
     this.announcement.set('');
 
     if (error instanceof HttpErrorResponse && error.status === 400) {
       const found: Record<string, string[]> = {};
-      for (const field of [...FILTER_FIELDS, 'fromUtc', 'toUtc', 'cursor', 'pageSize']) {
+      for (const field of [...FILTER_FIELDS, 'fromUtc', 'toUtc', 'page', 'pageSize']) {
         const messages = fieldErrors(error, field);
         if (messages.length > 0) {
           found[FIELD_FOR_PARAMETER[field] ?? field] = messages;
         }
       }
       this.problems.set(found);
-      if (found['cursor']) {
-        // A stale cursor means the position is lost: go back to the first page.
-        this.cursors.set([null]);
+      if (found['page']) {
+        this.page.set(1);
       }
       this.errorMessage.set('Some filters need attention. Correct them and apply the filters again.');
       this.focusFirstInvalid();

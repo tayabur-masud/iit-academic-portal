@@ -1,6 +1,6 @@
 <h1>Audit history</h1>
 <p class="max-w-[48rem] text-text-secondary">
-  Security events and mandatory business events recorded by the portal, newest first. All times are shown in UTC.
+  Security and business events recorded by the portal, newest first. Times are in UTC.
 </p>
 
 <form [formGroup]="form" (ngSubmit)="apply()" novalidate class="card mb-6" [attr.aria-busy]="loading()">
@@ -100,7 +100,7 @@
   <h2 id="results-title">Results</h2>
   <p class="sr-only" role="status">{{ announcement() }}</p>
 
-  @if (loading()) {
+  @if (loading() && items().length === 0) {
     <p class="flex items-center gap-2 text-text-secondary">
       <span class="spinner" aria-hidden="true"></span>
       Loading audit events…
@@ -127,10 +127,10 @@
       </p>
     </div>
   } @else if (items().length > 0) {
-    <div class="relative overflow-x-auto rounded-md border border-border bg-surface">
+    <div class="relative overflow-x-auto rounded-md border border-border bg-surface" [class.opacity-60]="loading()" [attr.aria-busy]="loading()">
       <table class="w-full min-w-[52rem] border-collapse text-left text-compact">
         <caption class="sr-only">
-          Audit events, newest first. Page {{ pageNumber() }}.
+          Audit events, newest first. Page {{ page() }} of {{ totalPages() }}.
         </caption>
         <thead>
           <tr class="border-b border-divider text-text-secondary">
@@ -177,10 +177,47 @@
       </table>
     </div>
 
-    <nav class="mt-4 flex flex-wrap items-center gap-3" aria-label="Pages of results">
-      <button type="button" class="btn btn-secondary" [disabled]="pageNumber() === 1" (click)="previous()">Previous page</button>
-      <span class="text-compact text-text-secondary" aria-current="page">Page {{ pageNumber() }}</span>
-      <button type="button" class="btn btn-secondary" [disabled]="!nextCursor()" (click)="next()">Next page</button>
-    </nav>
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <p class="m-0 text-compact text-text-secondary">
+        @if (loading()) {
+          <span class="inline-flex items-center gap-2"><span class="spinner" aria-hidden="true"></span>Loading…</span>
+        } @else {
+          Showing {{ firstShown() }} to {{ lastShown() }} of {{ totalCount() }} events
+        }
+      </p>
+      <nav aria-label="Pages of results">
+        <ul class="m-0 flex list-none flex-wrap items-center gap-2 p-0">
+          <li>
+            <button type="button" class="btn btn-secondary" [disabled]="page() === 1" (click)="goTo(page() - 1)">
+              Previous<span class="sr-only"> page</span>
+            </button>
+          </li>
+          @for (entry of pages(); track $index) {
+            <li>
+              @if (entry === '…') {
+                <span class="px-1 text-text-secondary" aria-hidden="true">…</span>
+              } @else {
+                <button
+                  type="button"
+                  class="btn min-w-(--control-height-sm)"
+                  [class.btn-primary]="entry === page()"
+                  [class.btn-secondary]="entry !== page()"
+                  [attr.aria-current]="entry === page() ? 'page' : null"
+                  [attr.aria-label]="'Page ' + entry"
+                  (click)="goTo(entry)"
+                >
+                  {{ entry }}
+                </button>
+              }
+            </li>
+          }
+          <li>
+            <button type="button" class="btn btn-secondary" [disabled]="page() >= totalPages()" (click)="goTo(page() + 1)">
+              Next<span class="sr-only"> page</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
   }
 </section>
