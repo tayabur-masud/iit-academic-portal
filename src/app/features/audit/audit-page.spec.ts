@@ -138,7 +138,7 @@ describe('AuditPage', () => {
     await open({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 1000, totalPages: 40 });
 
     expect(pageButtons()).toEqual(['Previous page', '1', '2', '3', '…', '40', 'Next page']);
-    expect(page.textContent).toContain('Showing 1 to 1 of 1000 events');
+    expect(page.textContent).toContain('Showing 1 to 25 of 1000 events');
     expect(pager().querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('1');
     expect(button('Previous').disabled).toBe(true);
   });
@@ -149,7 +149,7 @@ describe('AuditPage', () => {
     pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
     await respond((r) => r.params.get('page') === '3', { items: [event('e3')], nextCursor: null, page: 3, totalCount: 1000, totalPages: 40 });
     expect(pager().querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('3');
-    expect(page.textContent).toContain('Showing 51 to 51 of 1000 events');
+    expect(page.textContent).toContain('Showing 51 to 75 of 1000 events');
 
     button('Next').click();
     await respond((r) => r.params.get('page') === '4', { items: [event('e4')], nextCursor: null, page: 4, totalCount: 1000, totalPages: 40 });

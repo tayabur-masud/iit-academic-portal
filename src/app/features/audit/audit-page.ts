@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { fieldErrors, problemMessage } from '../../core/http/problem';
+import { Pager } from '../../shared/pager/pager';
 import { UtcTimestamp } from '../../shared/utc-timestamp/utc-timestamp';
 import { AuditApi } from './audit-api';
 import { AuditSearchState } from './audit-search-state';
@@ -16,7 +17,6 @@ import {
   EMPTY_FILTERS,
   PAGE_SIZE,
   hasFilters,
-  pageList,
   toUtcInstant,
 } from './audit.models';
 
@@ -41,7 +41,7 @@ const FILTER_FIELDS: (keyof AuditFilters)[] = [
 /** Admin-only search of audit history. The service re-checks the Admin role on every request. */
 @Component({
   selector: 'app-audit-page',
-  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp],
+  imports: [ReactiveFormsModule, RouterLink, Pager, UtcTimestamp],
   templateUrl: './audit-page.html',
 })
 export class AuditPage implements OnInit {
@@ -78,7 +78,6 @@ export class AuditPage implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly problems = signal<Record<string, string[]>>({});
   protected readonly announcement = signal('');
-  protected readonly pages = computed(() => pageList(this.page(), this.totalPages()));
   protected readonly firstShown = computed(() => (this.page() - 1) * PAGE_SIZE + 1);
   protected readonly lastShown = computed(() => (this.page() - 1) * PAGE_SIZE + this.items().length);
   protected readonly filtered = signal(false);

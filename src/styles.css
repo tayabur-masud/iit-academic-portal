@@ -60,6 +60,15 @@
     @apply border-control-border bg-surface text-brand-primary hover:not-disabled:bg-surface-hover active:not-disabled:bg-surface-selected disabled:text-text-disabled;
   }
 
+  /* Destructive actions use the semantic error color (design-system section 6, Buttons). Filled confirms; outlined offers. */
+  .btn-danger {
+    @apply bg-error text-surface hover:not-disabled:bg-[color-mix(in_srgb,var(--color-error)_85%,black)] hover:not-disabled:text-surface active:not-disabled:bg-[color-mix(in_srgb,var(--color-error)_70%,black)] disabled:opacity-60;
+  }
+
+  .btn-danger-outline {
+    @apply border-error bg-surface text-error hover:not-disabled:bg-[color-mix(in_srgb,var(--color-error)_8%,white)] active:not-disabled:bg-[color-mix(in_srgb,var(--color-error)_16%,white)] disabled:opacity-60;
+  }
+
   .btn-block {
     @apply w-full;
   }

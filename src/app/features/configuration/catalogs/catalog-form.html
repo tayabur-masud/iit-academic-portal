@@ -1,0 +1,254 @@
+@if (descriptor(); as d) {
+  <nav aria-label="Breadcrumb" class="mb-2 text-compact">
+    <a routerLink="/admin/configuration">Configuration</a>
+    <span aria-hidden="true"> / </span>
+    <a [routerLink]="['/admin/configuration', d.slug]">{{ d.label }}</a>
+    <span aria-hidden="true"> / </span>
+    <span>{{ isNew() ? 'New' : 'Edit' }}</span>
+  </nav>
+
+  <h1>{{ isNew() ? 'New ' + d.singular : 'Edit ' + d.singular }}</h1>
+  <p class="sr-only" role="status">{{ announcement() }}</p>
+
+  @if (loading()) {
+    <p class="flex items-center gap-2 text-text-secondary">
+      <span class="spinner" aria-hidden="true"></span>
+      Loading…
+    </p>
+  } @else if (loadError(); as message) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">Not shown</strong>
+      <p>{{ message }}</p>
+      <p class="mb-0"><a [routerLink]="['/admin/configuration', d.slug]">Back to {{ d.label.toLowerCase() }}</a></p>
+    </div>
+  } @else {
+    @if (!isNew() && original() && !original()!.isActive) {
+      <div class="alert alert-info" role="status">
+        <strong class="alert-title">This {{ d.singular }} is inactive</strong>
+        <p>
+          It stays visible where it is already used, but it cannot be chosen for new assignments. Turn on Active to use it
+          again.
+        </p>
+      </div>
+    }
+
+    @if (errorMessage(); as message) {
+      <div class="alert alert-error" role="alert">
+        <strong class="alert-title">Not saved</strong>
+        <p>{{ message }}</p>
+      </div>
+    }
+
+    <form class="card max-w-[40rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+      <div class="field">
+        <label class="field-label" for="name">Name</label>
+        <input
+          id="name"
+          class="field-input"
+          type="text"
+          autocomplete="off"
+          formControlName="name"
+          required
+          [attr.aria-invalid]="errorsFor('name').length > 0"
+          [attr.aria-describedby]="describedBy('name')"
+        />
+        @for (message of errorsFor('name'); track message) {
+          <p class="field-error" id="name-error">{{ message }}</p>
+        }
+      </div>
+
+      @if (d.hasCode) {
+        <div class="field">
+          <label class="field-label" for="code">Code (optional)</label>
+          <input
+            id="code"
+            class="field-input"
+            type="text"
+            autocomplete="off"
+            formControlName="code"
+            [attr.aria-invalid]="errorsFor('code').length > 0"
+            [attr.aria-describedby]="describedBy('code')"
+          />
+          @for (message of errorsFor('code'); track message) {
+            <p class="field-error" id="code-error">{{ message }}</p>
+          }
+        </div>
+      }
+
+      @if (d.hasType) {
+        <div class="field">
+          <label class="field-label" for="type">Type</label>
+          <select
+            id="type"
+            class="field-input"
+            formControlName="type"
+            required
+            [attr.aria-invalid]="errorsFor('type').length > 0"
+            [attr.aria-describedby]="describedBy('type')"
+          >
+            <option value="">Select a type</option>
+            @for (type of types; track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+          @for (message of errorsFor('type'); track message) {
+            <p class="field-error" id="type-error">{{ message }}</p>
+          }
+        </div>
+      }
+
+      @if (d.hasAddress) {
+        <div class="field">
+          <label class="field-label" for="address">Address (optional)</label>
+          <textarea
+            id="address"
+            class="field-input"
+            rows="3"
+            formControlName="address"
+            [attr.aria-invalid]="errorsFor('address').length > 0"
+            [attr.aria-describedby]="describedBy('address')"
+          ></textarea>
+          @for (message of errorsFor('address'); track message) {
+            <p class="field-error" id="address-error">{{ message }}</p>
+          }
+        </div>
+      }
+
+      @if (d.cascadeFrom) {
+        <div class="field">
+          <label class="field-label" for="cascadeDivisionId">Division</label>
+          <p class="field-help" id="cascadeDivisionId-help">Choose the division first; it narrows the districts.</p>
+          <select
+            id="cascadeDivisionId"
+            class="field-input"
+            formControlName="cascadeDivisionId"
+            required
+            (change)="divisionPicked()"
+            [attr.aria-invalid]="errorsFor('cascadeDivisionId').length > 0"
+            [attr.aria-describedby]="describedBy('cascadeDivisionId', true)"
+          >
+            <option value="">Select a division</option>
+            @for (division of divisionChoices(); track division.id) {
+              <option [value]="division.id">{{ division.name }}{{ division.isActive ? '' : ' (inactive)' }}</option>
+            }
+          </select>
+          @for (message of errorsFor('cascadeDivisionId'); track message) {
+            <p class="field-error" id="cascadeDivisionId-error">{{ message }}</p>
+          }
+        </div>
+
+        @for (reference of d.references; track reference.name) {
+          <div class="field">
+            <label class="field-label" [for]="reference.name">{{ reference.label }}</label>
+            <select
+              [id]="reference.name"
+              class="field-input"
+              [formControlName]="reference.name"
+              required
+              [attr.aria-invalid]="errorsFor(reference.name).length > 0"
+              [attr.aria-describedby]="describedBy(reference.name)"
+            >
+              <option value="">{{ form.controls.cascadeDivisionId.value ? 'Select a district' : 'Choose a division first' }}</option>
+              @for (option of districtChoices(); track option.id) {
+                <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+              }
+            </select>
+            @for (message of errorsFor(reference.name); track message) {
+              <p class="field-error" [id]="reference.name + '-error'">{{ message }}</p>
+            }
+          </div>
+        }
+      } @else {
+        @for (reference of d.references; track reference.name) {
+          <div class="field">
+            <label class="field-label" [for]="reference.name">{{ reference.label }}</label>
+            <select
+              [id]="reference.name"
+              class="field-input"
+              [formControlName]="reference.name"
+              required
+              [attr.aria-invalid]="errorsFor(reference.name).length > 0"
+              [attr.aria-describedby]="describedBy(reference.name)"
+            >
+              <option value="">Select a {{ reference.label.toLowerCase() }}</option>
+              @for (option of choices(reference); track option.id) {
+                <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+              }
+            </select>
+            @for (message of errorsFor(reference.name); track message) {
+              <p class="field-error" [id]="reference.name + '-error'">{{ message }}</p>
+            }
+          </div>
+        }
+      }
+
+      <div class="field">
+        <label class="choice" for="isActive">
+          <input id="isActive" type="checkbox" formControlName="isActive" />
+          <span>Active</span>
+        </label>
+        <p class="field-help" id="isActive-help">
+          Turn this off to deactivate the {{ d.singular }}. Records that already use it keep their link.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          @if (saving()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Saving…
+          } @else {
+            {{ isNew() ? 'Create ' + d.singular : 'Save changes' }}
+          }
+        </button>
+        <a class="btn btn-secondary" [routerLink]="['/admin/configuration', d.slug]">Cancel</a>
+      </div>
+    </form>
+
+    @if (!isNew()) {
+      <section class="card mt-6 max-w-[40rem]" aria-labelledby="delete-title">
+        <h2 id="delete-title">Delete this {{ d.singular }}</h2>
+        <p>
+          Deleting removes the record for good. It is only possible while nothing refers to it; otherwise deactivate it instead.
+        </p>
+
+        @if (!confirmingDelete()) {
+          <button type="button" class="btn btn-danger-outline" (click)="askDelete()">Delete {{ d.singular }}…</button>
+        } @else if (deleteConflict(); as conflict) {
+          <div class="alert alert-warning" role="alert">
+            <strong class="alert-title">It cannot be deleted</strong>
+            <p>{{ conflict }}</p>
+            <div class="flex flex-wrap gap-3">
+              @if (original()?.isActive) {
+                <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="deactivateInstead()">Deactivate instead</button>
+              }
+              <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Close</button>
+            </div>
+          </div>
+        } @else {
+          <div class="alert alert-warning" role="alert">
+            <strong class="alert-title">Delete "{{ original()?.name }}"?</strong>
+            <p>This cannot be undone.</p>
+            <div class="flex flex-wrap gap-3">
+              <button type="button" class="btn btn-danger" [disabled]="deleting()" (click)="confirmDelete()">
+                @if (deleting()) {
+                  <span class="spinner" aria-hidden="true"></span>
+                  Deleting…
+                } @else {
+                  Yes, delete
+                }
+              </button>
+              <button type="button" class="btn btn-secondary" [disabled]="deleting()" (click)="cancelDelete()">Cancel</button>
+            </div>
+          </div>
+        }
+      </section>
+    }
+  }
+} @else {
+  <div class="alert alert-warning" role="alert">
+    <strong class="alert-title">Not found</strong>
+    <p>There is no such configuration resource.</p>
+    <p><a routerLink="/admin/configuration">Back to Configuration</a></p>
+  </div>
+}
