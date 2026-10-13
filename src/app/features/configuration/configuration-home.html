@@ -1,0 +1,21 @@
+<h1>Configuration</h1>
+<p class="max-w-[48rem] text-text-secondary">
+  Maintain the reference data the portal relies on. Inactive records stay on existing links but cannot be chosen for new
+  ones, and a record that is in use cannot be deleted.
+</p>
+
+@for (group of groups; track group.name) {
+  <section class="mb-8" [attr.aria-labelledby]="'group-' + $index">
+    <h2 [id]="'group-' + $index">{{ group.name }}</h2>
+    <ul class="m-0 grid list-none gap-4 p-0 md:grid-cols-2 xl:grid-cols-3">
+      @for (resource of group.resources; track resource.slug) {
+        <li class="card">
+          <h3 class="mb-1 text-heading font-semibold">
+            <a [routerLink]="['/admin/configuration', resource.slug]">{{ resource.label }}</a>
+          </h3>
+          <p class="mb-0 text-compact text-text-secondary">{{ resource.description }}</p>
+        </li>
+      }
+    </ul>
+  </section>
+}

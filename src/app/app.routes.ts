@@ -9,6 +9,9 @@ import {
 import { ROLE_AREAS, Role } from './core/auth/auth.models';
 import { AuditDetail } from './features/audit/audit-detail';
 import { AuditPage } from './features/audit/audit-page';
+import { CatalogForm } from './features/configuration/catalogs/catalog-form';
+import { CatalogList } from './features/configuration/catalogs/catalog-list';
+import { ConfigurationHome } from './features/configuration/configuration-home';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Login } from './features/auth/login/login';
 import { ResetPassword } from './features/auth/reset-password/reset-password';
@@ -53,6 +56,10 @@ export const routes: Routes = [
     children: [
       // Audit history lives under /admin, so switching away from Admin leaves it for the new role's landing page.
       roleArea('Admin', [
+        { path: 'configuration', component: ConfigurationHome, title: `Configuration | ${TITLE}` },
+        { path: 'configuration/:resource', component: CatalogList, title: `Configuration | ${TITLE}` },
+        { path: 'configuration/:resource/new', component: CatalogForm, title: `New record | ${TITLE}` },
+        { path: 'configuration/:resource/:id', component: CatalogForm, title: `Edit record | ${TITLE}` },
         { path: 'audit', component: AuditPage, title: `Audit history | ${TITLE}` },
         { path: 'audit/:eventId', component: AuditDetail, title: `Audit event | ${TITLE}` },
       ]),

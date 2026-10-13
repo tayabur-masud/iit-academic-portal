@@ -1,0 +1,42 @@
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+  <p class="m-0 text-compact text-text-secondary">
+    @if (loading()) {
+      <span class="inline-flex items-center gap-2"><span class="spinner" aria-hidden="true"></span>Loading…</span>
+    } @else {
+      Showing {{ firstShown() }} to {{ lastShown() }} of {{ totalCount() }} {{ noun() }}
+    }
+  </p>
+  <nav aria-label="Pages of results">
+    <ul class="m-0 flex list-none flex-wrap items-center gap-2 p-0">
+      <li>
+        <button type="button" class="btn btn-secondary" [disabled]="page() === 1" (click)="go(page() - 1)">
+          Previous<span class="sr-only"> page</span>
+        </button>
+      </li>
+      @for (entry of pages(); track $index) {
+        <li>
+          @if (entry === '…') {
+            <span class="px-1 text-text-secondary" aria-hidden="true">…</span>
+          } @else {
+            <button
+              type="button"
+              class="btn min-w-(--control-height-sm)"
+              [class.btn-primary]="entry === page()"
+              [class.btn-secondary]="entry !== page()"
+              [attr.aria-current]="entry === page() ? 'page' : null"
+              [attr.aria-label]="'Page ' + entry"
+              (click)="go(entry)"
+            >
+              {{ entry }}
+            </button>
+          }
+        </li>
+      }
+      <li>
+        <button type="button" class="btn btn-secondary" [disabled]="page() >= totalPages()" (click)="go(page() + 1)">
+          Next<span class="sr-only"> page</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</div>

@@ -1,4 +1,4 @@
-import { pageList } from './audit.models';
+import { pageList } from './page-list';
 
 describe('pageList', () => {
   it('lists every page when there are few', () => {
