@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { fieldErrors, problemMessage } from '../../../core/http/problem';
+import { UtcTimestamp } from '../../../shared/utc-timestamp/utc-timestamp';
 import { ConfigurationApi } from '../configuration-api';
 import {
   ConfigurationItem,
@@ -34,7 +35,7 @@ const FIELDS = [
  */
 @Component({
   selector: 'app-catalog-form',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp],
   templateUrl: './catalog-form.html',
 })
 export class CatalogForm {
@@ -88,6 +89,11 @@ export class CatalogForm {
         untracked(() => void this.initialize(descriptor, id));
       }
     });
+  }
+
+  /** Who made a change: the account's email, "(account removed)" if it no longer exists, or "System" when no account did. */
+  protected who(display: string | undefined, userId: string | undefined): string {
+    return display ?? (userId ? '(account removed)' : 'System');
   }
 
   protected errorsFor(field: string): string[] {

@@ -13,7 +13,7 @@ class Destination {}
 const ROOT = '/api/admin/configuration';
 
 function item(id: string, name: string, extra: Partial<ConfigurationItem> = {}): ConfigurationItem {
-  return { id, name, isActive: true, ...extra };
+  return { id, name, isActive: true, createdAtUtc: '2026-10-09T08:30:00Z', lastModifiedAtUtc: '2026-10-09T08:30:00Z', ...extra };
 }
 
 describe('CatalogForm', () => {
@@ -133,6 +133,24 @@ describe('CatalogForm', () => {
       expect(TestBed.inject(Router).url).not.toContain('degrees');
     });
 
+    it('gives a hall an optional code and address and sends them trimmed', async () => {
+      await open('halls');
+      await settle();
+      fixture.detectChanges();
+
+      expect(page.querySelector('#type')).toBeNull();
+      type('#name', '  Fazlul Huq Hall ');
+      type('#code', ' fh ');
+      type('#address', '  University of Dhaka ');
+      submit();
+      const request = await writeRequest('POST', 'halls');
+
+      expect(request.request.body).toEqual({ name: 'Fazlul Huq Hall', isActive: true, code: 'fh', address: 'University of Dhaka' });
+      request.flush(item('h1', 'Fazlul Huq Hall'), { status: 201, statusText: 'Created' });
+      await settle();
+      expect(TestBed.inject(Router).url).toBe('/admin/configuration/halls');
+    });
+
     it('does not offer a code where the catalog has none', async () => {
       await open('semesters');
       await settle();
@@ -194,6 +212,45 @@ describe('CatalogForm', () => {
       await settle();
     });
 
+    it('shows who created and last changed the record and when, in UTC', async () => {
+      await open('degrees', 'd1');
+      await respond(
+        lookup('degrees/d1'),
+        item('d1', 'BSc', {
+          createdAtUtc: '2026-10-09T08:30:00Z',
+          createdByUserId: 'u1',
+          createdBy: 'first@iit.test',
+          lastModifiedAtUtc: '2026-10-12T14:05:09Z',
+          lastModifiedByUserId: 'u2',
+          lastModifiedBy: 'second@iit.test',
+        }),
+      );
+
+      const history = page.querySelector('section[aria-labelledby="history-title"]')!;
+      expect(history.textContent).toContain('Record history');
+      expect(history.textContent).toContain('2026-10-09 08:30:00 UTC');
+      expect(history.textContent).toContain('first@iit.test');
+      expect(history.textContent).toContain('2026-10-12 14:05:09 UTC');
+      expect(history.textContent).toContain('second@iit.test');
+    });
+
+    it('says System when no account made the change and marks a removed account', async () => {
+      await open('degrees', 'd1');
+      await respond(lookup('degrees/d1'), item('d1', 'BSc', { createdByUserId: undefined, lastModifiedByUserId: 'gone-1' }));
+
+      const history = page.querySelector('section[aria-labelledby="history-title"]')!.textContent!;
+      expect(history).toContain('by System');
+      expect(history).toContain('by (account removed)');
+    });
+
+    it('has no record history while creating', async () => {
+      await open('degrees');
+      await settle();
+      fixture.detectChanges();
+
+      expect(page.textContent).not.toContain('Record history');
+    });
+
     it('says so when the record does not exist', async () => {
       await open('degrees', 'missing');
       lookup('degrees/missing').flush(...problem(404, 'No record has that identifier.'));
@@ -212,10 +269,12 @@ describe('CatalogForm', () => {
 
     it('asks for confirmation, deletes, and returns to the list', async () => {
       await openExisting();
+      expect(page.textContent).toContain('kept in the database');
 
       button('Delete degree').click();
       fixture.detectChanges();
       expect(page.textContent).toContain('Delete "BSc"?');
+      expect(page.textContent).toContain('cannot be restored from the portal');
       http.expectNone({ method: 'DELETE', url: `${ROOT}/degrees/d1` });
 
       button('Yes, delete').click();
