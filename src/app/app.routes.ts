@@ -12,6 +12,8 @@ import { AuditPage } from './features/audit/audit-page';
 import { CatalogForm } from './features/configuration/catalogs/catalog-form';
 import { CatalogList } from './features/configuration/catalogs/catalog-list';
 import { ConfigurationHome } from './features/configuration/configuration-home';
+import { TeacherForm } from './features/teachers/teacher-form';
+import { TeacherList } from './features/teachers/teacher-list';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Login } from './features/auth/login/login';
 import { ResetPassword } from './features/auth/reset-password/reset-password';
@@ -60,6 +62,9 @@ export const routes: Routes = [
         { path: 'configuration/:resource', component: CatalogList, title: `Configuration | ${TITLE}` },
         { path: 'configuration/:resource/new', component: CatalogForm, title: `New record | ${TITLE}` },
         { path: 'configuration/:resource/:id', component: CatalogForm, title: `Edit record | ${TITLE}` },
+        { path: 'teachers', component: TeacherList, title: `Teachers | ${TITLE}` },
+        { path: 'teachers/new', component: TeacherForm, title: `Add teacher | ${TITLE}` },
+        { path: 'teachers/:id', component: TeacherForm, title: `Edit teacher | ${TITLE}` },
         { path: 'audit', component: AuditPage, title: `Audit history | ${TITLE}` },
         { path: 'audit/:eventId', component: AuditDetail, title: `Audit event | ${TITLE}` },
       ]),

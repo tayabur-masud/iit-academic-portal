@@ -29,6 +29,22 @@ describe('Configuration routes', () => {
     async (url) => expect(await navigate(url, admin)).toBe(url),
   );
 
+  it.each(['/admin/teachers', '/admin/teachers/new', '/admin/teachers/abc'])('opens teacher page %s for the active Admin', async (url) =>
+    expect(await navigate(url, admin)).toBe(url),
+  );
+
+  it.each(['Student', 'Teacher', 'Coordinator'] as const)('denies direct navigation to teachers by an active %s', async (role) => {
+    const session: SessionContext = { availableRoles: [role], activeRole: role };
+
+    expect(await navigate('/admin/teachers', session)).toBe('/unauthorized');
+  });
+
+  it('denies teacher management to an Admin who is acting as another role', async () => {
+    const acting: SessionContext = { availableRoles: ['Admin', 'Teacher'], activeRole: 'Teacher' };
+
+    expect(await navigate('/admin/teachers/new', acting)).toBe('/unauthorized');
+  });
+
   it.each(['Student', 'Teacher', 'Coordinator'] as const)('denies direct navigation by an active %s', async (role) => {
     const session: SessionContext = { availableRoles: [role], activeRole: role };
 
