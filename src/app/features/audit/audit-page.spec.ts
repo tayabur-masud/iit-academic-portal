@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 
 import { httpMock, problem, provideAuthTesting, settle } from '../../../testing/auth-testing';
+import { PagerPreferences } from '../../shared/pager/pager-preferences';
 import { AuditSearchState } from './audit-search-state';
 import { AuditEvent, AuditPage as Page } from './audit.models';
 import { AuditPage } from './audit-page';
@@ -205,6 +206,25 @@ describe('AuditPage', () => {
     await respond((r) => r.params.get('page') === '2', { items: [event('e2')], nextCursor: null, page: 2, totalCount: 30, totalPages: 2 });
 
     expect(pager().querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('2');
+  });
+
+  it('changes how many rows a page holds, starts again from page 1, and remembers the choice', async () => {
+    await open({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 1000, totalPages: 40 });
+    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
+    await respond((r) => r.params.get('page') === '3', { items: [event('e3')], nextCursor: null, page: 3, totalCount: 1000, totalPages: 40 });
+
+    const select = page.querySelector<HTMLSelectElement>('#page-size')!;
+    select.value = '50';
+    select.dispatchEvent(new Event('change'));
+    const request = http.expectOne((r) => r.url === '/api/audit-events' && r.params.get('pageSize') === '50');
+    expect(request.request.params.get('page')).toBe('1');
+    request.flush({ items: [event('e1')], nextCursor: null, page: 1, totalCount: 1000, totalPages: 20 });
+    await settle();
+    fixture.detectChanges();
+
+    expect(page.textContent).toContain('Showing 1 to 50 of 1000 events');
+    expect(page.querySelector<HTMLSelectElement>('#page-size')?.value).toBe('50');
+    expect(TestBed.inject(PagerPreferences).pageSize()).toBe(50);
   });
 
   it('shows server validation problems against the field that caused them', async () => {

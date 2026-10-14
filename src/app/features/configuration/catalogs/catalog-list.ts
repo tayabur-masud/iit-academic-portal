@@ -5,11 +5,11 @@ import { firstValueFrom } from 'rxjs';
 
 import { problemMessage } from '../../../core/http/problem';
 import { Pager } from '../../../shared/pager/pager';
+import { PagerPreferences } from '../../../shared/pager/pager-preferences';
 import { ConfigurationApi } from '../configuration-api';
 import {
   ConfigurationItem,
   ConfigurationStatus,
-  PAGE_SIZE,
   ResourceDescriptor,
   descriptorFor,
   RESOURCES,
@@ -28,6 +28,7 @@ import {
 export class CatalogList {
   private readonly api = inject(ConfigurationApi);
   private readonly router = inject(Router);
+  private readonly preferences = inject(PagerPreferences);
 
   /** Bound from the route. */
   readonly resource = input.required<string>();
@@ -55,8 +56,9 @@ export class CatalogList {
   protected readonly divisions = signal<ConfigurationItem[]>([]);
   protected readonly districts = signal<ConfigurationItem[]>([]);
 
-  protected readonly firstShown = computed(() => (this.page() - 1) * PAGE_SIZE + 1);
-  protected readonly lastShown = computed(() => (this.page() - 1) * PAGE_SIZE + this.items().length);
+  protected readonly pageSize = this.preferences.pageSize;
+  protected readonly firstShown = computed(() => (this.page() - 1) * this.pageSize() + 1);
+  protected readonly lastShown = computed(() => (this.page() - 1) * this.pageSize() + this.items().length);
   protected readonly columns = computed(() => {
     const descriptor = this.descriptor();
     return {
@@ -107,6 +109,13 @@ export class CatalogList {
       this.districts.set(parent ? await this.api.listAll(districts, 'all', parent) : []);
     }
     this.applyFilters();
+  }
+
+  protected setPageSize(size: number): void {
+    // A different size changes which rows fall on each page, so go back to the first page.
+    this.preferences.set(size);
+    this.page.set(1);
+    void this.load();
   }
 
   protected goTo(target: number): void {
@@ -189,6 +198,7 @@ export class CatalogList {
           search: this.search.value,
           status: this.status.value,
           page: this.page(),
+          pageSize: this.pageSize(),
           parentId: parentId || undefined,
         }),
       );

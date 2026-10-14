@@ -158,9 +158,11 @@
         [page]="page()"
         [totalPages]="totalPages()"
         [totalCount]="totalCount()"
+        [pageSize]="pageSize()"
         [loading]="loading()"
         [noun]="d.label.toLowerCase()"
         (pageChange)="goTo($event)"
+        (pageSizeChange)="setPageSize($event)"
       />
     }
   </section>

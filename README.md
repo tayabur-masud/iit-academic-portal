@@ -39,7 +39,7 @@ default role (Teacher), and the role switcher at the bottom of the menu changes 
 | `src/app/features/audit/` | Admin-only audit history at `/admin/audit` (search with numbered pages and a total count) and `/admin/audit/:eventId` (detail); filters and page position are remembered in memory while an event is open |
 | `src/app/layout/shell/` | Signed-in shell: header, sidebar navigation, and an account section at the bottom of the sidebar (active role or role switcher, sign-out) |
 | `src/app/pages/` | Role landing pages and the unauthorized, no-role, and not-found states |
-| `src/app/shared/pager/` | `<app-pager>`: the one numbered pager every paged table uses ("Showing X to Y of N", Previous, page numbers with an ellipsis, Next), and `pageList` that decides which numbers to show |
+| `src/app/shared/pager/` | `<app-pager>`: the one numbered pager every paged table uses ("Showing X to Y of N", an "Items per page" choice of 10, 25, 50, or 100, Previous, page numbers with an ellipsis, Next), `pageList` that decides which numbers to show, and `PagerPreferences`, which keeps the chosen page size in memory for all tables |
 | `src/app/shared/utc-timestamp/` | `<app-utc-timestamp>`: every audit time is shown in UTC with an explicit "UTC" label inside a `time` element |
 | `src/app/shared/auth-brand/` | Centered IIT logo and portal name used on every authentication screen |
 | `public/images/iit-logo.png` | Approved IIT logo (600×327), shown on the authentication screens and in the signed-in header; do not stretch or recolor it |

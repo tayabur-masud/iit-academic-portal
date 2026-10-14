@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { fieldErrors, problemMessage } from '../../core/http/problem';
 import { Pager } from '../../shared/pager/pager';
+import { PagerPreferences } from '../../shared/pager/pager-preferences';
 import { UtcTimestamp } from '../../shared/utc-timestamp/utc-timestamp';
 import { AuditApi } from './audit-api';
 import { AuditSearchState } from './audit-search-state';
@@ -15,7 +16,6 @@ import {
   AuditFilters,
   AuditOutcome,
   EMPTY_FILTERS,
-  PAGE_SIZE,
   hasFilters,
   toUtcInstant,
 } from './audit.models';
@@ -47,6 +47,7 @@ const FILTER_FIELDS: (keyof AuditFilters)[] = [
 export class AuditPage implements OnInit {
   private readonly api = inject(AuditApi);
   private readonly state = inject(AuditSearchState);
+  private readonly preferences = inject(PagerPreferences);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly form = inject(NonNullableFormBuilder).group({
@@ -78,8 +79,9 @@ export class AuditPage implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly problems = signal<Record<string, string[]>>({});
   protected readonly announcement = signal('');
-  protected readonly firstShown = computed(() => (this.page() - 1) * PAGE_SIZE + 1);
-  protected readonly lastShown = computed(() => (this.page() - 1) * PAGE_SIZE + this.items().length);
+  protected readonly pageSize = this.preferences.pageSize;
+  protected readonly firstShown = computed(() => (this.page() - 1) * this.pageSize() + 1);
+  protected readonly lastShown = computed(() => (this.page() - 1) * this.pageSize() + this.items().length);
   protected readonly filtered = signal(false);
 
   private applied: AuditFilters = { ...EMPTY_FILTERS };
@@ -138,6 +140,13 @@ export class AuditPage implements OnInit {
     void this.load();
   }
 
+  protected setPageSize(size: number): void {
+    // A different size changes which rows fall on each page, so go back to the first page.
+    this.preferences.set(size);
+    this.page.set(1);
+    void this.load();
+  }
+
   protected goTo(target: number): void {
     // Clicks during a load are ignored, not disabled, so the focused button keeps keyboard focus.
     if (!this.loading() && target !== this.page() && target >= 1 && target <= this.totalPages()) {
@@ -157,7 +166,7 @@ export class AuditPage implements OnInit {
     this.filtered.set(hasFilters(this.applied));
 
     try {
-      const result = await firstValueFrom(this.api.search(this.applied, this.page()));
+      const result = await firstValueFrom(this.api.search(this.applied, this.page(), this.pageSize()));
       const totalPages = result.totalPages ?? 0;
       if (result.items.length === 0 && totalPages > 0 && this.page() > totalPages) {
         // Events were removed from the match (or the page was stale): show the last page that exists.
