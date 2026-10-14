@@ -11,6 +11,14 @@ export interface ConfigurationItem {
   academicSessionId?: string;
   divisionId?: string;
   districtId?: string;
+  /** When and by whom it was created. The account is absent for a seed script or a background change. */
+  createdAtUtc: string;
+  createdByUserId?: string;
+  /** That account's current email; absent when the account was removed (or there was none). */
+  createdBy?: string;
+  lastModifiedAtUtc: string;
+  lastModifiedByUserId?: string;
+  lastModifiedBy?: string;
 }
 
 export interface ConfigurationPage {
@@ -142,6 +150,17 @@ export const RESOURCES: ResourceDescriptor[] = [
     singular: 'designation',
     description: 'Teaching and staff designations, with an optional code.',
     hasCode: true,
+  },
+  {
+    ...base,
+    slug: 'halls',
+    apiPath: 'halls',
+    group: 'Other catalogs',
+    label: 'Halls',
+    singular: 'hall',
+    description: 'University residential halls, with an optional code and address.',
+    hasCode: true,
+    hasAddress: true,
   },
   {
     ...base,

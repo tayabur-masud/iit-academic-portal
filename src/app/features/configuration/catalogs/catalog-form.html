@@ -205,11 +205,31 @@
       </div>
     </form>
 
+    @if (!isNew() && original(); as record) {
+      <section class="card mt-6 max-w-[40rem]" aria-labelledby="history-title">
+        <h2 id="history-title">Record history</h2>
+        <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
+          <dt class="font-medium text-text-secondary">Created</dt>
+          <dd class="m-0">
+            <app-utc-timestamp [value]="record.createdAtUtc" />
+            by <span class="break-all">{{ who(record.createdBy, record.createdByUserId) }}</span>
+          </dd>
+          <dt class="font-medium text-text-secondary">Last modified</dt>
+          <dd class="m-0">
+            <app-utc-timestamp [value]="record.lastModifiedAtUtc" />
+            by <span class="break-all">{{ who(record.lastModifiedBy, record.lastModifiedByUserId) }}</span>
+          </dd>
+        </dl>
+      </section>
+    }
+
     @if (!isNew()) {
       <section class="card mt-6 max-w-[40rem]" aria-labelledby="delete-title">
         <h2 id="delete-title">Delete this {{ d.singular }}</h2>
         <p>
-          Deleting removes the record for good. It is only possible while nothing refers to it; otherwise deactivate it instead.
+          Deleting hides the {{ d.singular }} from every list and selector. The record is kept in the database but cannot be restored
+          from the portal, and its name can be used again. It is only possible while nothing refers to it; otherwise deactivate it
+          instead.
         </p>
 
         @if (!confirmingDelete()) {
@@ -228,7 +248,7 @@
         } @else {
           <div class="alert alert-warning" role="alert">
             <strong class="alert-title">Delete "{{ original()?.name }}"?</strong>
-            <p>This cannot be undone.</p>
+            <p>It will disappear from every list and cannot be restored from the portal.</p>
             <div class="flex flex-wrap gap-3">
               <button type="button" class="btn btn-danger" [disabled]="deleting()" (click)="confirmDelete()">
                 @if (deleting()) {

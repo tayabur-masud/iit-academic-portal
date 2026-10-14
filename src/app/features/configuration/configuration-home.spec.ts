@@ -22,12 +22,12 @@ describe('ConfigurationHome', () => {
       { title: 'IIT academics', links: ['Degrees', 'Semesters', 'Academic sessions', 'Batches'] },
       {
         title: 'Other catalogs',
-        links: ['Educational institutions', 'Education boards', 'Education groups', 'Examination types', 'Designations'],
+        links: ['Educational institutions', 'Education boards', 'Education groups', 'Examination types', 'Designations', 'Halls'],
       },
       { title: 'Geography', links: ['Divisions', 'Districts', 'Upazilas'] },
     ]);
     const hrefs = Array.from(page.querySelectorAll('li a')).map((a) => a.getAttribute('href')).sort();
     expect(hrefs).toEqual(RESOURCES.map((r) => `/admin/configuration/${r.slug}`).sort());
-    expect(RESOURCES.length).toBe(12);
+    expect(RESOURCES.length).toBe(13);
   });
 });

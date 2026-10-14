@@ -9,7 +9,7 @@ import { CatalogList } from './catalog-list';
 const ROOT = '/api/admin/configuration';
 
 function item(id: string, name: string, extra: Partial<ConfigurationItem> = {}): ConfigurationItem {
-  return { id, name, isActive: true, ...extra };
+  return { id, name, isActive: true, createdAtUtc: '2026-10-09T08:30:00Z', lastModifiedAtUtc: '2026-10-09T08:30:00Z', ...extra };
 }
 
 describe('CatalogList', () => {
