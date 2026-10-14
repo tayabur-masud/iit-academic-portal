@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController, TestRequest } from '@angular/common/http/testing';
 
 import { httpMock, problem, provideAuthTesting, settle } from '../../../../testing/auth-testing';
+import { PagerPreferences } from '../../../shared/pager/pager-preferences';
 import { ConfigurationItem, ConfigurationPage } from '../configuration.models';
 import { CatalogList } from './catalog-list';
 
@@ -156,6 +157,27 @@ describe('CatalogList', () => {
     await respond(request, [item('5', 'Archived', { isActive: false })]);
 
     expect(current()).toBe('1');
+  });
+
+  it('changes how many records a page holds, starts again from page 1, and remembers the choice', async () => {
+    await open('degrees');
+    const first = listRequest('degrees');
+    expect(first.request.params.get('pageSize')).toBe('25');
+    await respond(first, [item('1', 'A')], { totalCount: 1000, totalPages: 40 });
+    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
+    await respond(listRequest('degrees', (r) => r.params.get('page') === '3'), [item('3', 'C')], { page: 3, totalCount: 1000, totalPages: 40 });
+
+    const select = page.querySelector<HTMLSelectElement>('#page-size')!;
+    select.value = '100';
+    select.dispatchEvent(new Event('change'));
+    const request = listRequest('degrees', (r) => r.params.get('pageSize') === '100');
+    expect(request.request.params.get('page')).toBe('1');
+    await respond(request, [item('1', 'A')], { totalCount: 1000, totalPages: 10 });
+
+    expect(page.textContent).toContain('Showing 1 to 100 of 1000 degrees');
+    expect(current()).toBe('1');
+    expect(pageButtons().filter((b) => /^\d+$/.test(b)).at(-1)).toBe('10');
+    expect(TestBed.inject(PagerPreferences).pageSize()).toBe(100);
   });
 
   it('shows the last existing page when the requested page is past the end', async () => {

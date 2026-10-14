@@ -192,9 +192,6 @@ export const RESOURCES: ResourceDescriptor[] = [
 ];
 
 /** The sections of the Configuration home, in the order they are shown. */
-/** Records per page in a Configuration list. */
-export const PAGE_SIZE = 25;
-
 export const GROUPS = ['IIT academics', 'Other catalogs', 'Geography'] as const;
 
 export function descriptorFor(slug: string | undefined): ResourceDescriptor | undefined {

@@ -61,7 +61,6 @@ export const EMPTY_FILTERS: AuditFilters = {
   correlationId: '',
 };
 
-export const PAGE_SIZE = 25;
 
 /** Whether any filter is set, which decides which empty-state message applies. */
 export function hasFilters(filters: AuditFilters): boolean {

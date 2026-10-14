@@ -10,10 +10,11 @@ import { Pager } from './pager';
       [page]="page()"
       [totalPages]="totalPages()"
       [totalCount]="totalCount()"
-      [pageSize]="25"
+      [pageSize]="pageSize()"
       [loading]="loading()"
       noun="widgets"
       (pageChange)="chosen.push($event)"
+      (pageSizeChange)="sizes.push($event)"
     />
   `,
 })
@@ -22,7 +23,9 @@ class Host {
   readonly totalPages = signal(40);
   readonly totalCount = signal(1000);
   readonly loading = signal(false);
+  readonly pageSize = signal(25);
   readonly chosen: number[] = [];
+  readonly sizes: number[] = [];
 }
 
 describe('Pager', () => {
@@ -62,6 +65,52 @@ describe('Pager', () => {
     page.querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
 
     expect(host.chosen).toEqual([]);
+  });
+
+  describe('items per page', () => {
+    const select = (page: HTMLElement) => page.querySelector<HTMLSelectElement>('#page-size')!;
+
+    function choose(page: HTMLElement, value: string): void {
+      select(page).value = value;
+      select(page).dispatchEvent(new Event('change'));
+    }
+
+    it('offers 10, 25, 50 and 100 with a visible label and the current size selected', async () => {
+      const { page } = await render();
+
+      expect(page.querySelector('label[for="page-size"]')?.textContent).toContain('Items per page');
+      expect(Array.from(select(page).options).map((o) => o.value)).toEqual(['10', '25', '50', '100']);
+      expect(select(page).value).toBe('25');
+    });
+
+    it('reports a different size and not the one already in use', async () => {
+      const { host, page } = await render();
+
+      choose(page, '50');
+      choose(page, '25');
+
+      expect(host.sizes).toEqual([50]);
+    });
+
+    it('uses the size it is given for the range shown', async () => {
+      const { host, page, fixture } = await render();
+      host.pageSize.set(100);
+      fixture.detectChanges();
+
+      expect(select(page).value).toBe('100');
+      expect(page.textContent).toContain('Showing 101 to 200 of 1000 widgets');
+    });
+
+    it('ignores a change while a page loads and puts the box back', async () => {
+      const { host, page, fixture } = await render();
+      host.loading.set(true);
+      fixture.detectChanges();
+
+      choose(page, '10');
+
+      expect(host.sizes).toEqual([]);
+      expect(select(page).value).toBe('25');
+    });
   });
 
   it('disables Previous on the first page and Next on the last', async () => {

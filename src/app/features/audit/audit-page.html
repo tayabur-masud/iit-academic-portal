@@ -181,9 +181,11 @@
       [page]="page()"
       [totalPages]="totalPages()"
       [totalCount]="totalCount()"
+      [pageSize]="pageSize()"
       [loading]="loading()"
       noun="events"
       (pageChange)="goTo($event)"
+      (pageSizeChange)="setPageSize($event)"
     />
   }
 </section>

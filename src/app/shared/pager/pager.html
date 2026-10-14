@@ -6,6 +6,14 @@
       Showing {{ firstShown() }} to {{ lastShown() }} of {{ totalCount() }} {{ noun() }}
     }
   </p>
+  <div class="flex items-center gap-2 text-compact">
+    <label for="page-size" class="text-text-secondary">Items per page</label>
+    <select id="page-size" class="field-input" (change)="changeSize($event)">
+      @for (option of pageSizeOptions(); track option) {
+        <option [value]="option" [selected]="option === pageSize()">{{ option }}</option>
+      }
+    </select>
+  </div>
   <nav aria-label="Pages of results">
     <ul class="m-0 flex list-none flex-wrap items-center gap-2 p-0">
       <li>
