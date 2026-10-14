@@ -15,6 +15,7 @@ interface NavItem {
 /** Pages that belong to one role only, listed under its module. */
 const ROLE_PAGES: Partial<Record<Role, NavItem[]>> = {
   Admin: [
+    { path: '/admin/teachers', label: 'Teachers', exact: false },
     { path: '/admin/configuration', label: 'Configuration', exact: false },
     { path: '/admin/audit', label: 'Audit history', exact: false },
   ],
