@@ -16,12 +16,12 @@
   @if (notice(); as message) {
     <div class="alert alert-success" role="status">
       <p>{{ message }}</p>
-      <button type="button" class="btn btn-secondary mt-2" (click)="dismissNotice()">Dismiss</button>
+      <button type="button" class="btn btn-secondary btn-sm mt-2" (click)="dismissNotice()">Dismiss</button>
     </div>
   }
 
   <form class="card mb-6" (submit)="$event.preventDefault(); applyFilters()" [attr.aria-busy]="loading()">
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       <div class="field mb-0">
         <label class="field-label" for="search">Search</label>
         <input id="search" class="field-input" type="search" autocomplete="off" [formControl]="search" />
@@ -67,9 +67,9 @@
       }
     </div>
 
-    <div class="mt-4 flex flex-wrap gap-3">
+    <div class="mt-3 flex flex-wrap gap-3">
       <button type="submit" class="btn btn-primary" [disabled]="loading()">Search</button>
-      <button type="button" class="btn btn-secondary" [disabled]="loading()" (click)="clearFilters()">Clear filters</button>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="loading()" (click)="clearFilters()">Clear filters</button>
     </div>
   </form>
 
@@ -82,14 +82,16 @@
         <span class="spinner" aria-hidden="true"></span>
         Loading {{ d.label.toLowerCase() }}…
       </p>
-    } @else if (errorMessage(); as message) {
+    } @else if (errorMessage() && items().length === 0) {
+      @if (errorMessage(); as message) {
       <div class="alert alert-error" role="alert">
         <strong class="alert-title">{{ d.label }} not shown</strong>
         <p>{{ message }}</p>
         <div class="mt-3">
-          <button type="button" class="btn btn-secondary" (click)="reload()">Try again</button>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
         </div>
       </div>
+      }
     } @else if (loaded() && items().length === 0) {
       <div class="card max-w-[40rem]">
         <h3 class="mb-2 text-heading font-semibold">
@@ -104,46 +106,42 @@
         </p>
       </div>
     } @else if (items().length > 0) {
-      <div
-        class="relative overflow-x-auto rounded-md border border-border bg-surface"
-        [class.opacity-60]="loading()"
-        [attr.aria-busy]="loading()"
-      >
-        <table class="w-full min-w-[40rem] border-collapse text-left text-compact">
+      <div class="data-table-container" [class.opacity-60]="loading()" [attr.aria-busy]="loading()">
+        <table class="data-table min-w-[40rem]">
           <caption class="sr-only">
-            {{ d.label }}, page {{ page() }} of {{ totalPages() }}
+            {{ d.label }}, {{ items().length }} loaded
           </caption>
           <thead>
-            <tr class="border-b border-divider text-text-secondary">
-              <th scope="col" class="p-3 font-medium">Name</th>
+            <tr>
+              <th scope="col">Name</th>
               @if (columns().code) {
-                <th scope="col" class="p-3 font-medium">Code</th>
+                <th scope="col">Code</th>
               }
               @if (columns().type) {
-                <th scope="col" class="p-3 font-medium">Type</th>
+                <th scope="col">Type</th>
               }
               @for (reference of columns().references; track reference.name) {
-                <th scope="col" class="p-3 font-medium">{{ reference.label }}</th>
+                <th scope="col">{{ reference.label }}</th>
               }
-              <th scope="col" class="p-3 font-medium">Status</th>
+              <th scope="col">Status</th>
             </tr>
           </thead>
           <tbody>
             @for (item of items(); track item.id) {
-              <tr class="border-b border-divider last:border-b-0 hover:bg-surface-hover">
-                <th scope="row" class="p-3 text-left font-medium align-top">
+              <tr>
+                <th scope="row" class="text-left">
                   <a [routerLink]="['/admin/configuration', d.slug, item.id]">{{ item.name }}</a>
                 </th>
                 @if (columns().code) {
-                  <td class="p-3 align-top">{{ item.code ?? '' }}</td>
+                  <td>{{ item.code ?? '' }}</td>
                 }
                 @if (columns().type) {
-                  <td class="p-3 align-top">{{ item.type }}</td>
+                  <td>{{ item.type }}</td>
                 }
                 @for (reference of columns().references; track reference.name) {
-                  <td class="p-3 align-top">{{ nameOf(reference.resource, referenceId(item, reference.name)) }}</td>
+                  <td>{{ nameOf(reference.resource, referenceId(item, reference.name)) }}</td>
                 }
-                <td class="p-3 align-top">
+                <td>
                   <span class="badge" [class.badge-success]="item.isActive" [class.badge-error]="!item.isActive">
                     {{ item.isActive ? 'Active' : 'Inactive' }}
                   </span>
@@ -154,16 +152,26 @@
         </table>
       </div>
 
-      <app-pager
-        [page]="page()"
-        [totalPages]="totalPages()"
-        [totalCount]="totalCount()"
-        [pageSize]="pageSize()"
-        [loading]="loading()"
-        [noun]="d.label.toLowerCase()"
-        (pageChange)="goTo($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
+      <div class="infinite-scroll-footer">
+        @if (hasMore()) {
+          <div class="infinite-scroll-sentinel" appInfiniteScrollSentinel (reachedEnd)="loadMore()" aria-hidden="true"></div>
+        }
+        @if (errorMessage(); as message) {
+          <div class="alert alert-error w-full" role="alert">
+            <strong class="alert-title">More records not shown</strong>
+            <p>{{ message }}</p>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="retryMore()">Try again</button>
+          </div>
+        } @else if (loading()) {
+          <p class="m-0 inline-flex items-center gap-2 text-compact text-text-secondary" role="status">
+            <span class="spinner" aria-hidden="true"></span>Loading more {{ d.label.toLowerCase() }}…
+          </p>
+        } @else if (hasMore()) {
+          <button type="button" class="btn btn-secondary btn-sm" (click)="loadMore()">Load more</button>
+        } @else {
+          <p class="m-0 text-helper text-text-secondary" role="status">All {{ items().length }} matching records loaded.</p>
+        }
+      </div>
     }
   </section>
 } @else {

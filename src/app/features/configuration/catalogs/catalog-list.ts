@@ -4,8 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { problemMessage } from '../../../core/http/problem';
-import { Pager } from '../../../shared/pager/pager';
-import { PagerPreferences } from '../../../shared/pager/pager-preferences';
+import { InfiniteScrollSentinel } from '../../../shared/infinite-scroll/infinite-scroll-sentinel';
 import { ConfigurationApi } from '../configuration-api';
 import {
   ConfigurationItem,
@@ -16,19 +15,18 @@ import {
 } from '../configuration.models';
 
 /**
- * Search and browse one configuration resource: catalogs, batches, or a geography level. Cursor paging, a status
+ * Search and browse one configuration resource: catalogs, batches, or a geography level. Cursor loading, a status
  * filter that defaults to active records, and a clear loading, empty, error, and inactive state. The service
  * authorizes every request; this screen only presents what it returns.
  */
 @Component({
   selector: 'app-catalog-list',
-  imports: [ReactiveFormsModule, RouterLink, Pager],
+  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel],
   templateUrl: './catalog-list.html',
 })
 export class CatalogList {
   private readonly api = inject(ConfigurationApi);
   private readonly router = inject(Router);
-  private readonly preferences = inject(PagerPreferences);
 
   /** Bound from the route. */
   readonly resource = input.required<string>();
@@ -41,9 +39,8 @@ export class CatalogList {
   protected readonly district = new FormControl('', { nonNullable: true });
 
   protected readonly items = signal<ConfigurationItem[]>([]);
-  protected readonly page = signal(1);
-  protected readonly totalPages = signal(0);
-  protected readonly totalCount = signal(0);
+  protected readonly cursor = signal<string | null>(null);
+  protected readonly hasMore = signal(false);
   protected readonly loading = signal(false);
   protected readonly loaded = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -56,9 +53,6 @@ export class CatalogList {
   protected readonly divisions = signal<ConfigurationItem[]>([]);
   protected readonly districts = signal<ConfigurationItem[]>([]);
 
-  protected readonly pageSize = this.preferences.pageSize;
-  protected readonly firstShown = computed(() => (this.page() - 1) * this.pageSize() + 1);
-  protected readonly lastShown = computed(() => (this.page() - 1) * this.pageSize() + this.items().length);
   protected readonly columns = computed(() => {
     const descriptor = this.descriptor();
     return {
@@ -87,8 +81,9 @@ export class CatalogList {
   }
 
   protected applyFilters(): void {
-    this.page.set(1);
-    void this.load();
+    this.cursor.set(null);
+    this.hasMore.set(false);
+    void this.load(false);
   }
 
   protected clearFilters(): void {
@@ -111,18 +106,15 @@ export class CatalogList {
     this.applyFilters();
   }
 
-  protected setPageSize(size: number): void {
-    // A different size changes which rows fall on each page, so go back to the first page.
-    this.preferences.set(size);
-    this.page.set(1);
-    void this.load();
+  protected loadMore(): void {
+    if (!this.loading() && this.cursor()) {
+      void this.load(true);
+    }
   }
 
-  protected goTo(target: number): void {
-    if (!this.loading() && target !== this.page() && target >= 1 && target <= this.totalPages()) {
-      this.page.set(target);
-      void this.load();
-    }
+  protected retryMore(): void {
+    this.errorMessage.set(null);
+    this.loadMore();
   }
 
   protected reload(): void {
@@ -141,9 +133,8 @@ export class CatalogList {
     this.districts.set([]);
     this.items.set([]);
     this.loaded.set(false);
-    this.page.set(1);
-    this.totalPages.set(0);
-    this.totalCount.set(0);
+    this.cursor.set(null);
+    this.hasMore.set(false);
     this.errorMessage.set(null);
 
     // Reference names and the parent filter choices load alongside the first page.
@@ -178,15 +169,20 @@ export class CatalogList {
     this.names.set(lookups);
   }
 
-  private async load(): Promise<void> {
+  private async load(append = false): Promise<void> {
     const descriptor = this.descriptor();
-    if (!descriptor) {
+    if (!descriptor || this.loading()) {
+      return;
+    }
+
+    const cursor = append ? this.cursor() : null;
+    if (append && !cursor) {
       return;
     }
 
     this.loading.set(true);
     this.errorMessage.set(null);
-    this.announcement.set(`Loading ${descriptor.label.toLowerCase()}…`);
+    this.announcement.set(append ? `Loading more ${descriptor.label.toLowerCase()}…` : `Loading ${descriptor.label.toLowerCase()}…`);
     const parentId = descriptor.cascadeFrom ? this.district.value : this.division.value;
     this.filtered.set(
       !!this.search.value.trim() || this.status.value !== 'active' || !!this.division.value || !!this.district.value,
@@ -197,33 +193,31 @@ export class CatalogList {
         this.api.list(descriptor, {
           search: this.search.value,
           status: this.status.value,
-          page: this.page(),
-          pageSize: this.pageSize(),
+          cursor,
+          pageSize: 25,
           parentId: parentId || undefined,
         }),
       );
-      const totalPages = result.totalPages ?? 0;
-      if (result.items.length === 0 && totalPages > 0 && this.page() > totalPages) {
-        // Records were removed from the match (or the page was stale): show the last page that exists.
-        this.page.set(totalPages);
-        await this.load();
-        return;
-      }
-      this.items.set(result.items);
-      this.totalPages.set(totalPages);
-      this.totalCount.set(result.totalCount ?? result.items.length);
+      const loadedItems = append ? [...this.items(), ...result.items] : result.items;
+      this.items.set(loadedItems);
+      this.cursor.set(result.nextCursor);
+      this.hasMore.set(!!result.nextCursor);
       this.loaded.set(true);
       this.announcement.set(
-        result.items.length === 0
+        loadedItems.length === 0
           ? 'No records match.'
-          : `Showing ${this.firstShown()} to ${this.lastShown()} of ${this.totalCount()} ${descriptor.label.toLowerCase()}. Page ${this.page()} of ${totalPages}.`,
+          : `Loaded ${loadedItems.length} ${descriptor.label.toLowerCase()}${result.nextCursor ? '. More records are available below.' : '.'}`,
       );
     } catch (error) {
-      this.items.set([]);
-      this.totalPages.set(0);
-      this.totalCount.set(0);
+      if (!append) {
+        this.items.set([]);
+        this.cursor.set(null);
+        this.hasMore.set(false);
+      }
       this.announcement.set('');
-      this.errorMessage.set(problemMessage(error, `The ${descriptor.label.toLowerCase()} could not be loaded. Try again.`));
+      this.errorMessage.set(
+        problemMessage(error, append ? `More ${descriptor.label.toLowerCase()} could not be loaded. Try again.` : `The ${descriptor.label.toLowerCase()} could not be loaded. Try again.`),
+      );
     } finally {
       this.loading.set(false);
     }

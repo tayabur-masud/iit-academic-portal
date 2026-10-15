@@ -1,27 +1,26 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { problemMessage } from '../../core/http/problem';
-import { Pager } from '../../shared/pager/pager';
-import { PagerPreferences } from '../../shared/pager/pager-preferences';
+import { InfiniteScrollSentinel } from '../../shared/infinite-scroll/infinite-scroll-sentinel';
 import { TeacherApi } from './teacher-api';
 import { ACCOUNT_STATUSES, Teacher, TeacherStatusFilter, statusLabel } from './teacher.models';
 
 /**
- * The Admin teacher directory: search by name, email, or staff ID, filter by account status, numbered pages, and a clear loading,
- * empty, error, and status state. The service authorizes every request; this screen only presents what it returns.
+ * The Admin teacher directory: search by name, email, or staff ID and filter by account status while loading bounded batches as
+ * the user scrolls. The service authorizes every request; this screen only presents what it returns.
  */
 @Component({
   selector: 'app-teacher-list',
-  imports: [ReactiveFormsModule, RouterLink, Pager],
+  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel],
   templateUrl: './teacher-list.html',
 })
 export class TeacherList {
   private readonly api = inject(TeacherApi);
   private readonly router = inject(Router);
-  private readonly preferences = inject(PagerPreferences);
+  private static readonly PageSize = 25;
 
   protected readonly statuses = ACCOUNT_STATUSES;
   protected readonly statusLabel = statusLabel;
@@ -32,7 +31,7 @@ export class TeacherList {
   protected readonly items = signal<Teacher[]>([]);
   protected readonly page = signal(1);
   protected readonly totalPages = signal(0);
-  protected readonly totalCount = signal(0);
+  protected readonly hasMore = signal(false);
   protected readonly loading = signal(false);
   protected readonly loaded = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -40,17 +39,21 @@ export class TeacherList {
   protected readonly announcement = signal('');
   protected readonly filtered = signal(false);
 
-  protected readonly pageSize = this.preferences.pageSize;
-  protected readonly firstShown = computed(() => (this.page() - 1) * this.pageSize() + 1);
-  protected readonly lastShown = computed(() => (this.page() - 1) * this.pageSize() + this.items().length);
-
   constructor() {
     this.notice.set((this.router.getCurrentNavigation()?.extras.state?.['notice'] as string | undefined) ?? null);
     void this.load();
   }
 
   protected applyFilters(): void {
+    if (this.loading()) {
+      return;
+    }
+
     this.page.set(1);
+    this.totalPages.set(0);
+    this.hasMore.set(false);
+    this.items.set([]);
+    this.loaded.set(false);
     void this.load();
   }
 
@@ -60,18 +63,15 @@ export class TeacherList {
     this.applyFilters();
   }
 
-  protected setPageSize(size: number): void {
-    // A different size changes which rows fall on each page, so go back to the first page.
-    this.preferences.set(size);
-    this.page.set(1);
-    void this.load();
+  protected loadMore(): void {
+    if (!this.loading() && this.hasMore()) {
+      void this.load(true);
+    }
   }
 
-  protected goTo(target: number): void {
-    if (!this.loading() && target !== this.page() && target >= 1 && target <= this.totalPages()) {
-      this.page.set(target);
-      void this.load();
-    }
+  protected retryMore(): void {
+    this.errorMessage.set(null);
+    this.loadMore();
   }
 
   protected reload(): void {
@@ -82,37 +82,52 @@ export class TeacherList {
     this.notice.set(null);
   }
 
-  private async load(): Promise<void> {
+  private async load(append = false): Promise<void> {
+    if (this.loading()) {
+      return;
+    }
+
+    const requestedPage = append ? this.page() + 1 : 1;
     this.loading.set(true);
     this.errorMessage.set(null);
-    this.announcement.set('Loading teachers…');
+    this.announcement.set(append ? 'Loading more teachers…' : 'Loading teachers…');
     this.filtered.set(!!this.search.value.trim() || !!this.status.value);
 
     try {
       const result = await firstValueFrom(
-        this.api.list({ search: this.search.value, status: this.status.value, page: this.page(), pageSize: this.pageSize() }),
+        this.api.list({ search: this.search.value, status: this.status.value, page: requestedPage, pageSize: TeacherList.PageSize }),
       );
-      if (result.items.length === 0 && result.totalPages > 0 && this.page() > result.totalPages) {
-        // The page no longer exists (teachers were removed from the match): show the last one.
-        this.page.set(result.totalPages);
-        await this.load();
+      if (append && result.items.length === 0) {
+        this.page.set(result.page);
+        this.totalPages.set(result.totalPages);
+        this.hasMore.set(false);
+        this.loaded.set(true);
+        this.announcement.set(`All ${this.items().length} matching teachers loaded.`);
         return;
       }
-      this.items.set(result.items);
+      const loadedItems = append ? [...this.items(), ...result.items] : result.items;
+      this.items.set(loadedItems);
+      this.page.set(result.page);
       this.totalPages.set(result.totalPages);
-      this.totalCount.set(result.totalCount);
+      this.hasMore.set(result.page < result.totalPages && result.items.length > 0);
       this.loaded.set(true);
       this.announcement.set(
-        result.items.length === 0
+        loadedItems.length === 0
           ? 'No teachers match.'
-          : `Showing ${this.firstShown()} to ${this.lastShown()} of ${this.totalCount()} teachers. Page ${this.page()} of ${result.totalPages}.`,
+          : this.hasMore()
+            ? `Loaded ${loadedItems.length} teachers. More teachers are available below.`
+            : `All ${loadedItems.length} matching teachers loaded.`,
       );
     } catch (error) {
-      this.items.set([]);
-      this.totalPages.set(0);
-      this.totalCount.set(0);
+      if (!append) {
+        this.items.set([]);
+        this.totalPages.set(0);
+        this.hasMore.set(false);
+      }
       this.announcement.set('');
-      this.errorMessage.set(problemMessage(error, 'The teachers could not be loaded. Try again.'));
+      this.errorMessage.set(
+        problemMessage(error, append ? 'More teachers could not be loaded. Try again.' : 'The teachers could not be loaded. Try again.'),
+      );
     } finally {
       this.loading.set(false);
     }

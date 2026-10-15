@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController, TestRequest } from '@angular/common/http/testing';
 
 import { httpMock, problem, provideAuthTesting, settle } from '../../../testing/auth-testing';
-import { PagerPreferences } from '../../shared/pager/pager-preferences';
 import { Teacher, TeacherPage } from './teacher.models';
 import { TeacherList } from './teacher-list';
 
@@ -59,6 +58,10 @@ describe('TeacherList', () => {
     return Array.from(page.querySelectorAll('tbody tr')).map((r) => r.textContent!.replace(/\s+/g, ' ').trim());
   }
 
+  function button(text: string): HTMLButtonElement {
+    return Array.from(page.querySelectorAll('button')).find((b) => b.textContent?.includes(text))!;
+  }
+
   function submitSearch(value: string): void {
     const input = page.querySelector<HTMLInputElement>('#search')!;
     input.value = value;
@@ -89,6 +92,7 @@ describe('TeacherList', () => {
     expect(rows()[2]).toContain('Deactivated');
     expect(page.querySelector('tbody a')?.getAttribute('href')).toBe('/admin/teachers/1');
     expect(page.querySelector('a.btn-primary')?.getAttribute('href')).toBe('/admin/teachers/new');
+    expect(page.querySelector('nav[aria-label="Pages of results"]')).toBeNull();
     expect(page.textContent).not.toMatch(/password|hash/i);
   });
 
@@ -103,7 +107,7 @@ describe('TeacherList', () => {
     expect(page.textContent).toContain('No teachers match');
   });
 
-  it('searches and filters by account status, going back to the first page', async () => {
+  it('searches and filters by account status, resetting the sequential request to page one', async () => {
     await open();
     await respond(listRequest(), [teacher('1', 'Ada')], { totalCount: 80, totalPages: 4 });
 
@@ -115,28 +119,49 @@ describe('TeacherList', () => {
     ]);
 
     expect(rows()[0]).toContain('Gone');
-    expect(page.textContent).toContain('Showing 1 to 1 of 1 teachers');
+    expect(page.querySelector('nav[aria-label="Pages of results"]')).toBeNull();
   });
 
-  it('pages through the directory and remembers the chosen items per page', async () => {
+  it('appends sequential server batches without showing numbered pagination', async () => {
     await open();
     await respond(listRequest(), [teacher('1', 'Ada')], { totalCount: 60, totalPages: 3 });
-    expect(page.textContent).toContain('Showing 1 to 1 of 60 teachers');
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(page.querySelector('nav[aria-label="Pages of results"]')).toBeNull();
+    expect(page.textContent).toContain('Load more teachers');
 
-    const next = Array.from(page.querySelectorAll('button')).find((b) => b.textContent?.includes('Next'))!;
-    next.click();
+    button('Load more teachers').click();
     await respond(listRequest((r) => r.params.get('page') === '2'), [teacher('26', 'Bob')], { page: 2, totalCount: 60, totalPages: 3 });
-    expect(page.querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('2');
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(rows()[0]).toContain('Ada');
+    expect(rows()[1]).toContain('Bob');
 
-    const size = page.querySelector<HTMLSelectElement>('select[id*="page-size"], select[id*="pageSize"]');
-    size!.value = '50';
-    size!.dispatchEvent(new Event('change'));
-    await respond(listRequest((r) => r.params.get('pageSize') === '50' && r.params.get('page') === '1'), [teacher('1', 'Ada')], {
-      totalCount: 60,
-      totalPages: 2,
-    });
+    button('Load more teachers').click();
+    await respond(listRequest((r) => r.params.get('page') === '3'), [teacher('51', 'Grace')], { page: 3, totalCount: 60, totalPages: 3 });
 
-    expect(TestBed.inject(PagerPreferences).pageSize()).toBe(50);
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(3);
+    expect(page.textContent).toContain('All 3 matching teachers loaded');
+    expect(page.querySelector('nav[aria-label="Pages of results"]')).toBeNull();
+  });
+
+  it('keeps rows visible while the next batch loads and preserves them when that batch fails', async () => {
+    await open();
+    await respond(listRequest(), [teacher('1', 'Ada')], { totalCount: 50, totalPages: 2 });
+
+    button('Load more teachers').click();
+    fixture.detectChanges();
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(page.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(page.textContent).toContain('Loading more teachers');
+
+    listRequest((r) => r.params.get('page') === '2').flush(...problem(500, 'boom'));
+    await settle();
+    fixture.detectChanges();
+
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(page.querySelector('[role=alert]')?.textContent).toContain('More teachers not shown');
+    button('Try again').click();
+    await respond(listRequest((r) => r.params.get('page') === '2'), [teacher('26', 'Bob')], { page: 2, totalCount: 50, totalPages: 2 });
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(2);
   });
 
   it('shows the service error with a way to retry', async () => {

@@ -1,24 +1,32 @@
 import { Injectable } from '@angular/core';
 
-import { AuditFilters, EMPTY_FILTERS } from './audit.models';
+import { AuditEvent, AuditFilters, EMPTY_FILTERS } from './audit.models';
+
+export interface AuditSearchSnapshot {
+  filters: AuditFilters;
+  items: AuditEvent[];
+  nextCursor: string | null;
+}
 
 /**
- * Remembers the reviewer's filters and page while they open an event, so returning to the list shows what they
- * were looking at. It lives only in memory and is dropped when the page is reloaded.
+ * Remembers the reviewer's filters and loaded audit rows while they open an event. It lives only in memory and is dropped
+ * when the page is reloaded.
  */
 @Injectable({ providedIn: 'root' })
 export class AuditSearchState {
-  filters: AuditFilters = { ...EMPTY_FILTERS };
+  private snapshot: AuditSearchSnapshot | null = null;
 
-  page = 1;
+  restore(): AuditSearchSnapshot | null {
+    return this.snapshot
+      ? { ...this.snapshot, filters: { ...this.snapshot.filters }, items: [...this.snapshot.items] }
+      : null;
+  }
 
-  save(filters: AuditFilters, page: number): void {
-    this.filters = { ...filters };
-    this.page = page;
+  save(filters: AuditFilters, items: AuditEvent[], nextCursor: string | null): void {
+    this.snapshot = { filters: { ...filters }, items: [...items], nextCursor };
   }
 
   clear(): void {
-    this.filters = { ...EMPTY_FILTERS };
-    this.page = 1;
+    this.snapshot = { filters: { ...EMPTY_FILTERS }, items: [], nextCursor: null };
   }
 }

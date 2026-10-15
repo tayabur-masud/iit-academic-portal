@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthSession } from '../../core/auth/auth-session';
@@ -31,6 +31,8 @@ export class Shell {
   protected readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
+  @ViewChild('accountMenu') private accountMenu?: ElementRef<HTMLDetailsElement>;
+
   protected readonly navOpen = signal(false);
   protected readonly switching = signal(false);
   protected readonly signingOut = signal(false);
@@ -51,9 +53,26 @@ export class Shell {
     this.navOpen.update((open) => !open);
   }
 
+  @HostListener('document:click', ['$event'])
+  protected closeAccountMenuOnOutsideClick(event: MouseEvent): void {
+    const menu = this.accountMenu?.nativeElement;
+    if (menu?.open && !menu.contains(event.target as Node)) {
+      menu.open = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeAccountMenuOnEscape(): void {
+    const menu = this.accountMenu?.nativeElement;
+    if (menu?.open) {
+      menu.open = false;
+      menu.querySelector('summary')?.focus();
+    }
+  }
+
   async switchRole(event: Event): Promise<void> {
-    const select = event.target as HTMLSelectElement;
-    const role = select.value as Role;
+    const radio = event.target as HTMLInputElement;
+    const role = radio.value as Role;
     if (role === this.session.activeRole() || this.switching()) {
       return;
     }
@@ -65,9 +84,15 @@ export class Shell {
       // Leave any page from the previous role; stay only if the page belongs to the new role's area.
       await this.router.navigateByUrl(landingWithin(this.router.url, role));
       this.navOpen.set(false);
+      if (this.accountMenu) {
+        this.accountMenu.nativeElement.open = false;
+      }
       this.announcement.set(`Switched to the ${role} role.`);
     } catch (error) {
-      select.value = this.session.activeRole() ?? '';
+      const activeRole = this.session.activeRole();
+      this.accountMenu?.nativeElement.querySelectorAll<HTMLInputElement>('input[name="active-role"]').forEach((option) => {
+        option.checked = option.value === activeRole;
+      });
       this.switchError.set(problemMessage(error, 'The role could not be switched. Try again.'));
     } finally {
       this.switching.set(false);
