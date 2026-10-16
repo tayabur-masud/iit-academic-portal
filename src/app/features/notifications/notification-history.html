@@ -1,0 +1,197 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin">Admin</a>
+  <span aria-hidden="true"> / </span>
+  <span>Notifications</span>
+</nav>
+
+<h1>Notifications</h1>
+<p class="text-text-secondary">
+  Every email the portal has been asked to send, newest first, with what happened to it. Times are in UTC. "Sent" means the delivery
+  service accepted the message, not that it reached an inbox.
+</p>
+
+<app-notification-sections />
+
+<form [formGroup]="form" (ngSubmit)="apply()" novalidate class="card mb-6" [attr.aria-busy]="loading()">
+  <fieldset class="m-0">
+    <legend class="mb-2 text-heading font-semibold">Filters</legend>
+
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div class="field mb-0">
+        <label class="field-label" for="recipient">Recipient</label>
+        <p class="field-help" id="recipient-help">The user ID or the email address the message was sent to.</p>
+        <input
+          id="recipient"
+          class="field-input"
+          type="text"
+          autocomplete="off"
+          formControlName="recipient"
+          [attr.aria-invalid]="errorsFor('recipient').length > 0"
+          [attr.aria-describedby]="describedBy('recipient') ? 'recipient-help recipient-error' : 'recipient-help'"
+        />
+        @for (message of errorsFor('recipient'); track message) {
+          <p class="field-error" id="recipient-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field mb-0">
+        <label class="field-label" for="eventType">Message</label>
+        <select id="eventType" class="field-input" formControlName="eventType" [attr.aria-invalid]="errorsFor('eventType').length > 0">
+          <option value="">Any</option>
+          @for (type of eventTypes; track type.value) {
+            <option [value]="type.value">{{ type.label }}</option>
+          }
+        </select>
+        @for (message of errorsFor('eventType'); track message) {
+          <p class="field-error" id="eventType-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field mb-0">
+        <label class="field-label" for="status">Status</label>
+        <select id="status" class="field-input" formControlName="status" [attr.aria-invalid]="errorsFor('status').length > 0">
+          <option value="">Any</option>
+          @for (status of statuses; track status.value) {
+            <option [value]="status.value">{{ status.label }}</option>
+          }
+        </select>
+        @for (message of errorsFor('status'); track message) {
+          <p class="field-error" id="status-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field mb-0">
+        <label class="field-label" for="from">Requested from (UTC)</label>
+        <p class="field-help" id="from-help">Includes this moment.</p>
+        <input
+          id="from"
+          class="field-input"
+          type="datetime-local"
+          formControlName="from"
+          [attr.aria-invalid]="errorsFor('from').length > 0"
+          [attr.aria-describedby]="describedBy('from') ? 'from-help from-error' : 'from-help'"
+        />
+        @for (message of errorsFor('from'); track message) {
+          <p class="field-error" id="from-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field mb-0">
+        <label class="field-label" for="to">Requested to (UTC)</label>
+        <p class="field-help" id="to-help">Does not include this moment.</p>
+        <input
+          id="to"
+          class="field-input"
+          type="datetime-local"
+          formControlName="to"
+          [attr.aria-invalid]="errorsFor('to').length > 0"
+          [attr.aria-describedby]="describedBy('to') ? 'to-help to-error' : 'to-help'"
+        />
+        @for (message of errorsFor('to'); track message) {
+          <p class="field-error" id="to-error">{{ message }}</p>
+        }
+      </div>
+    </div>
+
+    <div class="mt-3 flex flex-wrap gap-3">
+      <button type="submit" class="btn btn-primary" [disabled]="loading()">Apply filters</button>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="loading()" (click)="clear()">Clear filters</button>
+    </div>
+  </fieldset>
+</form>
+
+<section aria-labelledby="results-title">
+  <h2 id="results-title">Results</h2>
+  <p class="sr-only" role="status">{{ announcement() }}</p>
+
+  @if (loading() && items().length === 0) {
+    <p class="flex items-center gap-2 text-text-secondary">
+      <span class="spinner" aria-hidden="true"></span>
+      Loading notifications…
+    </p>
+  } @else if (errorMessage() && items().length === 0) {
+    @if (errorMessage(); as message) {
+      <div class="alert alert-error" role="alert">
+        <strong class="alert-title">Notifications not shown</strong>
+        <p>{{ message }}</p>
+        <div class="mt-3">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
+        </div>
+      </div>
+    }
+  } @else if (loaded() && items().length === 0) {
+    <div class="card max-w-[40rem]">
+      <h3 class="mb-2 text-heading font-semibold">
+        {{ filtered() ? 'No notifications match these filters' : 'No notifications yet' }}
+      </h3>
+      <p class="mb-0">
+        {{
+          filtered()
+            ? 'Widen the date range or clear a filter, then apply the filters again.'
+            : 'Notifications appear here as the portal sends account and academic emails.'
+        }}
+      </p>
+    </div>
+  } @else if (items().length > 0) {
+    <div class="data-table-container" [class.opacity-60]="loading()" [attr.aria-busy]="loading()">
+      <table class="data-table min-w-[52rem]">
+        <caption class="sr-only">
+          Notifications, newest first. {{ items().length }} loaded.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Requested</th>
+            <th scope="col">Message</th>
+            <th scope="col">Recipient</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of items(); track row.id) {
+            <tr>
+              <td class="whitespace-nowrap"><app-utc-timestamp [value]="row.requestedAtUtc" /></td>
+              <td>
+                <a [routerLink]="['/admin/notifications', row.id]">{{ eventLabel(row.eventType) }}</a>
+                @if (row.parentNotificationId) {
+                  <div class="text-helper text-text-secondary">Resend of an earlier notification</div>
+                }
+              </td>
+              <td class="break-all">
+                @if (row.destination) {
+                  {{ row.destination }}
+                } @else {
+                  <span class="text-text-secondary">No address</span>
+                }
+                <div class="text-helper text-text-secondary">{{ row.recipientUserId }}</div>
+              </td>
+              <td>
+                <span [class]="statusBadgeClass(row.status)">{{ statusLabel(row.status) }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="infinite-scroll-footer">
+      @if (hasMore()) {
+        <div class="infinite-scroll-sentinel" appInfiniteScrollSentinel (reachedEnd)="loadMore()" aria-hidden="true"></div>
+      }
+      @if (errorMessage(); as message) {
+        <div class="alert alert-error w-full" role="alert">
+          <strong class="alert-title">More notifications not shown</strong>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="retryMore()">Try again</button>
+        </div>
+      } @else if (loading()) {
+        <p class="m-0 inline-flex items-center gap-2 text-compact text-text-secondary" role="status">
+          <span class="spinner" aria-hidden="true"></span>Loading more notifications…
+        </p>
+      } @else if (hasMore()) {
+        <button type="button" class="btn btn-secondary btn-sm" (click)="loadMore()">Load more notifications</button>
+      } @else {
+        <p class="m-0 text-helper text-text-secondary" role="status">All {{ items().length }} matching notifications loaded.</p>
+      }
+    </div>
+  }
+</section>

@@ -243,6 +243,23 @@
     @apply border border-border bg-surface text-error;
   }
 
+  /*
+   * Tabs: a strip of links to sibling pages of one section. Each tab is a real link to its own address (so back, bookmarks, and
+   * lazy loading keep working) and the current one is marked with aria-current="page", not the ARIA tab pattern.
+   */
+  .tabs {
+    @apply m-0 mb-6 flex list-none flex-wrap gap-x-6 border-b border-border p-0;
+  }
+
+  .tab {
+    @apply -mb-px inline-flex items-center border-b-2 border-transparent px-1 font-medium text-text-secondary no-underline hover:border-border hover:text-brand-primary;
+    min-height: var(--control-height-lg);
+  }
+
+  .tab[aria-current='page'] {
+    @apply border-brand-primary font-semibold text-brand-primary;
+  }
+
   /* Shared compact geometry for audit, configuration, and teacher data tables. */
   .data-table-container {
     @apply relative overflow-x-auto rounded-md border border-border bg-surface;
