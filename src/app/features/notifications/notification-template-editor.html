@@ -1,0 +1,205 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin">Admin</a>
+  <span aria-hidden="true"> / </span>
+  <a routerLink="/admin/notifications">Notifications</a>
+  <span aria-hidden="true"> / </span>
+  <a routerLink="/admin/notifications/templates">Templates</a>
+  <span aria-hidden="true"> / </span>
+  <span>{{ template()?.name ?? 'Edit' }}</span>
+</nav>
+
+<h1>{{ template() ? template()!.name + ' template' : 'Template' }}</h1>
+<p class="sr-only" role="status">{{ announcement() }}</p>
+
+<app-notification-sections />
+
+@if (loading()) {
+  <p class="flex items-center gap-2 text-text-secondary" role="status">
+    <span class="spinner" aria-hidden="true"></span>
+    Loading…
+  </p>
+} @else if (loadError(); as message) {
+  <div class="alert alert-error" role="alert">
+    <strong class="alert-title">Not shown</strong>
+    <p>{{ message }}</p>
+    <p class="mb-0"><a routerLink="/admin/notifications/templates">Back to templates</a></p>
+  </div>
+} @else if (template(); as current) {
+  <p class="text-text-secondary">
+    Revision {{ current.revision }}, last changed <app-utc-timestamp [value]="current.updatedAtUtc" />. Sent by email, as plain text.
+  </p>
+
+  @if (current.isSecurity) {
+    <div class="alert alert-info" role="note">
+      <strong class="alert-title">This message carries a secure link</strong>
+      <p class="mb-0">
+        It must include <code>{{ token('actionLink') }}</code> and always stays enabled. The real link is created only when the message is
+        delivered: it is never shown in a preview and never kept in history.
+      </p>
+    </div>
+  }
+
+  @if (notice(); as message) {
+    <div class="alert alert-success" role="status">
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  }
+
+  @if (errorMessage(); as message) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">{{ conflict() ? 'Someone else changed this template' : 'Not saved' }}</strong>
+      <p>{{ message }}</p>
+      @if (conflict()) {
+        <p>Reloading shows the latest saved wording and discards what you typed.</p>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="reloadLatest()">Reload the latest version</button>
+      }
+    </div>
+  }
+
+  <form class="card max-w-[48rem]" [formGroup]="form" (ngSubmit)="save()" novalidate [attr.aria-busy]="saving()">
+    <div class="field">
+      <label class="field-label" for="subject">Subject</label>
+      <input
+        id="subject"
+        class="field-input"
+        type="text"
+        autocomplete="off"
+        formControlName="subject"
+        required
+        (input)="edited()"
+        [attr.aria-invalid]="errorsFor('subject').length > 0"
+        [attr.aria-describedby]="describedBy('subject')"
+      />
+      @for (message of errorsFor('subject'); track message) {
+        <p class="field-error" id="subject-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="body">Message</label>
+      <p class="field-help" id="body-help">
+        Plain text only. You can use
+        @for (name of current.placeholders; track name; let last = $last) {
+          <code>{{ token(name) }}</code
+          >{{ last ? '.' : ', ' }}
+        }
+        @if (current.requiredPlaceholders.length > 0) {
+          Required:
+          @for (name of current.requiredPlaceholders; track name) {
+            <code>{{ token(name) }}</code>
+          }
+        }
+      </p>
+      <textarea
+        id="body"
+        class="field-input"
+        rows="12"
+        formControlName="body"
+        required
+        (input)="edited()"
+        [attr.aria-invalid]="errorsFor('body').length > 0"
+        [attr.aria-describedby]="describedBy('body', true)"
+      ></textarea>
+      @for (message of errorsFor('body'); track message) {
+        <p class="field-error" id="body-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label class="choice" for="enabled">
+        <input
+          id="enabled"
+          type="checkbox"
+          formControlName="enabled"
+          [attr.aria-describedby]="describedBy('enabled', true)"
+          [attr.aria-invalid]="errorsFor('enabled').length > 0"
+          (change)="edited()"
+        />
+        <span>Enabled</span>
+      </label>
+      <p class="field-help" id="enabled-help">
+        @if (current.isSecurity) {
+          This message must stay enabled so people can always get invited, confirm their address, and reset their password.
+        } @else {
+          When disabled, matching events are recorded as suppressed and are not sent. Enabling it again does not send them later.
+        }
+      </p>
+      @for (message of errorsFor('enabled'); track message) {
+        <p class="field-error" id="enabled-error">{{ message }}</p>
+      }
+    </div>
+
+    @if (sampleNames().length > 0) {
+      <fieldset class="field">
+        <legend class="field-label">Sample values for the preview (optional)</legend>
+        <p class="field-help" id="sample-help">Used only in the preview. Leave blank to use the built-in sample.</p>
+        <div class="grid gap-3 md:grid-cols-2">
+          @for (name of sampleNames(); track name) {
+            <div>
+              <label class="field-label" [for]="'sample-' + name">{{ name }}</label>
+              <input
+                [id]="'sample-' + name"
+                class="field-input"
+                type="text"
+                autocomplete="off"
+                aria-describedby="sample-help"
+                (input)="setSample(name, $event)"
+              />
+            </div>
+          }
+        </div>
+        @for (message of errorsFor('sampleValues'); track message) {
+          <p class="field-error" id="sampleValues-error">{{ message }}</p>
+        }
+      </fieldset>
+    }
+
+    <div class="flex flex-wrap gap-3">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Saving…
+        } @else {
+          Save changes
+        }
+      </button>
+      <button type="button" class="btn btn-secondary" [disabled]="previewing()" (click)="runPreview()">
+        @if (previewing()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Preparing…
+        } @else {
+          Preview
+        }
+      </button>
+      <a class="btn btn-secondary" routerLink="/admin/notifications/templates">Back to templates</a>
+    </div>
+  </form>
+
+  @if (preview(); as shown) {
+    <section class="card mt-6 max-w-[48rem]" aria-labelledby="preview-title">
+      <h2 id="preview-title">Preview</h2>
+      <p class="text-text-secondary">
+        Every message is sent in the standard IIT layout (logo, heading, your wording, footer). Made with sample data. Nothing was sent or saved.
+        @if (current.isSecurity) {
+          The link below is a placeholder and does not work.
+        }
+      </p>
+      <h3 class="mb-2 text-heading font-semibold">As the recipient sees it</h3>
+      <iframe
+        title="Preview of the branded email"
+        sandbox=""
+        class="mb-4 h-[28rem] w-full rounded-md border border-border bg-white"
+        [srcdoc]="previewHtml()"
+        data-testid="preview-frame"
+      ></iframe>
+      <h3 class="mb-2 text-heading font-semibold">Plain-text version</h3>
+      <p class="field-help">Sent alongside the branded layout, for mail programs that show plain text.</p>
+      <dl class="mb-0">
+        <dt class="font-medium text-text-secondary">Subject</dt>
+        <dd class="m-0 mb-3" data-testid="preview-subject">{{ shown.subject }}</dd>
+        <dt class="font-medium text-text-secondary">Message</dt>
+        <dd class="m-0"><pre class="m-0 whitespace-pre-wrap break-words font-[inherit]" data-testid="preview-body">{{ shown.body }}</pre></dd>
+      </dl>
+    </section>
+  }
+}

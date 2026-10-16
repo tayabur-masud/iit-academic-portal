@@ -33,6 +33,30 @@ describe('Configuration routes', () => {
     expect(await navigate(url, admin)).toBe(url),
   );
 
+  it.each([
+    '/admin/notifications',
+    '/admin/notifications/templates',
+    '/admin/notifications/templates/password-reset',
+    '/admin/notifications/settings',
+    '/admin/notifications/0b1e5c3a-0000-4000-8000-000000000001',
+  ])('opens notification page %s for the active Admin', async (url) => expect(await navigate(url, admin)).toBe(url));
+
+  it.each(
+    (['Student', 'Teacher', 'Coordinator'] as const).flatMap((role) =>
+      ['/admin/notifications', '/admin/notifications/templates', '/admin/notifications/settings'].map((url) => [role, url] as const),
+    ),
+  )('denies an active %s direct navigation to %s', async (role, url) => {
+    const session: SessionContext = { availableRoles: [role], activeRole: role };
+
+    expect(await navigate(url, session)).toBe('/unauthorized');
+  });
+
+  it('denies notification pages to an Admin who is acting as another role', async () => {
+    const acting: SessionContext = { availableRoles: ['Admin', 'Teacher'], activeRole: 'Teacher' };
+
+    expect(await navigate('/admin/notifications/templates/password-reset', acting)).toBe('/unauthorized');
+  });
+
   it.each(['Student', 'Teacher', 'Coordinator'] as const)('denies direct navigation to teachers by an active %s', async (role) => {
     const session: SessionContext = { availableRoles: [role], activeRole: role };
 

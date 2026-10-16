@@ -65,6 +65,12 @@ export const routes: Routes = [
         { path: 'teachers', component: TeacherList, title: `Teachers | ${TITLE}` },
         { path: 'teachers/new', component: TeacherForm, title: `Add teacher | ${TITLE}` },
         { path: 'teachers/:id', component: TeacherForm, title: `Edit teacher | ${TITLE}` },
+        // Loaded on demand: these Admin-only screens are not part of the initial bundle. The fixed paths come first so "templates" and "settings" are never read as a notification identifier.
+        { path: 'notifications', loadComponent: () => import('./features/notifications/notification-history').then((m) => m.NotificationHistory), title: `Notifications | ${TITLE}` },
+        { path: 'notifications/templates', loadComponent: () => import('./features/notifications/notification-templates').then((m) => m.NotificationTemplates), title: `Message templates | ${TITLE}` },
+        { path: 'notifications/templates/:eventType', loadComponent: () => import('./features/notifications/notification-template-editor').then((m) => m.NotificationTemplateEditor), title: `Edit template | ${TITLE}` },
+        { path: 'notifications/settings', loadComponent: () => import('./features/notifications/feedback-reminder-setting').then((m) => m.FeedbackReminderSetting), title: `Reminder setting | ${TITLE}` },
+        { path: 'notifications/:notificationId', loadComponent: () => import('./features/notifications/notification-detail').then((m) => m.NotificationDetail), title: `Notification | ${TITLE}` },
         { path: 'audit', component: AuditPage, title: `Audit history | ${TITLE}` },
         { path: 'audit/:eventId', component: AuditDetail, title: `Audit event | ${TITLE}` },
       ]),
