@@ -9,7 +9,7 @@ import { NotificationSections } from './notification-sections';
 import { NotificationTemplate } from './notification.models';
 
 /**
- * The seven email templates (one per event). Admins open one to edit its wording, preview it, or, for an ordinary academic message,
+ * The eight email templates (one per event). Admins open one to edit its wording, preview it, or, for an ordinary academic message,
  * disable it. Invitation, email confirmation, and password reset messages are always enabled.
  */
 @Component({
