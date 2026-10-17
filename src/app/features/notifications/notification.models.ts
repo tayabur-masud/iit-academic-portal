@@ -23,6 +23,7 @@ export const EVENT_TYPES: readonly EventTypeInfo[] = [
   { value: 'ResultsPublished', label: 'Results published' },
   { value: 'FeedbackWindowOpened', label: 'Feedback window opened' },
   { value: 'FeedbackClosingReminder', label: 'Feedback closing reminder' },
+  { value: 'AccountCredentialSetup', label: 'Account setup' },
 ];
 
 export function eventLabel(eventType: string): string {

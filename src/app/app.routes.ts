@@ -51,6 +51,12 @@ export const routes: Routes = [
   },
   // Not guest-only: a recovery link may be opened in a browser that is still signed in.
   { path: 'reset-password', component: ResetPassword, title: `Choose a new password | ${TITLE}` },
+  // Public and not guest-only, like the reset page: the emailed setup link may be opened in any browser. Loaded on demand.
+  {
+    path: 'account-setup',
+    loadComponent: () => import('./features/users/account-credential-setup').then((m) => m.AccountCredentialSetup),
+    title: `Set up your account | ${TITLE}`,
+  },
   {
     path: '',
     component: Shell,
@@ -62,6 +68,10 @@ export const routes: Routes = [
         { path: 'configuration/:resource', component: CatalogList, title: `Configuration | ${TITLE}` },
         { path: 'configuration/:resource/new', component: CatalogForm, title: `New record | ${TITLE}` },
         { path: 'configuration/:resource/:id', component: CatalogForm, title: `Edit record | ${TITLE}` },
+        // Loaded on demand. "new" comes before ":userId" so it is never read as an account identifier.
+        { path: 'users', loadComponent: () => import('./features/users/user-list').then((m) => m.UserList), title: `Accounts | ${TITLE}` },
+        { path: 'users/new', loadComponent: () => import('./features/users/user-provisioning').then((m) => m.UserProvisioning), title: `Add account | ${TITLE}` },
+        { path: 'users/:userId', loadComponent: () => import('./features/users/user-maintenance').then((m) => m.UserMaintenance), title: `Account | ${TITLE}` },
         { path: 'teachers', component: TeacherList, title: `Teachers | ${TITLE}` },
         { path: 'teachers/new', component: TeacherForm, title: `Add teacher | ${TITLE}` },
         { path: 'teachers/:id', component: TeacherForm, title: `Edit teacher | ${TITLE}` },

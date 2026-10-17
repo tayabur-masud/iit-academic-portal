@@ -2,6 +2,11 @@ node_modules/
 dist/
 build/
 coverage/
+.angular/cache/
+*.log
+*.min.js
+.env*
+!.env.example
 package-lock.json
 yarn.lock
 pnpm-lock.yaml

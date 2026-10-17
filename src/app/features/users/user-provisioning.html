@@ -1,0 +1,82 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin">Admin</a>
+  <span aria-hidden="true"> / </span>
+  <a routerLink="/admin/users">Accounts</a>
+  <span aria-hidden="true"> / </span>
+  <span>Add account</span>
+</nav>
+
+<h1>Add account</h1>
+<p class="max-w-[40rem] text-text-secondary">
+  The account starts pending and cannot sign in. Its holder gets an email with a one-time link to choose a password. You never set or see
+  the password.
+</p>
+
+<div class="alert alert-info max-w-[40rem]">
+  <p class="mb-0">
+    To add a teacher, use <a routerLink="/admin/teachers/new">Teachers</a>, which also records the teacher's details. Coordinator access
+    comes from batch-coordinator assignments and cannot be added here.
+  </p>
+</div>
+
+@if (errorMessage(); as message) {
+  <div class="alert alert-error max-w-[40rem]" role="alert">
+    <strong class="alert-title">Account not added</strong>
+    <p class="mb-0">{{ message }}</p>
+  </div>
+}
+
+<form class="card max-w-[40rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+  <div class="field">
+    <label class="field-label" for="email">Email address</label>
+    <p class="field-help" id="email-help">The address used to sign in and to receive the setup email.</p>
+    <input
+      id="email"
+      class="field-input"
+      type="email"
+      autocomplete="off"
+      formControlName="email"
+      [attr.aria-invalid]="errorsFor('email').length > 0"
+      [attr.aria-describedby]="describedBy('email', true)"
+    />
+    @for (message of errorsFor('email'); track message) {
+      <p class="field-error" id="email-error">{{ message }}</p>
+    }
+  </div>
+
+  <fieldset class="field" [attr.aria-describedby]="describedBy('accountType')">
+    <legend class="field-label">Account type</legend>
+    @for (type of accountTypes; track type.value; let first = $first) {
+      <label class="choice" [for]="'accountType-' + type.value">
+        <input
+          type="radio"
+          formControlName="accountType"
+          [id]="'accountType-' + type.value"
+          [value]="type.value"
+          [attr.aria-invalid]="first && errorsFor('accountType').length > 0"
+          [attr.aria-describedby]="'accountType-' + type.value + '-help'"
+        />
+        <span>
+          {{ type.label }}
+          <span class="field-help block" [id]="'accountType-' + type.value + '-help'">{{ type.help }}</span>
+        </span>
+      </label>
+    }
+    @for (message of errorsFor('accountType'); track message) {
+      <p class="field-error" id="accountType-error">{{ message }}</p>
+    }
+  </fieldset>
+
+  <div class="flex flex-wrap gap-3">
+    <button type="submit" class="btn btn-primary" [disabled]="saving()">
+      @if (saving()) {
+        <span class="spinner" aria-hidden="true"></span>
+        Adding…
+      } @else {
+        Add account
+      }
+    </button>
+    <a class="btn btn-secondary" routerLink="/admin/users">Cancel</a>
+  </div>
+  <p class="sr-only" role="status">{{ announcement() }}</p>
+</form>

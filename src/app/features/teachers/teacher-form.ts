@@ -17,8 +17,8 @@ const ROLE_FIELDS = ['roles', 'defaultRole'] as const;
 
 /**
  * Add a teacher, or edit one: profile fields, the roles an Admin may change (Admin; Teacher stays while active; Coordinator is
- * assigned automatically and only shown), and deactivation. A new teacher is created pending: it cannot sign in and no email is
- * sent. The service authorizes and validates everything; this screen only presents it.
+ * assigned automatically and only shown), and deactivation. A new teacher is created pending: it cannot sign in until the teacher
+ * completes the setup email that the service requests. The service authorizes and validates everything; this screen only presents it.
  */
 @Component({
   selector: 'app-teacher-form',
@@ -143,7 +143,7 @@ export class TeacherForm {
       } else {
         const created = await firstValueFrom(this.api.create(body));
         await this.router.navigate(['/admin/teachers'], {
-          state: { notice: `${created.displayName} was added. The account stays pending and cannot sign in until credential setup is available.` },
+          state: { notice: `${created.displayName} was added. A setup email was requested; the account stays pending until the teacher sets a password.` },
         });
       }
     } catch (error) {

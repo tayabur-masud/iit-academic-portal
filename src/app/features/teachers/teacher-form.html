@@ -32,7 +32,8 @@
       <div class="alert alert-info" role="status">
         <strong class="alert-title">Pending setup</strong>
         <p class="mb-0">
-          This account cannot sign in yet. No email has been sent; sign-in becomes possible once credential setup is available.
+          This account cannot sign in until the teacher opens the setup email and chooses a password. To send a new setup email,
+          <a [routerLink]="['/admin/users', current.userId]">open this account in Accounts</a>.
         </p>
       </div>
     } @else if (current.accountStatus === 'Deactivated') {
@@ -45,7 +46,7 @@
     <div class="alert alert-info" role="note">
       <strong class="alert-title">No password is set</strong>
       <p class="mb-0">
-        The teacher is added with the Teacher role and a pending account. You do not set or see a password, and no email is sent yet.
+        The teacher is added with the Teacher role and a pending account. You do not set or see a password: the teacher gets a setup email to choose one.
       </p>
     </div>
   }
