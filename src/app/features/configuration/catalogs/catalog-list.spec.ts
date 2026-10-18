@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController, TestRequest } from '@angular/common/http/testing';
 
 import { httpMock, problem, provideAuthTesting, settle } from '../../../../testing/auth-testing';
-import { PagerPreferences } from '../../../shared/pager/pager-preferences';
 import { ConfigurationItem, ConfigurationPage } from '../configuration.models';
 import { CatalogList } from './catalog-list';
 
@@ -32,18 +31,10 @@ describe('CatalogList', () => {
     return http.expectOne((r) => r.url === `${ROOT}/${path}` && match(r));
   }
 
-  async function respond(
-    request: TestRequest,
-    items: ConfigurationItem[],
-    totals: { page?: number; totalCount?: number; totalPages?: number } = {},
-  ): Promise<void> {
-    const count = totals.totalCount ?? items.length;
+  async function respond(request: TestRequest, items: ConfigurationItem[], nextCursor: string | null = null): Promise<void> {
     request.flush({
       items,
-      nextCursor: null,
-      page: totals.page ?? 1,
-      totalCount: count,
-      totalPages: totals.totalPages ?? Math.ceil(count / 25),
+      nextCursor,
     } satisfies ConfigurationPage);
     await settle();
     fixture.detectChanges();
@@ -62,6 +53,8 @@ describe('CatalogList', () => {
     const first = listRequest('degrees');
     expect(first.request.params.get('status')).toBe('active');
     expect(first.request.params.get('pageSize')).toBe('25');
+    expect(first.request.params.has('page')).toBe(false);
+    expect(first.request.params.has('cursor')).toBe(false);
     await respond(first, [item('1', 'Bachelor of IT', { code: 'BIT' }), item('2', 'Master of IT')]);
 
     expect(page.querySelector('h1')?.textContent).toContain('Degrees');
@@ -94,56 +87,36 @@ describe('CatalogList', () => {
     expect(page.textContent).toContain('No degrees match');
   });
 
-  function pager(): HTMLElement {
-    return page.querySelector<HTMLElement>('nav[aria-label="Pages of results"]')!;
+  function loadMoreButton(): HTMLButtonElement {
+    return Array.from(page.querySelectorAll('button')).find((b) => b.textContent?.includes('Load more'))!;
   }
 
-  function pageButtons(): string[] {
-    return Array.from(pager().querySelectorAll('li')).map((li) => li.textContent!.trim());
-  }
-
-  function current(): string | undefined {
-    return pager().querySelector('[aria-current="page"]')?.textContent?.trim();
-  }
-
-  it('asks for numbered pages and shows the range, the total and the page numbers', async () => {
+  it('appends cursor batches and replaces numbered pagination with a load-more fallback', async () => {
     await open('degrees');
     const first = listRequest('degrees');
-    expect(first.request.params.get('page')).toBe('1');
-    expect(first.request.params.has('cursor')).toBe(false);
-    await respond(first, [item('1', 'A')], { totalCount: 1000, totalPages: 40 });
+    await respond(first, [item('1', 'A')], 'cursor-2');
+    expect(page.querySelector('nav[aria-label="Pages of results"]')).toBeNull();
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(page.textContent).toContain('Load more');
 
-    expect(pageButtons()).toEqual(['Previous page', '1', '2', '3', '…', '40', 'Next page']);
-    expect(page.textContent).toContain('Showing 1 to 25 of 1000 degrees');
-    expect(current()).toBe('1');
-    expect(button('Previous').disabled).toBe(true);
+    loadMoreButton().click();
+    const second = listRequest('degrees', (r) => r.params.get('cursor') === 'cursor-2');
+    expect(second.request.params.has('page')).toBe(false);
+    await respond(second, [item('2', 'B')]);
+
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(rows()[0]).toContain('A');
+    expect(rows()[1]).toContain('B');
+    expect(page.textContent).toContain('All 2 matching records loaded');
+    expect(page.querySelector('nav[aria-label="Pages of results"]')).toBeNull();
   });
 
-  it('jumps to a numbered page, the next page, the previous page and the last page', async () => {
+  it('resets the cursor and replaces rows when search or status changes', async () => {
     await open('degrees');
-    await respond(listRequest('degrees'), [item('1', 'A')], { totalCount: 1000, totalPages: 40 });
-
-    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '3'), [item('3', 'C')], { page: 3, totalCount: 1000, totalPages: 40 });
-    expect(current()).toBe('3');
-    expect(page.textContent).toContain('Showing 51 to 75 of 1000 degrees');
-
-    button('Next').click();
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '4'), [item('4', 'D')], { page: 4, totalCount: 1000, totalPages: 40 });
-    button('Previous').click();
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '3'), [item('3', 'C')], { page: 3, totalCount: 1000, totalPages: 40 });
-
-    pager().querySelector<HTMLButtonElement>('[aria-label="Page 40"]')!.click();
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '40'), [item('9', 'Z')], { page: 40, totalCount: 1000, totalPages: 40 });
-    expect(button('Next').disabled).toBe(true);
-    expect(page.textContent).toContain('Showing 976 to 1000 of 1000 degrees');
-  });
-
-  it('starts again from page 1 when the search or the status changes', async () => {
-    await open('degrees');
-    await respond(listRequest('degrees'), [item('1', 'A')], { totalCount: 100, totalPages: 4 });
-    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '3'), [item('3', 'C')], { page: 3, totalCount: 100, totalPages: 4 });
+    await respond(listRequest('degrees'), [item('1', 'A')], 'cursor-2');
+    loadMoreButton().click();
+    await respond(listRequest('degrees', (r) => r.params.get('cursor') === 'cursor-2'), [item('2', 'B')], 'cursor-3');
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(2);
 
     const input = page.querySelector<HTMLInputElement>('#search')!;
     input.value = '  bit ';
@@ -153,57 +126,29 @@ describe('CatalogList', () => {
     status.dispatchEvent(new Event('change'));
     const request = listRequest('degrees', (r) => r.params.get('status') === 'inactive');
     expect(request.request.params.get('search')).toBe('bit');
-    expect(request.request.params.get('page')).toBe('1');
+    expect(request.request.params.has('cursor')).toBe(false);
     await respond(request, [item('5', 'Archived', { isActive: false })]);
 
-    expect(current()).toBe('1');
+    expect(page.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(rows()[0]).toContain('Archived');
   });
 
-  it('changes how many records a page holds, starts again from page 1, and remembers the choice', async () => {
+  it('keeps existing rows while another cursor loads and prevents a second request', async () => {
     await open('degrees');
-    const first = listRequest('degrees');
-    expect(first.request.params.get('pageSize')).toBe('25');
-    await respond(first, [item('1', 'A')], { totalCount: 1000, totalPages: 40 });
-    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '3'), [item('3', 'C')], { page: 3, totalCount: 1000, totalPages: 40 });
+    await respond(listRequest('degrees'), [item('1', 'A')], 'cursor-2');
 
-    const select = page.querySelector<HTMLSelectElement>('#page-size')!;
-    select.value = '100';
-    select.dispatchEvent(new Event('change'));
-    const request = listRequest('degrees', (r) => r.params.get('pageSize') === '100');
-    expect(request.request.params.get('page')).toBe('1');
-    await respond(request, [item('1', 'A')], { totalCount: 1000, totalPages: 10 });
-
-    expect(page.textContent).toContain('Showing 1 to 100 of 1000 degrees');
-    expect(current()).toBe('1');
-    expect(pageButtons().filter((b) => /^\d+$/.test(b)).at(-1)).toBe('10');
-    expect(TestBed.inject(PagerPreferences).pageSize()).toBe(100);
-  });
-
-  it('shows the last existing page when the requested page is past the end', async () => {
-    await open('degrees');
-    await respond(listRequest('degrees'), [item('1', 'A')], { totalCount: 60, totalPages: 3 });
-    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '3'), [], { page: 3, totalCount: 30, totalPages: 2 });
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '2'), [item('2', 'B')], { page: 2, totalCount: 30, totalPages: 2 });
-
-    expect(current()).toBe('2');
-  });
-
-  it('keeps the rows on screen, marked busy, while another page loads, and ignores a second click', async () => {
-    await open('degrees');
-    await respond(listRequest('degrees'), [item('1', 'A')], { totalCount: 100, totalPages: 4 });
-
-    pager().querySelector<HTMLButtonElement>('[aria-label="Page 2"]')!.click();
+    loadMoreButton().click();
     fixture.detectChanges();
 
     expect(rows().length).toBe(1);
     expect(page.querySelector('[aria-busy="true"]')).not.toBeNull();
-    pager().querySelector<HTMLButtonElement>('[aria-label="Page 3"]')!.click();
-    await respond(listRequest('degrees', (r) => r.params.get('page') === '2'), [item('2', 'B')], { page: 2, totalCount: 100, totalPages: 4 });
+    expect(page.textContent).toContain('Loading more degrees');
+    http.expectNone((r) => r.params.get('cursor') === 'cursor-3');
+    await respond(listRequest('degrees', (r) => r.params.get('cursor') === 'cursor-2'), [item('2', 'B')], 'cursor-3');
+    expect(rows()).toHaveLength(2);
   });
 
-  it('shows an error with a retry and no stale rows', async () => {
+  it('shows an initial-load error with retry and no stale rows', async () => {
     await open('degrees');
     listRequest('degrees').flush(...problem(500, 'boom'));
     await settle();
@@ -215,6 +160,21 @@ describe('CatalogList', () => {
     button('Try again').click();
     await respond(listRequest('degrees'), [item('1', 'Recovered')]);
     expect(rows()[0]).toContain('Recovered');
+  });
+
+  it('keeps loaded rows and retries a failed later cursor', async () => {
+    await open('degrees');
+    await respond(listRequest('degrees'), [item('1', 'A')], 'cursor-2');
+    loadMoreButton().click();
+    listRequest('degrees', (r) => r.params.get('cursor') === 'cursor-2').flush(...problem(500, 'boom'));
+    await settle();
+    fixture.detectChanges();
+
+    expect(rows()).toHaveLength(1);
+    expect(page.querySelector('[role=alert]')?.textContent).toContain('More records not shown');
+    button('Try again').click();
+    await respond(listRequest('degrees', (r) => r.params.get('cursor') === 'cursor-2'), [item('2', 'B')]);
+    expect(rows()).toHaveLength(2);
   });
 
   it('resolves the names of a batch degree, semester and session', async () => {

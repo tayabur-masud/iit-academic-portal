@@ -12,6 +12,8 @@ import { AuditPage } from './features/audit/audit-page';
 import { CatalogForm } from './features/configuration/catalogs/catalog-form';
 import { CatalogList } from './features/configuration/catalogs/catalog-list';
 import { ConfigurationHome } from './features/configuration/configuration-home';
+import { TeacherForm } from './features/teachers/teacher-form';
+import { TeacherList } from './features/teachers/teacher-list';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Login } from './features/auth/login/login';
 import { ResetPassword } from './features/auth/reset-password/reset-password';
@@ -49,6 +51,12 @@ export const routes: Routes = [
   },
   // Not guest-only: a recovery link may be opened in a browser that is still signed in.
   { path: 'reset-password', component: ResetPassword, title: `Choose a new password | ${TITLE}` },
+  // Public and not guest-only, like the reset page: the emailed setup link may be opened in any browser. Loaded on demand.
+  {
+    path: 'account-setup',
+    loadComponent: () => import('./features/users/account-credential-setup').then((m) => m.AccountCredentialSetup),
+    title: `Set up your account | ${TITLE}`,
+  },
   {
     path: '',
     component: Shell,
@@ -60,6 +68,19 @@ export const routes: Routes = [
         { path: 'configuration/:resource', component: CatalogList, title: `Configuration | ${TITLE}` },
         { path: 'configuration/:resource/new', component: CatalogForm, title: `New record | ${TITLE}` },
         { path: 'configuration/:resource/:id', component: CatalogForm, title: `Edit record | ${TITLE}` },
+        // Loaded on demand. "new" comes before ":userId" so it is never read as an account identifier.
+        { path: 'users', loadComponent: () => import('./features/users/user-list').then((m) => m.UserList), title: `Accounts | ${TITLE}` },
+        { path: 'users/new', loadComponent: () => import('./features/users/user-provisioning').then((m) => m.UserProvisioning), title: `Add account | ${TITLE}` },
+        { path: 'users/:userId', loadComponent: () => import('./features/users/user-maintenance').then((m) => m.UserMaintenance), title: `Account | ${TITLE}` },
+        { path: 'teachers', component: TeacherList, title: `Teachers | ${TITLE}` },
+        { path: 'teachers/new', component: TeacherForm, title: `Add teacher | ${TITLE}` },
+        { path: 'teachers/:id', component: TeacherForm, title: `Edit teacher | ${TITLE}` },
+        // Loaded on demand: these Admin-only screens are not part of the initial bundle. The fixed paths come first so "templates" and "settings" are never read as a notification identifier.
+        { path: 'notifications', loadComponent: () => import('./features/notifications/notification-history').then((m) => m.NotificationHistory), title: `Notifications | ${TITLE}` },
+        { path: 'notifications/templates', loadComponent: () => import('./features/notifications/notification-templates').then((m) => m.NotificationTemplates), title: `Message templates | ${TITLE}` },
+        { path: 'notifications/templates/:eventType', loadComponent: () => import('./features/notifications/notification-template-editor').then((m) => m.NotificationTemplateEditor), title: `Edit template | ${TITLE}` },
+        { path: 'notifications/settings', loadComponent: () => import('./features/notifications/feedback-reminder-setting').then((m) => m.FeedbackReminderSetting), title: `Reminder setting | ${TITLE}` },
+        { path: 'notifications/:notificationId', loadComponent: () => import('./features/notifications/notification-detail').then((m) => m.NotificationDetail), title: `Notification | ${TITLE}` },
         { path: 'audit', component: AuditPage, title: `Audit history | ${TITLE}` },
         { path: 'audit/:eventId', component: AuditDetail, title: `Audit event | ${TITLE}` },
       ]),

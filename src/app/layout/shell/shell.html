@@ -30,7 +30,7 @@
       class="border-b border-divider bg-surface md:flex md:w-(--sidebar-width) md:flex-none md:flex-col md:overflow-y-auto md:border-r md:border-b-0"
       [class.hidden]="!navOpen()"
     >
-      <nav aria-label="Main" class="p-4 md:flex-1">
+      <nav aria-label="Main" class="p-3 md:flex-1">
         <ul>
           @for (item of navItems(); track item.path) {
             <li>
@@ -39,7 +39,7 @@
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: item.exact }"
                 ariaCurrentWhenActive="page"
-                class="block rounded-sm border-l-3 border-transparent p-3 text-text-primary no-underline hover:bg-surface-hover aria-[current=page]:border-brand-primary aria-[current=page]:bg-surface-selected aria-[current=page]:font-semibold aria-[current=page]:text-brand-primary"
+                class="block min-h-11 rounded-sm border-l-3 border-transparent px-3 py-2.5 text-text-primary no-underline hover:bg-surface-hover aria-[current=page]:border-brand-primary aria-[current=page]:bg-surface-selected aria-[current=page]:font-semibold aria-[current=page]:text-brand-primary"
                 >{{ item.label }}</a
               >
             </li>
@@ -47,32 +47,54 @@
         </ul>
       </nav>
 
-      <!-- Account: active role (or role switcher) and sign-out, pinned to the bottom of the menu. -->
-      <section aria-label="Your account" class="flex flex-col gap-3 border-t border-divider p-4">
-        @if (session.availableRoles().length > 1) {
-          <label class="text-compact font-medium" for="role-switcher">Active role</label>
-          <select
-            id="role-switcher"
-            class="field-input w-full"
-            [disabled]="switching()"
-            [attr.aria-busy]="switching()"
-            (change)="switchRole($event)"
-          >
-            @for (role of session.availableRoles(); track role) {
-              <option [value]="role" [selected]="role === session.activeRole()">{{ role }}</option>
+      <!-- Account dropdown stays pinned to the bottom of the sidebar. -->
+      <section aria-label="Your account" class="flex flex-col gap-2 border-t border-divider p-3">
+        <details #accountMenu class="account-dropdown">
+          <summary class="account-dropdown-trigger" aria-controls="account-dropdown-panel">
+            <span class="account-dropdown-avatar" aria-hidden="true">{{ session.activeRole()?.charAt(0) ?? 'U' }}</span>
+            <span class="account-dropdown-copy">
+              <span class="account-dropdown-label">Account</span>
+              <span class="account-dropdown-role">Role: {{ session.activeRole() }}</span>
+            </span>
+            <span class="account-dropdown-chevron" aria-hidden="true"></span>
+          </summary>
+          <div id="account-dropdown-panel" class="account-dropdown-panel">
+            @if (session.availableRoles().length > 1) {
+              <fieldset class="account-role-group" [disabled]="switching()" [attr.aria-busy]="switching()">
+                <legend>Active role</legend>
+                  @for (role of session.availableRoles(); track role) {
+                  <label class="account-role-option">
+                    <input
+                      type="radio"
+                      name="active-role"
+                      [value]="role"
+                      [checked]="role === session.activeRole()"
+                      (change)="switchRole($event)"
+                    />
+                    <span>{{ role }}</span>
+                  </label>
+                  }
+              </fieldset>
+            } @else if (session.activeRole(); as role) {
+              <span class="badge self-start">Role: {{ role }}</span>
             }
-          </select>
-        } @else if (session.activeRole(); as role) {
-          <span class="badge self-start">Role: {{ role }}</span>
-        }
-        <button type="button" class="btn btn-secondary w-full" [disabled]="signingOut()" (click)="signOut()">
-          Sign out
-        </button>
+            <div class="account-dropdown-divider" aria-hidden="true"></div>
+            <button type="button" class="account-dropdown-item" disabled aria-disabled="true">My Profile</button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm account-dropdown-sign-out w-full"
+              [disabled]="signingOut()"
+              (click)="signOut()"
+            >
+              Sign out
+            </button>
+          </div>
+        </details>
       </section>
     </aside>
 
     <main id="main" class="relative min-h-0 flex-1 overflow-y-auto" tabindex="-1">
-      <div class="mx-auto w-full max-w-(--content-max-width) px-4 py-6 md:px-6 md:py-8">
+      <div class="mx-auto w-full max-w-(--content-max-width) px-4 py-4 md:px-6 md:py-6">
         <p class="sr-only" role="status">{{ announcement() }}</p>
         @if (switchError(); as message) {
           <div class="alert alert-error" role="alert">

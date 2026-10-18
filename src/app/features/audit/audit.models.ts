@@ -30,7 +30,7 @@ export interface AuditEvent {
 export interface AuditPage {
   items: AuditEvent[];
   nextCursor: string | null;
-  /** Present because the screen asks for numbered pages. */
+  /** Present only for API clients that explicitly request numbered pages. */
   page?: number;
   totalCount?: number;
   totalPages?: number;

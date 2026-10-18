@@ -50,10 +50,10 @@
   --spacing-2: 0.5rem;
   --spacing-3: 0.75rem;
   --spacing-4: 1rem;
-  --spacing-6: 1.5rem;
-  --spacing-8: 2rem;
-  --spacing-12: 3rem;
-  --spacing-16: 4rem;
+  --spacing-6: 1.25rem;
+  --spacing-8: 1.5rem;
+  --spacing-12: 2rem;
+  --spacing-16: 2.5rem;
 
   /* Shape and elevation. */
   --radius-sm: 0.25rem;
@@ -79,9 +79,9 @@
 
 /* Design-system tokens outside Tailwind's namespaces; use with var(--…) or utilities such as h-(--header-height). */
 :root {
-  --font-size-page-title: 1.75rem;
-  --font-size-heading: 1.3125rem;
-  --font-size-body: 1rem;
+  --font-size-page-title: 1.5rem;
+  --font-size-heading: 1.125rem;
+  --font-size-body: 0.9375rem;
   --font-size-compact: 0.875rem;
   --font-size-helper: 0.8125rem;
   --line-height-heading: 1.25;
@@ -93,6 +93,6 @@
   --control-height-lg: 2.75rem;
 
   --content-max-width: 80rem;
-  --sidebar-width: 16.875rem;
-  --header-height: 4.375rem;
+  --sidebar-width: 15rem;
+  --header-height: 4rem;
 }

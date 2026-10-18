@@ -1,0 +1,74 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin">Admin</a>
+  <span aria-hidden="true"> / </span>
+  <a routerLink="/admin/notifications">Notifications</a>
+  <span aria-hidden="true"> / </span>
+  <span>Templates</span>
+</nav>
+
+<h1>Message templates</h1>
+<p class="text-text-secondary">
+  The wording of each email the portal sends. Each save creates a new revision; messages already requested keep the wording they were
+  requested with.
+</p>
+
+<app-notification-sections />
+
+<section aria-labelledby="templates-title">
+  <h2 id="templates-title" class="sr-only">Templates</h2>
+  <p class="sr-only" role="status">{{ announcement() }}</p>
+
+  @if (loading()) {
+    <p class="flex items-center gap-2 text-text-secondary" role="status">
+      <span class="spinner" aria-hidden="true"></span>
+      Loading templates…
+    </p>
+  } @else if (errorMessage(); as message) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">Templates not shown</strong>
+      <p>{{ message }}</p>
+      <div class="mt-3">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
+      </div>
+    </div>
+  } @else if (templates().length === 0) {
+    <div class="card max-w-[40rem]">
+      <h3 class="mb-2 text-heading font-semibold">No templates</h3>
+      <p class="mb-0">No message templates are set up yet.</p>
+    </div>
+  } @else {
+    <div class="data-table-container">
+      <table class="data-table min-w-[44rem]">
+        <caption class="sr-only">
+          Email templates, one per event.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Message</th>
+            <th scope="col">Kind</th>
+            <th scope="col">State</th>
+            <th scope="col">Revision</th>
+            <th scope="col">Last changed</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (template of templates(); track template.slug) {
+            <tr>
+              <th scope="row" class="text-left font-medium">
+                <a [routerLink]="['/admin/notifications/templates', template.slug]">{{ template.name }}</a>
+              </th>
+              <td>{{ template.isSecurity ? 'Secure link' : 'Academic notice' }}</td>
+              <td>
+                <span class="badge" [class.badge-success]="template.enabled" [class.badge-error]="!template.enabled">
+                  {{ template.enabled ? 'Enabled' : 'Disabled' }}
+                </span>
+              </td>
+              <td>{{ template.revision }}</td>
+              <td class="whitespace-nowrap"><app-utc-timestamp [value]="template.updatedAtUtc" /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

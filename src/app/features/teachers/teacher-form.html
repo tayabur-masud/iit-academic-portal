@@ -1,0 +1,290 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin">Admin</a>
+  <span aria-hidden="true"> / </span>
+  <a routerLink="/admin/teachers">Teachers</a>
+  <span aria-hidden="true"> / </span>
+  <span>{{ isNew() ? 'Add' : 'Edit' }}</span>
+</nav>
+
+<h1>{{ isNew() ? 'Add teacher' : 'Edit teacher' }}</h1>
+<p class="sr-only" role="status">{{ announcement() }}</p>
+
+@if (loading()) {
+  <p class="flex items-center gap-2 text-text-secondary">
+    <span class="spinner" aria-hidden="true"></span>
+    Loading…
+  </p>
+} @else if (loadError(); as message) {
+  <div class="alert alert-error" role="alert">
+    <strong class="alert-title">Not shown</strong>
+    <p>{{ message }}</p>
+    <p class="mb-0"><a routerLink="/admin/teachers">Back to teachers</a></p>
+  </div>
+} @else {
+  @if (notice(); as message) {
+    <div class="alert alert-success" role="status">
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  }
+
+  @if (teacher(); as current) {
+    @if (current.accountStatus === 'PendingCredentialSetup') {
+      <div class="alert alert-info" role="status">
+        <strong class="alert-title">Pending setup</strong>
+        <p class="mb-0">
+          This account cannot sign in until the teacher opens the setup email and chooses a password. To send a new setup email,
+          <a [routerLink]="['/admin/users', current.userId]">open this account in Accounts</a>.
+        </p>
+      </div>
+    } @else if (current.accountStatus === 'Deactivated') {
+      <div class="alert alert-info" role="status">
+        <strong class="alert-title">This teacher is deactivated</strong>
+        <p class="mb-0">The account cannot sign in and has no active sessions. The profile, roles, and history are kept.</p>
+      </div>
+    }
+  } @else {
+    <div class="alert alert-info" role="note">
+      <strong class="alert-title">No password is set</strong>
+      <p class="mb-0">
+        The teacher is added with the Teacher role and a pending account. You do not set or see a password: the teacher gets a setup email to choose one.
+      </p>
+    </div>
+  }
+
+  @if (errorMessage(); as message) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">Not saved</strong>
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  }
+
+  <form class="card max-w-[40rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+    <div class="field">
+      <label class="field-label" for="displayName">Name</label>
+      <input
+        id="displayName"
+        class="field-input"
+        type="text"
+        autocomplete="off"
+        formControlName="displayName"
+        required
+        [attr.aria-invalid]="errorsFor('displayName').length > 0"
+        [attr.aria-describedby]="describedBy('displayName')"
+      />
+      @for (message of errorsFor('displayName'); track message) {
+        <p class="field-error" id="displayName-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="email">Email address</label>
+      <p class="field-help" id="email-help">The teacher signs in with this address. It must not belong to another account.</p>
+      <input
+        id="email"
+        class="field-input"
+        type="email"
+        autocomplete="off"
+        formControlName="email"
+        required
+        [attr.aria-invalid]="errorsFor('email').length > 0"
+        [attr.aria-describedby]="describedBy('email', true)"
+      />
+      @for (message of errorsFor('email'); track message) {
+        <p class="field-error" id="email-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="employeeStaffId">Staff ID (optional)</label>
+      <input
+        id="employeeStaffId"
+        class="field-input"
+        type="text"
+        autocomplete="off"
+        formControlName="employeeStaffId"
+        [attr.aria-invalid]="errorsFor('employeeStaffId').length > 0"
+        [attr.aria-describedby]="describedBy('employeeStaffId')"
+      />
+      @for (message of errorsFor('employeeStaffId'); track message) {
+        <p class="field-error" id="employeeStaffId-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="phone">Phone (optional)</label>
+      <input
+        id="phone"
+        class="field-input"
+        type="tel"
+        autocomplete="off"
+        formControlName="phone"
+        [attr.aria-invalid]="errorsFor('phone').length > 0"
+        [attr.aria-describedby]="describedBy('phone')"
+      />
+      @for (message of errorsFor('phone'); track message) {
+        <p class="field-error" id="phone-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="designationId">Designation (optional)</label>
+      <select
+        id="designationId"
+        class="field-input"
+        formControlName="designationId"
+        [attr.aria-invalid]="errorsFor('designationId').length > 0"
+        [attr.aria-describedby]="describedBy('designationId')"
+      >
+        <option value="">No designation</option>
+        @for (option of designationChoices(); track option.id) {
+          <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+        }
+      </select>
+      @for (message of errorsFor('designationId'); track message) {
+        <p class="field-error" id="designationId-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Saving…
+        } @else {
+          {{ isNew() ? 'Add teacher' : 'Save changes' }}
+        }
+      </button>
+      <a class="btn btn-secondary" routerLink="/admin/teachers">Cancel</a>
+    </div>
+  </form>
+
+  @if (!isNew() && teacher(); as current) {
+    <section class="card mt-6 max-w-[40rem]" aria-labelledby="roles-title">
+      <h2 id="roles-title">Roles</h2>
+      <p>Teacher stays assigned while the teacher is active. Student is never assigned to a teacher.</p>
+
+      @if (isDeactivated()) {
+        <p class="mb-0 text-text-secondary">The roles of a deactivated teacher cannot be changed.</p>
+      } @else {
+        @if (rolesError(); as message) {
+          <div class="alert alert-error" role="alert">
+            <strong class="alert-title">Roles not saved</strong>
+            <p class="mb-0">{{ message }}</p>
+          </div>
+        }
+
+        <form [formGroup]="rolesForm" (ngSubmit)="saveRoles()" novalidate [attr.aria-busy]="savingRoles()">
+          <fieldset class="field">
+            <legend class="field-label">Assigned roles</legend>
+            <label class="choice" for="role-teacher">
+              <input id="role-teacher" type="checkbox" checked disabled />
+              <span>Teacher (required)</span>
+            </label>
+            <label class="choice" for="role-admin">
+              <input id="role-admin" type="checkbox" formControlName="admin" (change)="adminChanged()" />
+              <span>Admin</span>
+            </label>
+            @if (holdsCoordinator()) {
+              <p class="field-help mb-0">
+                Coordinator is also assigned. It follows the teacher's batch-coordinator assignments and cannot be changed here.
+              </p>
+            }
+            @for (message of errorsFor('roles'); track message) {
+              <p class="field-error" id="roles-error">{{ message }}</p>
+            }
+          </fieldset>
+
+          <div class="field">
+            <label class="field-label" for="defaultRole">Default role</label>
+            <p class="field-help" id="defaultRole-help">The role the teacher enters when signing in.</p>
+            <select
+              id="defaultRole"
+              class="field-input"
+              formControlName="defaultRole"
+              [attr.aria-invalid]="errorsFor('defaultRole').length > 0"
+              [attr.aria-describedby]="describedBy('defaultRole', true)"
+            >
+              @for (role of defaultChoices(); track role) {
+                <option [value]="role">{{ role }}</option>
+              }
+            </select>
+            @for (message of errorsFor('defaultRole'); track message) {
+              <p class="field-error" id="defaultRole-error">{{ message }}</p>
+            }
+          </div>
+
+          <button type="submit" class="btn btn-primary" [disabled]="savingRoles()">
+            @if (savingRoles()) {
+              <span class="spinner" aria-hidden="true"></span>
+              Saving…
+            } @else {
+              Save roles
+            }
+          </button>
+        </form>
+      }
+    </section>
+
+    <section class="card mt-6 max-w-[40rem]" aria-labelledby="status-title">
+      <h2 id="status-title">Account status</h2>
+      <p>
+        <span
+          class="badge"
+          [class.badge-success]="current.accountStatus === 'Active'"
+          [class.badge-error]="current.accountStatus === 'Deactivated'"
+        >
+          {{ statusLabel(current.accountStatus) }}
+        </span>
+      </p>
+    </section>
+
+    @if (!isDeactivated()) {
+      <section class="card mt-6 max-w-[40rem]" aria-labelledby="deactivate-title">
+        <h2 id="deactivate-title">Deactivate this teacher</h2>
+        <p>
+          Deactivating disables the account and ends every active session at once. The profile, roles, and history are kept, and the
+          teacher cannot be deleted. The last active Admin cannot be deactivated.
+        </p>
+
+        @if (!confirmingDeactivate()) {
+          <button type="button" class="btn btn-danger-outline" (click)="askDeactivate()">Deactivate teacher…</button>
+        } @else {
+          <div class="alert alert-warning" role="alert">
+            <strong class="alert-title">Deactivate {{ current.displayName }}?</strong>
+            <p>They will be signed out everywhere and will not be able to sign in.</p>
+            @if (deactivateError(); as message) {
+              <p class="field-error">{{ message }}</p>
+            }
+            <div class="flex flex-wrap gap-3">
+              <button type="button" class="btn btn-danger" [disabled]="deactivating()" (click)="confirmDeactivate()">
+                @if (deactivating()) {
+                  <span class="spinner" aria-hidden="true"></span>
+                  Deactivating…
+                } @else {
+                  Yes, deactivate
+                }
+              </button>
+              <button type="button" class="btn btn-secondary" [disabled]="deactivating()" (click)="cancelDeactivate()">Cancel</button>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <section class="card mt-6 max-w-[40rem]" aria-labelledby="history-title">
+      <h2 id="history-title">Record history</h2>
+      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
+        <dt class="font-medium text-text-secondary">Created</dt>
+        <dd class="m-0">
+          <app-utc-timestamp [value]="current.createdAtUtc" />
+          by <span class="break-all">{{ who(current.createdBy, current.createdByUserId) }}</span>
+        </dd>
+        <dt class="font-medium text-text-secondary">Last modified</dt>
+        <dd class="m-0">
+          <app-utc-timestamp [value]="current.lastModifiedAtUtc" />
+          by <span class="break-all">{{ who(current.lastModifiedBy, current.lastModifiedByUserId) }}</span>
+        </dd>
+      </dl>
+    </section>
+  }
+}

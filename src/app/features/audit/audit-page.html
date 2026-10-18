@@ -5,9 +5,9 @@
 
 <form [formGroup]="form" (ngSubmit)="apply()" novalidate class="card mb-6" [attr.aria-busy]="loading()">
   <fieldset class="m-0">
-    <legend class="mb-3 text-heading font-semibold">Filters</legend>
+    <legend class="mb-2 text-heading font-semibold">Filters</legend>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       <div class="field mb-0">
         <label class="field-label" for="from">From (UTC)</label>
         <p class="field-help" id="from-help">Includes this moment.</p>
@@ -89,9 +89,9 @@
       }
     </div>
 
-    <div class="mt-4 flex flex-wrap gap-3">
+    <div class="mt-3 flex flex-wrap gap-3">
       <button type="submit" class="btn btn-primary" [disabled]="loading()">Apply filters</button>
-      <button type="button" class="btn btn-secondary" [disabled]="loading()" (click)="clear()">Clear filters</button>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="loading()" (click)="clear()">Clear filters</button>
     </div>
   </fieldset>
 </form>
@@ -105,14 +105,16 @@
       <span class="spinner" aria-hidden="true"></span>
       Loading audit events…
     </p>
-  } @else if (errorMessage(); as message) {
+    } @else if (errorMessage() && items().length === 0) {
+      @if (errorMessage(); as message) {
     <div class="alert alert-error" role="alert">
       <strong class="alert-title">Audit events not shown</strong>
       <p>{{ message }}</p>
       <div class="mt-3">
-        <button type="button" class="btn btn-secondary" (click)="reload()">Try again</button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
       </div>
     </div>
+      }
   } @else if (loaded() && items().length === 0) {
     <div class="card max-w-[40rem]">
       <h3 class="mb-2 text-heading font-semibold">
@@ -127,32 +129,32 @@
       </p>
     </div>
   } @else if (items().length > 0) {
-    <div class="relative overflow-x-auto rounded-md border border-border bg-surface" [class.opacity-60]="loading()" [attr.aria-busy]="loading()">
-      <table class="w-full min-w-[52rem] border-collapse text-left text-compact">
+    <div class="data-table-container" [class.opacity-60]="loading()" [attr.aria-busy]="loading()">
+      <table class="data-table min-w-[52rem]">
         <caption class="sr-only">
-          Audit events, newest first. Page {{ page() }} of {{ totalPages() }}.
+          Audit events, newest first. {{ items().length }} loaded.
         </caption>
         <thead>
-          <tr class="border-b border-divider text-text-secondary">
-            <th scope="col" class="p-3 font-medium">Time</th>
-            <th scope="col" class="p-3 font-medium">Event</th>
-            <th scope="col" class="p-3 font-medium">Outcome</th>
-            <th scope="col" class="p-3 font-medium">Actor</th>
-            <th scope="col" class="p-3 font-medium">Entity</th>
+          <tr>
+            <th scope="col">Time</th>
+            <th scope="col">Event</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Actor</th>
+            <th scope="col">Entity</th>
           </tr>
         </thead>
         <tbody>
           @for (event of items(); track event.eventId) {
-            <tr class="border-b border-divider last:border-b-0 hover:bg-surface-hover">
-              <td class="p-3 align-top whitespace-nowrap"><app-utc-timestamp [value]="event.occurredAtUtc" /></td>
-              <td class="p-3 align-top">
+            <tr>
+              <td class="whitespace-nowrap"><app-utc-timestamp [value]="event.occurredAtUtc" /></td>
+              <td>
                 <a [routerLink]="['/admin/audit', event.eventId]">{{ event.eventType }}</a>
                 <div class="text-helper text-text-secondary">{{ event.category === 'security' ? 'Security' : 'Business' }}</div>
               </td>
-              <td class="p-3 align-top">
+              <td>
                 <span [class]="outcomeClass(event.outcome)">{{ outcomeLabel(event.outcome) }}</span>
               </td>
-              <td class="p-3 align-top break-all">
+              <td class="break-all">
                 @if (event.actorDisplay) {
                   {{ event.actorDisplay }}
                 } @else if (event.actorUserId) {
@@ -163,7 +165,7 @@
                   <span class="sr-only">No actor</span>
                 }
               </td>
-              <td class="p-3 align-top break-all">
+              <td class="break-all">
                 @if (entityText(event); as entity) {
                   {{ entity }}
                 } @else {
@@ -177,15 +179,25 @@
       </table>
     </div>
 
-    <app-pager
-      [page]="page()"
-      [totalPages]="totalPages()"
-      [totalCount]="totalCount()"
-      [pageSize]="pageSize()"
-      [loading]="loading()"
-      noun="events"
-      (pageChange)="goTo($event)"
-      (pageSizeChange)="setPageSize($event)"
-    />
+    <div class="infinite-scroll-footer">
+      @if (hasMore()) {
+        <div class="infinite-scroll-sentinel" appInfiniteScrollSentinel (reachedEnd)="loadMore()" aria-hidden="true"></div>
+      }
+      @if (errorMessage(); as message) {
+        <div class="alert alert-error w-full" role="alert">
+          <strong class="alert-title">More events not shown</strong>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="retryMore()">Try again</button>
+        </div>
+      } @else if (loading()) {
+        <p class="m-0 inline-flex items-center gap-2 text-compact text-text-secondary" role="status">
+          <span class="spinner" aria-hidden="true"></span>Loading more events…
+        </p>
+      } @else if (hasMore()) {
+        <button type="button" class="btn btn-secondary btn-sm" (click)="loadMore()">Load more events</button>
+      } @else {
+        <p class="m-0 text-helper text-text-secondary" role="status">All {{ items().length }} matching events loaded.</p>
+      }
+    </div>
   }
 </section>

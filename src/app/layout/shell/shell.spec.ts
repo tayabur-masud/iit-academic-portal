@@ -32,13 +32,14 @@ describe('Shell', () => {
 
   afterEach(() => http.verify());
 
-  function switcher(): HTMLSelectElement {
-    return page.querySelector<HTMLSelectElement>('#role-switcher')!;
+  function roleInputs(): HTMLInputElement[] {
+    return Array.from(page.querySelectorAll<HTMLInputElement>('input[name="active-role"]'));
   }
 
   async function chooseRole(role: string): Promise<void> {
-    switcher().value = role;
-    switcher().dispatchEvent(new Event('change'));
+    const input = roleInputs().find((item) => item.value === role)!;
+    input.checked = true;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
     await flushCsrf(http);
   }
 
@@ -51,10 +52,33 @@ describe('Shell', () => {
 
     const sidebar = page.querySelector('aside')!;
     expect(sidebar.lastElementChild).toBe(accountSection());
-    expect(accountSection().querySelector('#role-switcher')).not.toBeNull();
+    expect(roleInputs()).toHaveLength(2);
     expect(accountSection().textContent).toContain('Sign out');
     expect(page.querySelector('header')?.textContent).not.toContain('Sign out');
-    expect(page.querySelector('header #role-switcher')).toBeNull();
+    expect(page.querySelector('header input[name="active-role"]')).toBeNull();
+  });
+
+  it('opens account actions from a profile dropdown and closes on Escape or an outside click', async () => {
+    await render(context(['Teacher', 'Coordinator'], 'Teacher'));
+
+    const menu = page.querySelector<HTMLDetailsElement>('details.account-dropdown')!;
+    const trigger = menu.querySelector<HTMLElement>('summary')!;
+
+    expect(menu.open).toBe(false);
+    trigger.click();
+    expect(menu.open).toBe(true);
+    expect(menu.querySelectorAll('input[name="active-role"]')).toHaveLength(2);
+    expect(menu.textContent).toContain('Sign out');
+    expect(menu.querySelector<HTMLButtonElement>('.account-dropdown-item')).toMatchObject({ disabled: true });
+    expect(menu.textContent).toContain('My Profile');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(menu.open).toBe(false);
+
+    trigger.click();
+    expect(menu.open).toBe(true);
+    page.querySelector('main')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(menu.open).toBe(false);
   });
 
   it('always offers an explicit sign-out', async () => {
@@ -73,7 +97,7 @@ describe('Shell', () => {
     await render(context(['Student'], 'Student'));
 
     expect(page.querySelector('.badge')?.textContent).toContain('Role: Student');
-    expect(page.querySelector('#role-switcher')).toBeNull();
+    expect(roleInputs()).toHaveLength(0);
     expect(page.querySelector('nav')?.textContent).toContain('Dashboard');
   });
 
@@ -86,30 +110,36 @@ describe('Shell', () => {
     expect(page.querySelector('header')?.textContent).toContain('IIT Academic Portal');
   });
 
-  it('lists Configuration and audit history under the Admin module only', async () => {
+  it('lists Accounts, Teachers, Configuration, Notifications and audit history under the Admin module only', async () => {
     await render(context(['Admin', 'Teacher'], 'Admin'));
     const links = Array.from(page.querySelectorAll('nav a')).map((a) => [a.textContent?.trim(), a.getAttribute('href')]);
     expect(links).toEqual([
       ['Dashboard', '/admin'],
+      ['Accounts', '/admin/users'],
+      ['Teachers', '/admin/teachers'],
       ['Configuration', '/admin/configuration'],
+      ['Notifications', '/admin/notifications'],
       ['Audit history', '/admin/audit'],
     ]);
   });
 
-  it('shows no Configuration or audit navigation to other roles, even an Admin acting as another role', async () => {
+  it('shows no Accounts, Teachers, Configuration, Notifications or audit navigation to other roles, even an Admin acting as another role', async () => {
     await render(context(['Admin', 'Teacher'], 'Teacher'));
     const text = page.querySelector('nav')?.textContent;
+    expect(text).not.toContain('Accounts');
+    expect(text).not.toContain('Teachers');
     expect(text).not.toContain('Configuration');
+    expect(text).not.toContain('Notifications');
     expect(text).not.toContain('Audit');
   });
 
   it('offers only the assigned roles and marks the active one', async () => {
     await render(context(['Teacher', 'Coordinator'], 'Teacher'));
 
-    const options = Array.from(switcher().options).map((o) => o.value);
-    expect(options).toEqual(['Teacher', 'Coordinator']);
-    expect(switcher().value).toBe('Teacher');
-    expect(page.querySelector('label[for=role-switcher]')?.textContent).toContain('Active role');
+    const inputs = roleInputs();
+    expect(inputs.map((input) => input.value)).toEqual(['Teacher', 'Coordinator']);
+    expect(inputs.map((input) => input.checked)).toEqual([true, false]);
+    expect(page.querySelector('.account-role-group legend')?.textContent).toContain('Active role');
   });
 
   it('switches role through the service and opens the new role landing page', async () => {
@@ -139,7 +169,7 @@ describe('Shell', () => {
     fixture.detectChanges();
 
     expect(page.querySelector('[role=alert]')?.textContent).toContain('Role not switched');
-    expect(switcher().value).toBe('Teacher');
+    expect(roleInputs().find((input) => input.value === 'Teacher')?.checked).toBe(true);
     expect(TestBed.inject(AuthSession).activeRole()).toBe('Teacher');
   });
 });

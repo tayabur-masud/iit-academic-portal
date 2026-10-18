@@ -9,7 +9,7 @@ import { AuditEvent, AuditFilters, AuditPage, toUtcInstant } from './audit.model
 export class AuditApi {
   private readonly http = inject(HttpClient);
 
-  search(filters: AuditFilters, page: number, pageSize: number): Observable<AuditPage> {
+  search(filters: AuditFilters, cursor: string | null, pageSize: number): Observable<AuditPage> {
     const values: Record<string, string> = {
       fromUtc: toUtcInstant(filters.from),
       toUtc: toUtcInstant(filters.to),
@@ -20,11 +20,13 @@ export class AuditApi {
       entityType: filters.entityType.trim(),
       entityId: filters.entityId.trim(),
       correlationId: filters.correlationId.trim(),
-      page: String(page),
     };
 
     // Blank filters are left out so the request names only what was asked for.
     let params = new HttpParams().set('pageSize', pageSize);
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
     for (const [name, value] of Object.entries(values)) {
       if (value) {
         params = params.set(name, value);
