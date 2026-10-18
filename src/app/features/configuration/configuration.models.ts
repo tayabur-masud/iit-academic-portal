@@ -6,6 +6,7 @@ export interface ConfigurationItem {
   code?: string;
   type?: string;
   address?: string;
+  creditsToBeCompleted?: number;
   degreeId?: string;
   startingSemesterId?: string;
   academicSessionId?: string;
@@ -61,6 +62,7 @@ export interface ResourceDescriptor {
   hasCode: boolean;
   hasType: boolean;
   hasAddress: boolean;
+  hasCredits: boolean;
   references: ReferenceField[];
   /** The query parameter that limits the list to one parent, if the resource has a parent. */
   parentFilter?: 'divisionId' | 'districtId';
@@ -70,7 +72,7 @@ export interface ResourceDescriptor {
 
 export const INSTITUTION_TYPES = ['School', 'College', 'University'] as const;
 
-const base = { hasCode: false, hasType: false, hasAddress: false, references: [] as ReferenceField[] };
+const base = { hasCode: false, hasType: false, hasAddress: false, hasCredits: false, references: [] as ReferenceField[] };
 
 export const RESOURCES: ResourceDescriptor[] = [
   {
@@ -120,8 +122,9 @@ export const RESOURCES: ResourceDescriptor[] = [
     group: 'IIT academics',
     label: 'Degrees',
     singular: 'degree',
-    description: 'The programs IIT offers, with an optional code.',
+    description: 'The programs IIT offers, with an optional code and required credit total.',
     hasCode: true,
+    hasCredits: true,
   },
   {
     ...base,
@@ -224,6 +227,7 @@ export interface ConfigurationRequest {
   code?: string;
   type?: string;
   address?: string;
+  creditsToBeCompleted?: number;
   degreeId?: string;
   startingSemesterId?: string;
   academicSessionId?: string;

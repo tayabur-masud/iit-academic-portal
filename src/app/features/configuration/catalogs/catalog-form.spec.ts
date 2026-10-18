@@ -102,14 +102,80 @@ describe('CatalogForm', () => {
       fixture.detectChanges();
       type('#name', '  Bachelor of IT ');
       type('#code', ' bit ');
+      type('#creditsToBeCompleted', '120');
 
       submit();
       const request = await writeRequest('POST', 'degrees');
-      expect(request.request.body).toEqual({ name: 'Bachelor of IT', isActive: true, code: 'bit' });
-      request.flush(item('1', 'Bachelor of IT', { code: 'bit' }), { status: 201, statusText: 'Created' });
+      expect(request.request.body).toEqual({ name: 'Bachelor of IT', isActive: true, code: 'bit', creditsToBeCompleted: 120 });
+      request.flush(item('1', 'Bachelor of IT', { code: 'bit', creditsToBeCompleted: 120 }), { status: 201, statusText: 'Created' });
       await settle();
 
       expect(TestBed.inject(Router).url).toBe('/admin/configuration/degrees');
+    });
+
+    it('requires positive credits to be completed and sends the Degree value as a number', async () => {
+      await open('degrees');
+      await settle();
+      fixture.detectChanges();
+
+      const credits = page.querySelector<HTMLInputElement>('#creditsToBeCompleted')!;
+      expect(credits.type).toBe('number');
+      expect(credits.required).toBe(true);
+      expect(credits.min).toBe('0.01');
+      expect(credits.step).toBe('0.01');
+      type('#name', 'Bachelor of IT');
+
+      submit();
+      await settle();
+      fixture.detectChanges();
+      expect(page.querySelector('#creditsToBeCompleted-error')?.textContent).toContain('positive');
+      http.expectNone(`${ROOT}/degrees`);
+
+      type('#creditsToBeCompleted', '0');
+      submit();
+      await settle();
+      fixture.detectChanges();
+      expect(page.querySelector('#creditsToBeCompleted-error')?.textContent).toContain('positive');
+      http.expectNone(`${ROOT}/degrees`);
+
+      type('#creditsToBeCompleted', '-1');
+      submit();
+      await settle();
+      fixture.detectChanges();
+      expect(page.querySelector('#creditsToBeCompleted-error')?.textContent).toContain('positive');
+      http.expectNone(`${ROOT}/degrees`);
+
+      type('#creditsToBeCompleted', '1.234');
+      submit();
+      await settle();
+      fixture.detectChanges();
+      expect(page.querySelector('#creditsToBeCompleted-error')?.textContent).toContain('two decimal places');
+      http.expectNone(`${ROOT}/degrees`);
+
+      type('#creditsToBeCompleted', '120.50');
+      submit();
+      const request = await writeRequest('POST', 'degrees');
+      expect(request.request.body).toEqual({ name: 'Bachelor of IT', isActive: true, code: '', creditsToBeCompleted: 120.5 });
+      request.flush(item('degree-1', 'Bachelor of IT', { creditsToBeCompleted: 120.5 }), { status: 201, statusText: 'Created' });
+      await settle();
+    });
+
+    it('loads and updates the Degree credit total', async () => {
+      await open('degrees', 'degree-1');
+      await respond(lookup('degrees/degree-1'), item('degree-1', 'Bachelor of IT', { code: 'BIT', creditsToBeCompleted: 120.5 }));
+
+      expect(page.querySelector<HTMLInputElement>('#creditsToBeCompleted')?.value).toBe('120.5');
+      type('#creditsToBeCompleted', '140.25');
+      submit();
+      const request = await writeRequest('PUT', 'degrees/degree-1');
+      expect(request.request.body).toEqual({
+        name: 'Bachelor of IT',
+        isActive: true,
+        code: 'BIT',
+        creditsToBeCompleted: 140.25,
+      });
+      request.flush(item('degree-1', 'Bachelor of IT', { code: 'BIT', creditsToBeCompleted: 140.25 }));
+      await settle();
     });
 
     it('shows the service field errors against the field and keeps what was typed', async () => {
@@ -118,6 +184,7 @@ describe('CatalogForm', () => {
       fixture.detectChanges();
       type('#name', 'Duplicate');
       type('#code', 'D1');
+      type('#creditsToBeCompleted', '120');
 
       submit();
       (await writeRequest('POST', 'degrees')).flush(
@@ -158,6 +225,7 @@ describe('CatalogForm', () => {
 
       expect(page.querySelector('#code')).toBeNull();
       expect(page.querySelector('#type')).toBeNull();
+      expect(page.querySelector('#creditsToBeCompleted')).toBeNull();
     });
 
     it('requires one of the three institution types and sends the address trimmed', async () => {
@@ -183,7 +251,7 @@ describe('CatalogForm', () => {
 
     it('loads a record for editing and saves only through PUT', async () => {
       await open('degrees', 'd1');
-      await respond(lookup('degrees/d1'), item('d1', 'BSc', { code: 'B' }));
+      await respond(lookup('degrees/d1'), item('d1', 'BSc', { code: 'B', creditsToBeCompleted: 120 }));
 
       expect(page.querySelector('h1')?.textContent).toContain('Edit degree');
       expect(page.querySelector<HTMLInputElement>('#name')?.value).toBe('BSc');
@@ -192,14 +260,14 @@ describe('CatalogForm', () => {
       type('#name', 'BSc in IT');
       submit();
       const request = await writeRequest('PUT', 'degrees/d1');
-      expect(request.request.body).toEqual({ name: 'BSc in IT', isActive: true, code: 'B' });
-      request.flush(item('d1', 'BSc in IT'));
+      expect(request.request.body).toEqual({ name: 'BSc in IT', isActive: true, code: 'B', creditsToBeCompleted: 120 });
+      request.flush(item('d1', 'BSc in IT', { creditsToBeCompleted: 120 }));
       await settle();
     });
 
     it('deactivates by turning Active off and explains an inactive record', async () => {
       await open('degrees', 'd1');
-      await respond(lookup('degrees/d1'), item('d1', 'BSc', { isActive: false }));
+      await respond(lookup('degrees/d1'), item('d1', 'BSc', { isActive: false, creditsToBeCompleted: 120 }));
       expect(page.textContent).toContain('This degree is inactive');
 
       const active = page.querySelector<HTMLInputElement>('#isActive')!;
@@ -208,7 +276,7 @@ describe('CatalogForm', () => {
       submit();
       const request = await writeRequest('PUT', 'degrees/d1');
       expect(request.request.body.isActive).toBe(true);
-      request.flush(item('d1', 'BSc'));
+      request.flush(item('d1', 'BSc', { creditsToBeCompleted: 120 }));
       await settle();
     });
 
@@ -264,7 +332,7 @@ describe('CatalogForm', () => {
   describe('delete', () => {
     async function openExisting(extra: Partial<ConfigurationItem> = {}): Promise<void> {
       await open('degrees', 'd1');
-      await respond(lookup('degrees/d1'), item('d1', 'BSc', extra));
+      await respond(lookup('degrees/d1'), item('d1', 'BSc', { creditsToBeCompleted: 120, ...extra }));
     }
 
     it('asks for confirmation, deletes, and returns to the list', async () => {

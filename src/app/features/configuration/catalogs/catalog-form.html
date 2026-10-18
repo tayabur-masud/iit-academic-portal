@@ -75,6 +75,28 @@
         </div>
       }
 
+      @if (d.hasCredits) {
+        <div class="field">
+          <label class="field-label" for="creditsToBeCompleted">Credits to be completed</label>
+          <input
+            id="creditsToBeCompleted"
+            class="field-input"
+            type="number"
+            min="0.01"
+            max="999999.99"
+            step="0.01"
+            inputmode="decimal"
+            formControlName="creditsToBeCompleted"
+            required
+            [attr.aria-invalid]="errorsFor('creditsToBeCompleted').length > 0"
+            [attr.aria-describedby]="describedBy('creditsToBeCompleted')"
+          />
+          @for (message of errorsFor('creditsToBeCompleted'); track message) {
+            <p class="field-error" id="creditsToBeCompleted-error">{{ message }}</p>
+          }
+        </div>
+      }
+
       @if (d.hasType) {
         <div class="field">
           <label class="field-label" for="type">Type</label>

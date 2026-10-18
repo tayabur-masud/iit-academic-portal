@@ -21,6 +21,7 @@ const FIELDS = [
   'code',
   'type',
   'address',
+  'creditsToBeCompleted',
   'degreeId',
   'startingSemesterId',
   'academicSessionId',
@@ -56,6 +57,7 @@ export class CatalogForm {
     code: [''],
     type: [''],
     address: [''],
+    creditsToBeCompleted: [''],
     isActive: [true],
     degreeId: [''],
     startingSemesterId: [''],
@@ -203,6 +205,13 @@ export class CatalogForm {
     if (descriptor.hasType && !v.type) {
       errors['type'] = ['Select a type.'];
     }
+    if (descriptor.hasCredits) {
+      const raw = String(v.creditsToBeCompleted).trim();
+      const value = Number(raw);
+      if (!/^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/.test(raw) || !Number.isFinite(value) || value <= 0 || value > 999_999.99) {
+        errors['creditsToBeCompleted'] = ['Enter a positive credit total with no more than two decimal places.'];
+      }
+    }
     for (const reference of descriptor.references) {
       if (!v[reference.name]) {
         errors[reference.name] = [`Select a ${reference.label.toLowerCase()}.`];
@@ -225,6 +234,9 @@ export class CatalogForm {
     }
     if (descriptor.hasAddress) {
       body.address = v.address.trim();
+    }
+    if (descriptor.hasCredits) {
+      body.creditsToBeCompleted = Number(v.creditsToBeCompleted);
     }
     for (const reference of descriptor.references) {
       body[reference.name] = v[reference.name];
@@ -314,6 +326,7 @@ export class CatalogForm {
           code: item.code ?? '',
           type: item.type ?? '',
           address: item.address ?? '',
+          creditsToBeCompleted: item.creditsToBeCompleted?.toString() ?? '',
           isActive: item.isActive,
           degreeId: item.degreeId ?? '',
           startingSemesterId: item.startingSemesterId ?? '',
