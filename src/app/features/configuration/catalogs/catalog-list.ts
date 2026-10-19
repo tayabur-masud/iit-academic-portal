@@ -11,6 +11,7 @@ import {
   ConfigurationStatus,
   ResourceDescriptor,
   descriptorFor,
+  INSTITUTION_TYPES,
   RESOURCES,
 } from '../configuration.models';
 
@@ -37,6 +38,8 @@ export class CatalogList {
   protected readonly status = new FormControl<ConfigurationStatus>('active', { nonNullable: true });
   protected readonly division = new FormControl('', { nonNullable: true });
   protected readonly district = new FormControl('', { nonNullable: true });
+  protected readonly degree = new FormControl('', { nonNullable: true });
+  protected readonly type = new FormControl('', { nonNullable: true });
 
   protected readonly items = signal<ConfigurationItem[]>([]);
   protected readonly cursor = signal<string | null>(null);
@@ -52,12 +55,19 @@ export class CatalogList {
   protected readonly names = signal<Record<string, Record<string, string>>>({});
   protected readonly divisions = signal<ConfigurationItem[]>([]);
   protected readonly districts = signal<ConfigurationItem[]>([]);
+  protected readonly degrees = signal<ConfigurationItem[]>([]);
+
+  /** The type filter's choices, for a resource that has a type. */
+  protected readonly types = computed<readonly string[]>(() => this.descriptor()?.typeOptions ?? INSTITUTION_TYPES);
 
   protected readonly columns = computed(() => {
     const descriptor = this.descriptor();
     return {
       code: !!descriptor?.hasCode,
+      /** A required code identifies the record, so it is the first column and the link to it. */
+      codeFirst: !!descriptor?.codeRequired,
       type: !!descriptor?.hasType,
+      credits: !!descriptor?.isCourse,
       references: descriptor?.references ?? [],
     };
   });
@@ -80,6 +90,18 @@ export class CatalogList {
     return (item as unknown as Record<string, string | undefined>)[name];
   }
 
+  /** A course's credit hours with its theory and lab split when given, for example "3 (2 theory + 1 lab)". */
+  protected credits(item: ConfigurationItem): string {
+    if (item.creditHours === undefined) {
+      return '';
+    }
+    const parts = [
+      item.theoryCreditHours !== undefined ? `${item.theoryCreditHours} theory` : '',
+      item.labCreditHours !== undefined ? `${item.labCreditHours} lab` : '',
+    ].filter(Boolean);
+    return parts.length > 0 ? `${item.creditHours} (${parts.join(' + ')})` : `${item.creditHours}`;
+  }
+
   protected applyFilters(): void {
     this.cursor.set(null);
     this.hasMore.set(false);
@@ -91,6 +113,8 @@ export class CatalogList {
     this.status.setValue('active');
     this.division.setValue('');
     this.district.setValue('');
+    this.degree.setValue('');
+    this.type.setValue('');
     this.districts.set([]);
     this.applyFilters();
   }
@@ -130,6 +154,8 @@ export class CatalogList {
     this.status.setValue('active');
     this.division.setValue('');
     this.district.setValue('');
+    this.degree.setValue('');
+    this.type.setValue('');
     this.districts.set([]);
     this.items.set([]);
     this.loaded.set(false);
@@ -161,6 +187,9 @@ export class CatalogList {
           if (slug === 'divisions') {
             this.divisions.set(all.filter((item) => item.isActive));
           }
+          if (slug === 'degrees' && descriptor.parentFilter === 'degreeId') {
+            this.degrees.set(all);
+          }
         } catch {
           // A missing name shows as "Unknown"; the list itself reports its own errors.
         }
@@ -183,9 +212,14 @@ export class CatalogList {
     this.loading.set(true);
     this.errorMessage.set(null);
     this.announcement.set(append ? `Loading more ${descriptor.label.toLowerCase()}…` : `Loading ${descriptor.label.toLowerCase()}…`);
-    const parentId = descriptor.cascadeFrom ? this.district.value : this.division.value;
+    const parentId = descriptor.cascadeFrom
+      ? this.district.value
+      : descriptor.parentFilter === 'degreeId'
+        ? this.degree.value
+        : this.division.value;
     this.filtered.set(
-      !!this.search.value.trim() || this.status.value !== 'active' || !!this.division.value || !!this.district.value,
+      !!this.search.value.trim() || this.status.value !== 'active' || !!this.division.value || !!this.district.value || !!this.degree.value ||
+        !!this.type.value,
     );
 
     try {
@@ -196,6 +230,7 @@ export class CatalogList {
           cursor,
           pageSize: 25,
           parentId: parentId || undefined,
+          type: this.type.value || undefined,
         }),
       );
       const loadedItems = append ? [...this.items(), ...result.items] : result.items;

@@ -59,13 +59,14 @@
 
       @if (d.hasCode) {
         <div class="field">
-          <label class="field-label" for="code">Code (optional)</label>
+          <label class="field-label" for="code">{{ d.codeRequired ? 'Code' : 'Code (optional)' }}</label>
           <input
             id="code"
             class="field-input"
             type="text"
             autocomplete="off"
             formControlName="code"
+            [attr.required]="d.codeRequired ? '' : null"
             [attr.aria-invalid]="errorsFor('code').length > 0"
             [attr.aria-describedby]="describedBy('code')"
           />
@@ -97,6 +98,42 @@
         </div>
       }
 
+      @if (d.isCourse) {
+        <fieldset class="field">
+          <legend class="field-label">Credit hours</legend>
+          <p class="field-help" id="credits-help">
+            Theory and lab are optional. Each can be up to the total; when both are given they must add up to the total.
+          </p>
+          <div class="grid gap-3 sm:grid-cols-3">
+            @for (credit of [
+              { name: 'creditHours', label: 'Total', required: true },
+              { name: 'theoryCreditHours', label: 'Theory (optional)', required: false },
+              { name: 'labCreditHours', label: 'Lab (optional)', required: false }
+            ]; track credit.name) {
+              <div class="flex flex-col gap-1.5">
+                <label class="field-label" [for]="credit.name">{{ credit.label }}</label>
+                <input
+                  class="field-input"
+                  type="number"
+                  step="0.01"
+                  inputmode="decimal"
+                  [id]="credit.name"
+                  [attr.min]="credit.required ? '0.01' : '0'"
+                  max="999999.99"
+                  [formControlName]="credit.name"
+                  [attr.required]="credit.required ? '' : null"
+                  [attr.aria-invalid]="errorsFor(credit.name).length > 0"
+                  [attr.aria-describedby]="'credits-help' + (errorsFor(credit.name).length > 0 ? ' ' + credit.name + '-error' : '')"
+                />
+                @for (message of errorsFor(credit.name); track message) {
+                  <p class="field-error" [id]="credit.name + '-error'">{{ message }}</p>
+                }
+              </div>
+            }
+          </div>
+        </fieldset>
+      }
+
       @if (d.hasType) {
         <div class="field">
           <label class="field-label" for="type">Type</label>
@@ -109,7 +146,7 @@
             [attr.aria-describedby]="describedBy('type')"
           >
             <option value="">Select a type</option>
-            @for (type of types; track type) {
+            @for (type of types(); track type) {
               <option [value]="type">{{ type }}</option>
             }
           </select>
@@ -188,6 +225,7 @@
               [id]="reference.name"
               class="field-input"
               [formControlName]="reference.name"
+              (change)="referencePicked(reference.name)"
               required
               [attr.aria-invalid]="errorsFor(reference.name).length > 0"
               [attr.aria-describedby]="describedBy(reference.name)"
@@ -202,6 +240,28 @@
             }
           </div>
         }
+      }
+
+      @if (d.isCourse) {
+        <div class="field">
+          <label class="field-label" for="prerequisiteCourseId">Prerequisite (optional)</label>
+          <p class="field-help" id="prerequisiteCourseId-help">An active course of the same degree that must come first.</p>
+          <select
+            id="prerequisiteCourseId"
+            class="field-input"
+            formControlName="prerequisiteCourseId"
+            [attr.aria-invalid]="errorsFor('prerequisiteCourseId').length > 0"
+            [attr.aria-describedby]="describedBy('prerequisiteCourseId', true)"
+          >
+            <option value="">{{ form.controls.degreeId.value ? 'No prerequisite' : 'Select a degree first' }}</option>
+            @for (course of prerequisiteChoices(); track course.id) {
+              <option [value]="course.id">{{ course.code }} · {{ course.name }}{{ course.isActive ? '' : ' (inactive)' }}</option>
+            }
+          </select>
+          @for (message of errorsFor('prerequisiteCourseId'); track message) {
+            <p class="field-error" id="prerequisiteCourseId-error">{{ message }}</p>
+          }
+        </div>
       }
 
       <div class="field">
@@ -245,7 +305,7 @@
       </section>
     }
 
-    @if (!isNew()) {
+    @if (!isNew() && d.canDelete !== false) {
       <section class="card mt-6 max-w-[40rem]" aria-labelledby="delete-title">
         <h2 id="delete-title">Delete this {{ d.singular }}</h2>
         <p>

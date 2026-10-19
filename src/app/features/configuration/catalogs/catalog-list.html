@@ -34,6 +34,18 @@
         </select>
       </div>
 
+      @if (d.hasType) {
+        <div class="field mb-0">
+          <label class="field-label" for="type-filter">Type</label>
+          <select id="type-filter" class="field-input" [formControl]="type" (change)="applyFilters()">
+            <option value="">All types</option>
+            @for (option of types(); track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </div>
+      }
+
       @if (d.parentFilter === 'divisionId' || d.cascadeFrom) {
         <div class="field mb-0">
           <label class="field-label" for="division-filter">Division</label>
@@ -41,6 +53,18 @@
             <option value="">All divisions</option>
             @for (division of divisions(); track division.id) {
               <option [value]="division.id">{{ division.name }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      @if (d.parentFilter === 'degreeId') {
+        <div class="field mb-0">
+          <label class="field-label" for="degree-filter">Degree</label>
+          <select id="degree-filter" class="field-input" [formControl]="degree" (change)="applyFilters()">
+            <option value="">All degrees</option>
+            @for (option of degrees(); track option.id) {
+              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
             }
           </select>
         </div>
@@ -111,12 +135,21 @@
           </caption>
           <thead>
             <tr>
-              <th scope="col">Name</th>
-              @if (columns().code) {
+              <!-- Where every record has a code (courses), the code leads and opens the record; otherwise the name does. -->
+              @if (columns().codeFirst) {
                 <th scope="col">Code</th>
+                <th scope="col">Name</th>
+              } @else {
+                <th scope="col">Name</th>
+                @if (columns().code) {
+                  <th scope="col">Code</th>
+                }
               }
               @if (columns().type) {
                 <th scope="col">Type</th>
+              }
+              @if (columns().credits) {
+                <th scope="col">Credit hours</th>
               }
               @for (reference of columns().references; track reference.name) {
                 <th scope="col">{{ reference.label }}</th>
@@ -127,14 +160,24 @@
           <tbody>
             @for (item of items(); track item.id) {
               <tr>
-                <th scope="row" class="text-left">
-                  <a [routerLink]="['/admin/configuration', d.slug, item.id]">{{ item.name }}</a>
-                </th>
-                @if (columns().code) {
-                  <td>{{ item.code ?? '' }}</td>
+                @if (columns().codeFirst) {
+                  <th scope="row" class="whitespace-nowrap text-left">
+                    <a [routerLink]="['/admin/configuration', d.slug, item.id]">{{ item.code }}</a>
+                  </th>
+                  <td>{{ item.name }}</td>
+                } @else {
+                  <th scope="row" class="text-left">
+                    <a [routerLink]="['/admin/configuration', d.slug, item.id]">{{ item.name }}</a>
+                  </th>
+                  @if (columns().code) {
+                    <td>{{ item.code ?? '' }}</td>
+                  }
                 }
                 @if (columns().type) {
                   <td>{{ item.type }}</td>
+                }
+                @if (columns().credits) {
+                  <td>{{ credits(item) }}</td>
                 }
                 @for (reference of columns().references; track reference.name) {
                   <td>{{ nameOf(reference.resource, referenceId(item, reference.name)) }}</td>
