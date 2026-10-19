@@ -71,6 +71,11 @@ export class UserApi {
     return this.http.post<CredentialSetupReissue>(`${ROOT}/${encodeURIComponent(userId)}/credential-setup-reissues`, {});
   }
 
+  /** Public: whether a setup link can still be used. Says nothing about the account; an unusable link is just `usable: false`. */
+  checkSetupLink(userId: string, proof: string): Observable<{ usable: boolean }> {
+    return this.http.post<{ usable: boolean }>('/api/auth/account-credential-setup-checks', { userId, proof });
+  }
+
   /** Public: sets the first password from the emailed link and activates the account. */
   completeSetup(body: AccountCredentialSetupRequest): Observable<void> {
     return this.http.post<void>('/api/auth/account-credential-setups', body);
