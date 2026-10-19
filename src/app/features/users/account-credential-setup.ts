@@ -9,6 +9,7 @@ import { fieldErrors, problemMessage } from '../../core/http/problem';
 import { AuthBrand } from '../../shared/auth-brand/auth-brand';
 import { PASSWORD_RULES } from '../auth/reset-password/reset-password';
 import { UserApi } from './user-api';
+import { PasswordToggle } from '../../shared/password-toggle/password-toggle';
 
 /** Shown for every link that cannot be used; deliberately the same whether the account was activated, the link expired, or it was replaced. */
 export const UNUSABLE_LINK_MESSAGE =
@@ -26,7 +27,7 @@ function passwordPolicy(control: AbstractControl<string>): ValidationErrors | nu
  */
 @Component({
   selector: 'app-account-credential-setup',
-  imports: [ReactiveFormsModule, RouterLink, AuthBrand],
+  imports: [ReactiveFormsModule, RouterLink, AuthBrand, PasswordToggle],
   templateUrl: './account-credential-setup.html',
 })
 export class AccountCredentialSetup implements OnInit {

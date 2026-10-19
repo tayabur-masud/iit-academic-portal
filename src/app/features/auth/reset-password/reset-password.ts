@@ -15,6 +15,7 @@ import { AuthApi } from '../../../core/auth/auth-api';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { fieldErrors, problemMessage } from '../../../core/http/problem';
 import { AuthBrand } from '../../../shared/auth-brand/auth-brand';
+import { PasswordToggle } from '../../../shared/password-toggle/password-toggle';
 
 /** The approved rule, mirrored for feedback; the service enforces it. */
 export const PASSWORD_RULES = [
@@ -29,7 +30,7 @@ function passwordPolicy(control: AbstractControl<string>): ValidationErrors | nu
 
 @Component({
   selector: 'app-reset-password',
-  imports: [ReactiveFormsModule, RouterLink, AuthBrand],
+  imports: [ReactiveFormsModule, RouterLink, AuthBrand, PasswordToggle],
   templateUrl: './reset-password.html',
 })
 export class ResetPassword implements OnInit {

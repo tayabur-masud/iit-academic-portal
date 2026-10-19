@@ -6,13 +6,14 @@ import { AuthSession } from '../../../core/auth/auth-session';
 import { SessionContext, landingWithin, routeForSession } from '../../../core/auth/auth.models';
 import { problemMessage } from '../../../core/http/problem';
 import { AuthBrand } from '../../../shared/auth-brand/auth-brand';
+import { PasswordToggle } from '../../../shared/password-toggle/password-toggle';
 
 const SIGN_IN_FAILED =
   'The email or password is incorrect. Check both and try again, or reset your password.';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, AuthBrand],
+  imports: [ReactiveFormsModule, RouterLink, AuthBrand, PasswordToggle],
   templateUrl: './login.html',
 })
 export class Login {
