@@ -110,24 +110,26 @@ describe('Shell', () => {
     expect(page.querySelector('header')?.textContent).toContain('IIT Academic Portal');
   });
 
-  it('lists Accounts, Teachers, Configuration, Notifications and audit history under the Admin module only', async () => {
+  it('lists Accounts, Teachers, Students, Configuration, Notifications and audit history under the Admin module only', async () => {
     await render(context(['Admin', 'Teacher'], 'Admin'));
     const links = Array.from(page.querySelectorAll('nav a')).map((a) => [a.textContent?.trim(), a.getAttribute('href')]);
     expect(links).toEqual([
       ['Dashboard', '/admin'],
       ['Accounts', '/admin/users'],
       ['Teachers', '/admin/teachers'],
+      ['Students', '/admin/students'],
       ['Configuration', '/admin/configuration'],
       ['Notifications', '/admin/notifications'],
       ['Audit history', '/admin/audit'],
     ]);
   });
 
-  it('shows no Accounts, Teachers, Configuration, Notifications or audit navigation to other roles, even an Admin acting as another role', async () => {
+  it('shows no Accounts, Teachers, Students, Configuration, Notifications or audit navigation to other roles, even an Admin acting as another role', async () => {
     await render(context(['Admin', 'Teacher'], 'Teacher'));
     const text = page.querySelector('nav')?.textContent;
     expect(text).not.toContain('Accounts');
     expect(text).not.toContain('Teachers');
+    expect(text).not.toContain('Students');
     expect(text).not.toContain('Configuration');
     expect(text).not.toContain('Notifications');
     expect(text).not.toContain('Audit');

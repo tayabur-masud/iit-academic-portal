@@ -72,6 +72,10 @@ export const routes: Routes = [
         { path: 'users', loadComponent: () => import('./features/users/user-list').then((m) => m.UserList), title: `Accounts | ${TITLE}` },
         { path: 'users/new', loadComponent: () => import('./features/users/user-provisioning').then((m) => m.UserProvisioning), title: `Add account | ${TITLE}` },
         { path: 'users/:userId', loadComponent: () => import('./features/users/user-maintenance').then((m) => m.UserMaintenance), title: `Account | ${TITLE}` },
+        // Loaded on demand. "new" comes before ":admissionId" so it is never read as an admission identifier.
+        { path: 'students', loadComponent: () => import('./features/students/student-list').then((m) => m.StudentList), title: `Students | ${TITLE}` },
+        { path: 'students/new', loadComponent: () => import('./features/students/student-form').then((m) => m.StudentForm), title: `Add admission | ${TITLE}` },
+        { path: 'students/:admissionId', loadComponent: () => import('./features/students/student-form').then((m) => m.StudentForm), title: `Admission | ${TITLE}` },
         { path: 'teachers', component: TeacherList, title: `Teachers | ${TITLE}` },
         { path: 'teachers/new', component: TeacherForm, title: `Add teacher | ${TITLE}` },
         { path: 'teachers/:id', component: TeacherForm, title: `Edit teacher | ${TITLE}` },

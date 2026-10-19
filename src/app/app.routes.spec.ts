@@ -33,6 +33,21 @@ describe('Configuration routes', () => {
     expect(await navigate(url, admin)).toBe(url),
   );
 
+  it.each(['/admin/students', '/admin/students/new', '/admin/students/0b1e5c3a-0000-4000-8000-000000000009'])(
+    'opens student page %s for the active Admin',
+    async (url) => expect(await navigate(url, admin)).toBe(url),
+  );
+
+  it.each(
+    (['Student', 'Teacher', 'Coordinator'] as const).flatMap((role) =>
+      ['/admin/students', '/admin/students/new'].map((url) => [role, url] as const),
+    ),
+  )('denies an active %s direct navigation to %s', async (role, url) => {
+    const session: SessionContext = { availableRoles: [role], activeRole: role };
+
+    expect(await navigate(url, session)).toBe('/unauthorized');
+  });
+
   it.each(['/admin/users', '/admin/users/new', '/admin/users/3f0c1a2b-user'])('opens account page %s for the active Admin', async (url) =>
     expect(await navigate(url, admin)).toBe(url),
   );

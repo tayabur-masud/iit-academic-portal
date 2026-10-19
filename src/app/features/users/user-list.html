@@ -4,16 +4,14 @@
   <span>Accounts</span>
 </nav>
 
-<div class="flex flex-wrap items-start justify-between gap-3">
-  <div>
-    <h1>Accounts</h1>
-    <p class="text-text-secondary">
-      Find any portal account, check its status and roles, and keep its access up to date. Teacher details stay in
-      <a routerLink="/admin/teachers">Teachers</a>.
-    </p>
-  </div>
-  <a class="btn btn-primary" routerLink="/admin/users/new">Add account</a>
+<div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+  <h1 class="mb-0">Accounts</h1>
+  <a class="btn btn-primary shrink-0" routerLink="/admin/users/new">Add account</a>
 </div>
+<p class="text-text-secondary">
+  Find any portal account, check its status and roles, and keep its access up to date. Teacher details stay in
+  <a routerLink="/admin/teachers">Teachers</a>.
+</p>
 
 @if (notice(); as message) {
   <div class="alert alert-success" role="status">

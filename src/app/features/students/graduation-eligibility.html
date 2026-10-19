@@ -1,0 +1,58 @@
+<section class="card mt-6 max-w-[48rem]" aria-labelledby="eligibility-title" [attr.aria-busy]="loading()">
+  <h2 id="eligibility-title">Graduation eligibility</h2>
+  <p class="text-text-secondary">
+    Worked out automatically for this program only. Credits from the student's other admissions do not count. This check never blocks
+    result calculation or publication, and there is no clearance step.
+  </p>
+
+  @if (loading() && !result()) {
+    <p class="flex items-center gap-2 text-text-secondary" role="status">
+      <span class="spinner" aria-hidden="true"></span>
+      Checking eligibility…
+    </p>
+  } @else if (errorMessage(); as message) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">Eligibility not shown</strong>
+      <p>{{ message }}</p>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
+    </div>
+  } @else if (result(); as current) {
+    @if (current.eligible) {
+      <div class="alert alert-success" role="status">
+        <strong class="alert-title">Eligible to graduate</strong>
+        <p class="mb-0">Every requirement for this program is met.</p>
+      </div>
+    } @else {
+      <div class="alert alert-warning" role="status">
+        <strong class="alert-title">Not eligible yet</strong>
+        <p class="mb-0">The requirements marked below are not met or cannot be checked yet.</p>
+      </div>
+    }
+
+    @if (current.requiredCredits !== undefined || current.completedCredits !== undefined) {
+      <p>
+        Credits:
+        <strong>{{ current.completedCredits !== undefined ? (current.completedCredits | number: '1.0-2') : 'not available' }}</strong>
+        completed of
+        <strong>{{ current.requiredCredits !== undefined ? (current.requiredCredits | number: '1.0-2') : 'unknown' }}</strong>
+        required.
+      </p>
+    }
+
+    <ul class="m-0 list-none p-0">
+      @for (requirement of current.requirements; track requirement.requirement) {
+        <li class="flex flex-wrap items-baseline gap-2 py-1">
+          <span
+            class="badge"
+            [class.badge-success]="requirement.status === 'Met'"
+            [class.badge-error]="requirement.status === 'NotMet'"
+          >
+            {{ requirement.status === 'Met' ? 'Met' : requirement.status === 'NotMet' ? 'Not met' : 'Unavailable' }}
+          </span>
+          <strong>{{ labels[requirement.requirement] }}:</strong>
+          <span>{{ requirement.message }}</span>
+        </li>
+      }
+    </ul>
+  }
+</section>

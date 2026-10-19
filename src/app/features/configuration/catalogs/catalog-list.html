@@ -5,13 +5,11 @@
     <span>{{ d.label }}</span>
   </nav>
 
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <h1>{{ d.label }}</h1>
-      <p class="max-w-[48rem] text-text-secondary">{{ d.description }}</p>
-    </div>
-    <a class="btn btn-primary" [routerLink]="['/admin/configuration', d.slug, 'new']">New {{ d.singular }}</a>
+  <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="mb-0">{{ d.label }}</h1>
+    <a class="btn btn-primary shrink-0" [routerLink]="['/admin/configuration', d.slug, 'new']">New {{ d.singular }}</a>
   </div>
+  <p class="text-text-secondary">{{ d.description }}</p>
 
   @if (notice(); as message) {
     <div class="alert alert-success" role="status">

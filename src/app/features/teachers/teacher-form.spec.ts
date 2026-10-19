@@ -212,7 +212,8 @@ describe('TeacherForm', () => {
       await open('t1', teacher({ accountStatus: 'PendingCredentialSetup' }));
 
       expect(page.textContent).toContain('Pending setup');
-      expect(page.textContent).toContain('cannot sign in yet');
+      expect(page.textContent).toContain('cannot sign in until the teacher opens the setup email');
+      expect(page.querySelector('a[href="/admin/users/u1"]')?.textContent).toContain('open this account in Accounts');
     });
 
     it('shows a not-found teacher without a form', async () => {

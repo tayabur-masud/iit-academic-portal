@@ -1,0 +1,481 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin">Admin</a>
+  <span aria-hidden="true"> / </span>
+  <a routerLink="/admin/students">Students</a>
+  <span aria-hidden="true"> / </span>
+  <span>{{ isNew() ? 'Add admission' : 'Admission' }}</span>
+</nav>
+
+<h1>{{ isNew() ? 'Add admission' : (admission()?.profile?.applicantName ?? 'Admission') }}</h1>
+<p class="sr-only" role="status">{{ announcement() }}</p>
+
+@if (loading()) {
+  <p class="flex items-center gap-2 text-text-secondary">
+    <span class="spinner" aria-hidden="true"></span>
+    Loading…
+  </p>
+} @else if (loadError(); as message) {
+  <div class="alert alert-error" role="alert">
+    <strong class="alert-title">Not shown</strong>
+    <p>{{ message }}</p>
+    <p class="mb-0"><a routerLink="/admin/students">Back to students</a></p>
+  </div>
+} @else {
+  @if (notice(); as message) {
+    <div class="alert alert-success max-w-[48rem]" role="status">
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  }
+
+  @if (isNew()) {
+    <div class="alert alert-info max-w-[48rem]" role="note">
+      <strong class="alert-title">Typed data only</strong>
+      <p class="mb-0">
+        Enter the paper form's details. The photograph, attachments, declaration, and signature stay with the paper file and are not
+        uploaded. You never set or see a password.
+      </p>
+    </div>
+  }
+
+  @if (admission(); as current) {
+    <section class="card max-w-[48rem]" aria-labelledby="account-title">
+      <h2 id="account-title">Student account</h2>
+      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
+        <dt class="font-medium text-text-secondary">Email</dt>
+        <dd class="m-0 break-all">{{ current.profile.email }}</dd>
+        <dt class="font-medium text-text-secondary">Account status</dt>
+        <dd class="m-0">
+          <span
+            class="badge"
+            [class.badge-success]="current.profile.accountStatus === 'Active'"
+            [class.badge-error]="current.profile.accountStatus === 'Deactivated'"
+          >
+            {{ statusLabel(current.profile.accountStatus) }}
+          </span>
+          <a class="ml-2" [routerLink]="['/admin/users', current.profile.userId]">Manage the account</a>
+        </dd>
+      </dl>
+      @if (current.otherAdmissions.length > 0) {
+        <h3 class="mt-4 text-heading font-semibold">Other programs of this student</h3>
+        <ul class="mb-0 pl-6">
+          @for (other of current.otherAdmissions; track other.id) {
+            <li>
+              <a [routerLink]="['/admin/students', other.id]">{{ other.degreeName }} · {{ other.batchName }}</a>
+              @if (other.registrationNumber) {
+                <span class="text-text-secondary"> (registration {{ other.registrationNumber }})</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  @if (errorMessage(); as message) {
+    <div class="alert alert-error mt-6 max-w-[48rem]" role="alert">
+      <strong class="alert-title">Not saved</strong>
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  }
+
+  <form class="mt-6 max-w-[48rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+    @if (isNew()) {
+      <fieldset class="card">
+        <legend class="text-heading font-semibold">Applicant email</legend>
+        <div class="field mb-0">
+          <label class="field-label" for="email">Email address</label>
+          <p class="field-help" id="email-help">
+            Not on the paper form; ask the applicant. It becomes the Student's sign-in address. A returning student's existing email reuses their account.
+          </p>
+          <input
+            id="email"
+            class="field-input"
+            type="email"
+            autocomplete="off"
+            formControlName="email"
+            (blur)="checkEmail()"
+            [attr.aria-invalid]="errorsFor('email').length > 0"
+            [attr.aria-describedby]="describedBy('email', true)"
+          />
+          @for (message of errorsFor('email'); track message) {
+            <p class="field-error" id="email-error">{{ message }}</p>
+          }
+        </div>
+        @if (lookup(); as found) {
+          @switch (found.status) {
+            @case ('New') {
+              <p class="field-help mb-0 mt-2" role="status">A new Student account will be created and a setup email requested.</p>
+            }
+            @case ('ExistingStudent') {
+              <div class="alert alert-info mb-0 mt-3" role="status">
+                <strong class="alert-title">Returning student</strong>
+                <p class="mb-0">
+                  This email already has a Student account. The new admission is added to it, no new setup email is sent, and the shared
+                  profile below was filled in from the existing record; changes to it apply to every admission.
+                  @if (found.profile?.admissions?.length) {
+                    Existing programs:
+                    @for (other of found.profile!.admissions; track other.id; let last = $last) {
+                      {{ other.degreeName }} · {{ other.batchName }}{{ last ? '.' : ', ' }}
+                    }
+                  }
+                </p>
+              </div>
+            }
+            @case ('NotStudentAccount') {
+              <div class="alert alert-warning mb-0 mt-3" role="alert">
+                <strong class="alert-title">Not a Student account</strong>
+                <p class="mb-0">This email belongs to a staff account. Use a different email; accounts are never merged.</p>
+              </div>
+            }
+          }
+        }
+      </fieldset>
+    }
+
+    <fieldset class="card mt-6">
+      <legend class="text-heading font-semibold">Program admission</legend>
+      <div class="grid gap-3 md:grid-cols-2">
+        <div class="field">
+          <label class="field-label" for="degreeId">Degree</label>
+          <select
+            id="degreeId"
+            class="field-input"
+            formControlName="degreeId"
+            (change)="degreePicked()"
+            [attr.aria-invalid]="errorsFor('degreeId').length > 0"
+            [attr.aria-describedby]="describedBy('degreeId')"
+          >
+            <option value="">Select a degree</option>
+            @for (option of degreeChoices(); track option.id) {
+              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+            }
+          </select>
+          @for (message of errorsFor('degreeId'); track message) {
+            <p class="field-error" id="degreeId-error">{{ message }}</p>
+          }
+        </div>
+        <div class="field">
+          <label class="field-label" for="batchId">Batch</label>
+          <select
+            id="batchId"
+            class="field-input"
+            formControlName="batchId"
+            [attr.aria-invalid]="errorsFor('batchId').length > 0"
+            [attr.aria-describedby]="describedBy('batchId')"
+          >
+            <option value="">{{ selectedDegree() ? 'Select a batch' : 'Select a degree first' }}</option>
+            @for (option of batchChoices(); track option.id) {
+              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+            }
+          </select>
+          @for (message of errorsFor('batchId'); track message) {
+            <p class="field-error" id="batchId-error">{{ message }}</p>
+          }
+        </div>
+        <div class="field">
+          <label class="field-label" for="admissionSerialNumber">Admission test serial number</label>
+          <input
+            id="admissionSerialNumber"
+            class="field-input"
+            type="text"
+            autocomplete="off"
+            formControlName="admissionSerialNumber"
+            [attr.aria-invalid]="errorsFor('admissionSerialNumber').length > 0"
+            [attr.aria-describedby]="describedBy('admissionSerialNumber')"
+          />
+          @for (message of errorsFor('admissionSerialNumber'); track message) {
+            <p class="field-error" id="admissionSerialNumber-error">{{ message }}</p>
+          }
+        </div>
+        <div class="field">
+          <label class="field-label" for="admissionExamRoll">Admission test roll (Exam Roll)</label>
+          <input
+            id="admissionExamRoll"
+            class="field-input"
+            type="text"
+            autocomplete="off"
+            formControlName="admissionExamRoll"
+            [attr.aria-invalid]="errorsFor('admissionExamRoll').length > 0"
+            [attr.aria-describedby]="describedBy('admissionExamRoll')"
+          />
+          @for (message of errorsFor('admissionExamRoll'); track message) {
+            <p class="field-error" id="admissionExamRoll-error">{{ message }}</p>
+          }
+        </div>
+        <div class="field mb-0">
+          <label class="field-label" for="classRoll">Class roll (optional)</label>
+          <input
+            id="classRoll"
+            class="field-input"
+            type="text"
+            autocomplete="off"
+            formControlName="classRoll"
+            [attr.aria-invalid]="errorsFor('classRoll').length > 0"
+            [attr.aria-describedby]="describedBy('classRoll')"
+          />
+          @for (message of errorsFor('classRoll'); track message) {
+            <p class="field-error" id="classRoll-error">{{ message }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="card mt-6">
+      <legend class="text-heading font-semibold">Hall and registration</legend>
+      <p class="field-help">Usually assigned after admission. Record either one whenever it is known; both are needed for graduation.</p>
+      <div class="grid gap-3 md:grid-cols-2">
+        <div class="field mb-0">
+          <label class="field-label" for="assignedHallId">Assigned hall</label>
+          <select
+            id="assignedHallId"
+            class="field-input"
+            formControlName="assignedHallId"
+            [attr.aria-invalid]="errorsFor('assignedHallId').length > 0"
+            [attr.aria-describedby]="describedBy('assignedHallId')"
+          >
+            <option value="">Not assigned yet</option>
+            @for (option of hallChoices(); track option.id) {
+              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+            }
+          </select>
+          @for (message of errorsFor('assignedHallId'); track message) {
+            <p class="field-error" id="assignedHallId-error">{{ message }}</p>
+          }
+        </div>
+        <div class="field mb-0">
+          <label class="field-label" for="registrationNumber">Registration number</label>
+          <input
+            id="registrationNumber"
+            class="field-input"
+            type="text"
+            autocomplete="off"
+            formControlName="registrationNumber"
+            [attr.aria-invalid]="errorsFor('registrationNumber').length > 0"
+            [attr.aria-describedby]="describedBy('registrationNumber')"
+          />
+          @for (message of errorsFor('registrationNumber'); track message) {
+            <p class="field-error" id="registrationNumber-error">{{ message }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="card mt-6">
+      <legend class="text-heading font-semibold">Applicant</legend>
+      @if (!isNew() && (admission()?.otherAdmissions?.length ?? 0) > 0) {
+        <p class="field-help">These details are shared by all of this student's admissions.</p>
+      }
+      <div class="grid gap-3 md:grid-cols-2">
+        @for (f of [
+          { key: 'applicantName', label: 'Applicant name', type: 'text' },
+          { key: 'applicantMobile', label: 'Mobile number', type: 'tel' },
+          { key: 'fatherName', label: "Father's name (optional)", type: 'text' },
+          { key: 'motherName', label: "Mother's name (optional)", type: 'text' },
+          { key: 'dateOfBirth', label: 'Date of birth (optional)', type: 'date' },
+          { key: 'placeOfBirth', label: 'Place of birth (optional)', type: 'text' },
+          { key: 'maritalStatus', label: 'Marital status (optional)', type: 'text' },
+          { key: 'nationality', label: 'Nationality (optional)', type: 'text' }
+        ]; track f.key) {
+          <div class="field">
+            <label class="field-label" [for]="f.key">{{ f.label }}</label>
+            <input
+              class="field-input"
+              autocomplete="off"
+              [id]="f.key"
+              [type]="f.type"
+              [formControlName]="f.key"
+              [attr.aria-invalid]="errorsFor(f.key).length > 0"
+              [attr.aria-describedby]="describedBy(f.key)"
+            />
+            @for (message of errorsFor(f.key); track message) {
+              <p class="field-error" [id]="f.key + '-error'">{{ message }}</p>
+            }
+          </div>
+        }
+      </div>
+    </fieldset>
+
+    @for (kind of ['mailing', 'permanent']; track kind) {
+      @let key = kind === 'mailing' ? 'mailingAddress' : 'permanentAddress';
+      @let k = kind === 'mailing' ? 'mailing' : 'permanent';
+      <fieldset class="card mt-6" [formGroupName]="k">
+        <legend class="text-heading font-semibold">{{ kind === 'mailing' ? 'Mailing address' : 'Permanent address' }} (optional)</legend>
+        <div class="grid gap-3 md:grid-cols-3">
+          <div class="field">
+            <label class="field-label" [for]="kind + '-divisionId'">Division</label>
+            <select class="field-input" formControlName="divisionId" [id]="kind + '-divisionId'" (change)="divisionPicked(k)">
+              <option value="">Select a division</option>
+              @for (option of geography(divisions(), k, 'divisionId'); track option.id) {
+                <option [value]="option.id">{{ option.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" [for]="kind + '-districtId'">District</label>
+            <select class="field-input" formControlName="districtId" [id]="kind + '-districtId'" (change)="districtPicked(k)">
+              <option value="">{{ address(k).get('divisionId')?.value ? 'Select a district' : 'Select a division first' }}</option>
+              @for (option of geography(districts[k](), k, 'districtId'); track option.id) {
+                <option [value]="option.id">{{ option.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" [for]="fieldId(key + '.upazilaId')">Upazila</label>
+            <select
+              class="field-input"
+              formControlName="upazilaId"
+              [id]="fieldId(key + '.upazilaId')"
+              [attr.aria-invalid]="errorsFor(key + '.upazilaId').length > 0"
+              [attr.aria-describedby]="describedBy(key + '.upazilaId')"
+            >
+              <option value="">{{ address(k).get('districtId')?.value ? 'Select an upazila' : 'Select a district first' }}</option>
+              @for (option of geography(upazilas[k](), k, 'upazilaId'); track option.id) {
+                <option [value]="option.id">{{ option.name }}</option>
+              }
+            </select>
+            @for (message of errorsFor(key + '.upazilaId'); track message) {
+              <p class="field-error" [id]="fieldId(key + '.upazilaId') + '-error'">{{ message }}</p>
+            }
+          </div>
+        </div>
+        <div class="grid gap-3 md:grid-cols-[2fr_1fr]">
+          <div class="field mb-0">
+            <label class="field-label" [for]="fieldId(key + '.details')">Address details</label>
+            <input
+              class="field-input"
+              type="text"
+              autocomplete="off"
+              formControlName="details"
+              [id]="fieldId(key + '.details')"
+              [attr.aria-invalid]="errorsFor(key + '.details').length > 0"
+              [attr.aria-describedby]="describedBy(key + '.details')"
+            />
+            @for (message of errorsFor(key + '.details'); track message) {
+              <p class="field-error" [id]="fieldId(key + '.details') + '-error'">{{ message }}</p>
+            }
+          </div>
+          <div class="field mb-0">
+            <label class="field-label" [for]="fieldId(key + '.cellNumber')">Cell number</label>
+            <input class="field-input" type="tel" autocomplete="off" formControlName="cellNumber" [id]="fieldId(key + '.cellNumber')" />
+          </div>
+        </div>
+      </fieldset>
+    }
+
+    <fieldset class="card mt-6">
+      <legend class="text-heading font-semibold">Local guardian / emergency contact (optional)</legend>
+      <div class="grid gap-3 md:grid-cols-2">
+        @for (f of [
+          { key: 'guardianName', label: 'Name', type: 'text' },
+          { key: 'guardianRelationship', label: 'Relationship', type: 'text' },
+          { key: 'guardianAddress', label: 'Address', type: 'text' },
+          { key: 'guardianCellNumber', label: 'Cell number', type: 'tel' }
+        ]; track f.key) {
+          <div class="field mb-0">
+            <label class="field-label" [for]="f.key">{{ f.label }}</label>
+            <input
+              class="field-input"
+              autocomplete="off"
+              [id]="f.key"
+              [type]="f.type"
+              [formControlName]="f.key"
+              [attr.aria-invalid]="errorsFor(f.key).length > 0"
+              [attr.aria-describedby]="describedBy(f.key)"
+            />
+            @for (message of errorsFor(f.key); track message) {
+              <p class="field-error" [id]="f.key + '-error'">{{ message }}</p>
+            }
+          </div>
+        }
+      </div>
+    </fieldset>
+
+    <fieldset class="card mt-6" formArrayName="academicHistory">
+      <legend class="text-heading font-semibold">Academic history</legend>
+      <p class="field-help">
+        Prior education from the form, shared by all of the student's admissions. Type values exactly as written; only the category is chosen
+        from a list. Do not add an IIT program already recorded here as an admission.
+      </p>
+      @for (row of history.controls; track row; let i = $index) {
+        <div class="mt-3 rounded border border-border p-3" [formGroupName]="i" role="group" [attr.aria-label]="'Academic-history entry ' + (i + 1)">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div class="field mb-0 min-w-[14rem]">
+              <label class="field-label" [for]="fieldId('academicHistory[' + i + '].category')">Category</label>
+              <select
+                class="field-input"
+                formControlName="category"
+                [id]="fieldId('academicHistory[' + i + '].category')"
+                [attr.aria-invalid]="errorsFor('academicHistory[' + i + '].category').length > 0"
+                [attr.aria-describedby]="describedBy('academicHistory[' + i + '].category')"
+              >
+                <option value="">Select a category</option>
+                @for (option of categories; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+              @for (message of errorsFor('academicHistory[' + i + '].category'); track message) {
+                <p class="field-error" [id]="fieldId('academicHistory[' + i + '].category') + '-error'">{{ message }}</p>
+              }
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="removeHistory(i)">Remove entry {{ i + 1 }}</button>
+          </div>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            @for (name of applicableFields(i); track name) {
+              @let fkey = 'academicHistory[' + i + '].' + name;
+              <div class="field mb-0">
+                <label class="field-label" [for]="fieldId(fkey)">{{ fieldLabel(name) }}</label>
+                <input
+                  class="field-input"
+                  type="text"
+                  autocomplete="off"
+                  [formControlName]="name"
+                  [id]="fieldId(fkey)"
+                  [attr.aria-invalid]="errorsFor(fkey).length > 0"
+                  [attr.aria-describedby]="describedBy(fkey)"
+                />
+                @for (message of errorsFor(fkey); track message) {
+                  <p class="field-error" [id]="fieldId(fkey) + '-error'">{{ message }}</p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      } @empty {
+        <p class="mb-0 text-text-secondary">No academic history entered.</p>
+      }
+      <button type="button" class="btn btn-secondary btn-sm mt-3" (click)="addHistory()">Add academic-history entry</button>
+    </fieldset>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Saving…
+        } @else {
+          {{ isNew() ? 'Add admission' : 'Save changes' }}
+        }
+      </button>
+      <a class="btn btn-secondary" routerLink="/admin/students">Cancel</a>
+    </div>
+  </form>
+
+  @if (admission(); as current) {
+    <app-graduation-eligibility [admissionId]="current.id" [version]="savedVersion()" />
+
+    <section class="card mt-6 max-w-[48rem]" aria-labelledby="history-title">
+      <h2 id="history-title">Record history</h2>
+      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
+        <dt class="font-medium text-text-secondary">Created</dt>
+        <dd class="m-0">
+          <app-utc-timestamp [value]="current.createdAtUtc" />
+          by <span class="break-all">{{ who(current.createdBy, current.createdByUserId) }}</span>
+        </dd>
+        <dt class="font-medium text-text-secondary">Last modified</dt>
+        <dd class="m-0">
+          <app-utc-timestamp [value]="current.lastModifiedAtUtc" />
+          by <span class="break-all">{{ who(current.lastModifiedBy, current.lastModifiedByUserId) }}</span>
+        </dd>
+      </dl>
+    </section>
+  }
+}

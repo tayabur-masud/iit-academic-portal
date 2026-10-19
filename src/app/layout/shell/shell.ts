@@ -17,6 +17,7 @@ const ROLE_PAGES: Partial<Record<Role, NavItem[]>> = {
   Admin: [
     { path: '/admin/users', label: 'Accounts', exact: false },
     { path: '/admin/teachers', label: 'Teachers', exact: false },
+    { path: '/admin/students', label: 'Students', exact: false },
     { path: '/admin/configuration', label: 'Configuration', exact: false },
     { path: '/admin/notifications', label: 'Notifications', exact: false },
     { path: '/admin/audit', label: 'Audit history', exact: false },
