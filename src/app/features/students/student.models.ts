@@ -38,12 +38,33 @@ export type HistoryField = (typeof HISTORY_FIELDS)[number]['name'];
 
 export type AcademicHistoryValues = Partial<Record<HistoryField, string | null>>;
 
-export interface AcademicHistoryEntry extends AcademicHistoryValues {
+/**
+ * The history fields chosen from a Configuration catalog, with the ID field that holds the choice. The text field keeps the name: the
+ * catalog name when chosen, or the name typed from the form when it is not listed. Institutions are limited to the types that fit.
+ */
+export const CATALOG_FIELDS = {
+  schoolOrCollege: { idField: 'schoolOrCollegeId', catalog: 'institutions', types: ['School', 'College'] },
+  university: { idField: 'universityId', catalog: 'institutions', types: ['University'] },
+  institution: { idField: 'institutionId', catalog: 'institutions', types: null },
+  board: { idField: 'boardId', catalog: 'education-boards', types: null },
+  group: { idField: 'groupId', catalog: 'education-groups', types: null },
+} as const;
+
+export type CatalogField = keyof typeof CATALOG_FIELDS;
+export type CatalogIdField = (typeof CATALOG_FIELDS)[CatalogField]['idField'];
+
+export function isCatalogField(name: string): name is CatalogField {
+  return name in CATALOG_FIELDS;
+}
+
+export type AcademicHistoryIds = Partial<Record<CatalogIdField, string | null>>;
+
+export interface AcademicHistoryEntry extends AcademicHistoryValues, AcademicHistoryIds {
   id: string;
   category: AcademicHistoryCategory;
 }
 
-export interface AcademicHistoryRequest extends AcademicHistoryValues {
+export interface AcademicHistoryRequest extends AcademicHistoryValues, AcademicHistoryIds {
   id: string | null;
   category: string;
 }

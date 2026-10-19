@@ -15,6 +15,8 @@ import {
   AcademicHistoryCategory,
   AcademicHistoryEntry,
   HISTORY_CATEGORIES,
+  CATALOG_FIELDS,
+  CatalogField,
   HISTORY_FIELDS,
   HistoryField,
   StudentAddress,
@@ -23,7 +25,11 @@ import {
   StudentAdmissionRequest,
   StudentLookup,
   StudentProfile,
+  isCatalogField,
 } from './student.models';
+
+/** The choice that reveals a text box for a name that is not in the catalog. */
+export const NOT_LISTED = '__not-listed__';
 
 type AddressKind = 'mailing' | 'permanent';
 
@@ -102,6 +108,11 @@ export class StudentForm {
   protected readonly degrees = signal<ConfigurationItem[]>([]);
   protected readonly batches = signal<ConfigurationItem[]>([]);
   protected readonly halls = signal<ConfigurationItem[]>([]);
+  protected readonly institutions = signal<ConfigurationItem[]>([]);
+  protected readonly boards = signal<ConfigurationItem[]>([]);
+  protected readonly groups = signal<ConfigurationItem[]>([]);
+  protected readonly notListed = NOT_LISTED;
+  protected readonly isCatalogField = isCatalogField;
   protected readonly divisions = signal<ConfigurationItem[]>([]);
   protected readonly districts = { mailing: signal<ConfigurationItem[]>([]), permanent: signal<ConfigurationItem[]>([]) };
   protected readonly upazilas = { mailing: signal<ConfigurationItem[]>([]), permanent: signal<ConfigurationItem[]>([]) };
@@ -144,6 +155,22 @@ export class StudentForm {
   protected applicableFields(index: number): readonly HistoryField[] {
     const category = this.history.at(index).get('category')?.value as AcademicHistoryCategory | '';
     return category ? APPLICABLE[category] : [];
+  }
+
+  /**
+   * The catalog records a history field can choose: institutions of the fitting type, or boards, or groups. Active records, plus the one
+   * this row already has, so a record deactivated since stays selected.
+   */
+  protected catalogChoices(name: CatalogField, index: number): ConfigurationItem[] {
+    const spec = CATALOG_FIELDS[name];
+    const items = spec.catalog === 'institutions' ? this.institutions() : spec.catalog === 'education-boards' ? this.boards() : this.groups();
+    const types = spec.types as readonly string[] | null;
+    const current = this.history.at(index).get(`${name}Choice`)?.value as string;
+    return items.filter((item) => (item.isActive || item.id === current) && (!types || types.includes(item.type ?? '')));
+  }
+
+  protected isNotListed(name: CatalogField, index: number): boolean {
+    return this.history.at(index).get(`${name}Choice`)?.value === NOT_LISTED;
   }
 
   protected fieldLabel(name: HistoryField): string {
@@ -333,6 +360,14 @@ export class StudentForm {
         for (const field of HISTORY_FIELDS) {
           entry[field.name] = text(row[field.name] ?? '');
         }
+        // A catalog choice sends its ID (the service keeps the catalog name); a name that is not listed is sent as typed.
+        for (const [name, spec] of Object.entries(CATALOG_FIELDS)) {
+          const choice = row[`${name}Choice`] ?? '';
+          entry[spec.idField] = choice && choice !== NOT_LISTED ? choice : null;
+          if (choice !== NOT_LISTED) {
+            entry[name] = choice ? text(row[name] ?? '') : null;
+          }
+        }
         return entry as unknown as StudentAdmissionRequest['academicHistory'][number];
       }),
     };
@@ -371,16 +406,22 @@ export class StudentForm {
     this.selectedDegree.set('');
 
     try {
-      const [degrees, batches, halls, divisions, admission] = await Promise.all([
+      const [degrees, batches, halls, divisions, institutions, boards, groups, admission] = await Promise.all([
         this.configuration.listAll(descriptorFor('degrees')!, 'all'),
         this.configuration.listAll(descriptorFor('batches')!, 'all'),
         this.configuration.listAll(descriptorFor('halls')!, 'all'),
         this.configuration.listAll(descriptorFor('divisions')!, 'all'),
+        this.configuration.listAll(descriptorFor('institutions')!, 'all'),
+        this.configuration.listAll(descriptorFor('education-boards')!, 'all'),
+        this.configuration.listAll(descriptorFor('education-groups')!, 'all'),
         id ? firstValueFrom(this.api.get(id)) : Promise.resolve(null),
       ]);
       this.degrees.set(degrees);
       this.batches.set(batches);
       this.halls.set(halls);
+      this.institutions.set(institutions);
+      this.boards.set(boards);
+      this.groups.set(groups);
       this.divisions.set(divisions);
       if (admission) {
         await this.apply(admission);
@@ -488,7 +529,20 @@ export class StudentForm {
     for (const field of HISTORY_FIELDS) {
       controls[field.name] = [entry?.[field.name] ?? ''];
     }
-    return this.fb.group(controls);
+    // The catalog choice: the record's ID, "not listed" for a typed name, or empty.
+    for (const [name, spec] of Object.entries(CATALOG_FIELDS)) {
+      const id = entry?.[spec.idField];
+      controls[`${name}Choice`] = [id ? id : entry?.[name as CatalogField] ? NOT_LISTED : ''];
+    }
+    const group = this.fb.group(controls);
+    // Choosing a catalog record shows its name; switching to "not listed" starts from an empty name.
+    for (const name of Object.keys(CATALOG_FIELDS)) {
+      group.get(`${name}Choice`)!.valueChanges.subscribe((choice: string) => {
+        const record = [...this.institutions(), ...this.boards(), ...this.groups()].find((item) => item.id === choice);
+        group.get(name)!.setValue(choice === NOT_LISTED ? '' : (record?.name ?? ''));
+      });
+    }
+    return group;
   }
 
   private focusFirstInvalid(): void {

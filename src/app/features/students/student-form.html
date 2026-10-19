@@ -393,8 +393,9 @@
     <fieldset class="card mt-6" formArrayName="academicHistory">
       <legend class="text-heading font-semibold">Academic history</legend>
       <p class="field-help">
-        Prior education from the form, shared by all of the student's admissions. Type values exactly as written; only the category is chosen
-        from a list. Do not add an IIT program already recorded here as an admission.
+        Prior education from the form, shared by all of the student's admissions. Choose the school, college, university, board, and group
+        from the lists; if one is not listed, choose "Not listed" and type it as written. Type every other value exactly as on the form. Do
+        not add an IIT program already recorded here as an admission.
       </p>
       @for (row of history.controls; track row; let i = $index) {
         <div class="mt-3 rounded border border-border p-3" [formGroupName]="i" role="group" [attr.aria-label]="'Academic-history entry ' + (i + 1)">
@@ -422,21 +423,59 @@
           <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
             @for (name of applicableFields(i); track name) {
               @let fkey = 'academicHistory[' + i + '].' + name;
-              <div class="field mb-0">
-                <label class="field-label" [for]="fieldId(fkey)">{{ fieldLabel(name) }}</label>
-                <input
-                  class="field-input"
-                  type="text"
-                  autocomplete="off"
-                  [formControlName]="name"
-                  [id]="fieldId(fkey)"
-                  [attr.aria-invalid]="errorsFor(fkey).length > 0"
-                  [attr.aria-describedby]="describedBy(fkey)"
-                />
-                @for (message of errorsFor(fkey); track message) {
-                  <p class="field-error" [id]="fieldId(fkey) + '-error'">{{ message }}</p>
-                }
-              </div>
+              @if (isCatalogField(name)) {
+                @let idKey = 'academicHistory[' + i + '].' + name + 'Id';
+                <div class="field mb-0">
+                  <label class="field-label" [for]="fieldId(idKey)">{{ fieldLabel(name) }}</label>
+                  <select
+                    class="field-input"
+                    [formControlName]="name + 'Choice'"
+                    [id]="fieldId(idKey)"
+                    [attr.aria-invalid]="errorsFor(idKey).length > 0"
+                    [attr.aria-describedby]="describedBy(idKey)"
+                  >
+                    <option value="">Not given</option>
+                    @for (option of catalogChoices(name, i); track option.id) {
+                      <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+                    }
+                    <option [value]="notListed">Not listed: type the name</option>
+                  </select>
+                  @for (message of errorsFor(idKey); track message) {
+                    <p class="field-error" [id]="fieldId(idKey) + '-error'">{{ message }}</p>
+                  }
+                  @if (isNotListed(name, i)) {
+                    <label class="field-label mt-2" [for]="fieldId(fkey)">{{ fieldLabel(name) }} as written on the form</label>
+                    <input
+                      class="field-input"
+                      type="text"
+                      autocomplete="off"
+                      [formControlName]="name"
+                      [id]="fieldId(fkey)"
+                      [attr.aria-invalid]="errorsFor(fkey).length > 0"
+                      [attr.aria-describedby]="describedBy(fkey)"
+                    />
+                    @for (message of errorsFor(fkey); track message) {
+                      <p class="field-error" [id]="fieldId(fkey) + '-error'">{{ message }}</p>
+                    }
+                  }
+                </div>
+              } @else {
+                <div class="field mb-0">
+                  <label class="field-label" [for]="fieldId(fkey)">{{ fieldLabel(name) }}</label>
+                  <input
+                    class="field-input"
+                    type="text"
+                    autocomplete="off"
+                    [formControlName]="name"
+                    [id]="fieldId(fkey)"
+                    [attr.aria-invalid]="errorsFor(fkey).length > 0"
+                    [attr.aria-describedby]="describedBy(fkey)"
+                  />
+                  @for (message of errorsFor(fkey); track message) {
+                    <p class="field-error" [id]="fieldId(fkey) + '-error'">{{ message }}</p>
+                  }
+                </div>
+              }
             }
           </div>
         </div>

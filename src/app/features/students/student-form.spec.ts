@@ -84,6 +84,14 @@ describe('StudentForm', () => {
     ]);
     respondList(`${CONFIG}/halls`, [item('hall1', 'Jagannath Hall'), item('hall2', 'Closed Hall', { isActive: false })]);
     respondList(`${CONFIG}/geography/divisions`, [item('div1', 'Dhaka')]);
+    respondList(`${CONFIG}/institutions`, [
+      item('sch1', 'Motijheel Model High School', { type: 'School' }),
+      item('col1', 'Notre Dame College', { type: 'College' }),
+      item('uni1', 'University of Dhaka', { type: 'University' }),
+      item('uni2', 'Closed University', { type: 'University', isActive: false }),
+    ]);
+    respondList(`${CONFIG}/education-boards`, [item('b1', 'Dhaka')]);
+    respondList(`${CONFIG}/education-groups`, [item('g1', 'Science')]);
     if (id) {
       http.expectOne({ method: 'GET', url: `${ROOT}/${id}` }).flush(loaded);
       await settle();
@@ -235,8 +243,10 @@ describe('StudentForm', () => {
       expect(categories).toEqual(['Select a category', 'SSC / O-Level', 'HSC / A-Level', 'Bachelor / Graduation', 'Master', 'PGDIT', 'Other']);
       choose('#academicHistory-0-category', 'SscOLevel');
       fixture.detectChanges();
-      expect(page.querySelector('#academicHistory-0-board')).not.toBeNull();
-      expect(page.querySelector('#academicHistory-0-university')).toBeNull();
+      expect(page.querySelector('#academicHistory-0-boardId')).not.toBeNull();
+      expect(page.querySelector('#academicHistory-0-universityId')).toBeNull();
+      choose('#academicHistory-0-boardId', '__not-listed__');
+      fixture.detectChanges();
       type('#academicHistory-0-board', 'Dhaka Board (old name)');
       type('#academicHistory-0-marksPercentage', '086.50');
       type('#academicHistory-0-cgpa', '5.00');
@@ -245,9 +255,72 @@ describe('StudentForm', () => {
       const request = await writeRequest('POST', ROOT);
 
       const [entry] = request.request.body.academicHistory;
-      expect(entry).toMatchObject({ id: null, category: 'SscOLevel', board: 'Dhaka Board (old name)', marksPercentage: '086.50', cgpa: '5.00', university: null });
+      expect(entry).toMatchObject({
+        id: null,
+        category: 'SscOLevel',
+        board: 'Dhaka Board (old name)',
+        boardId: null,
+        marksPercentage: '086.50',
+        cgpa: '5.00',
+        university: null,
+        universityId: null,
+      });
       request.flush(...problem(500, 'boom'));
       await render();
+    });
+
+    it('chooses institutions, boards, and groups from their catalogs, filtered by the type that fits the field', async () => {
+      await open();
+      await fillRequired();
+      button('Add academic-history entry').click();
+      button('Add academic-history entry').click();
+      await render();
+      choose('#academicHistory-0-category', 'HscALevel');
+      choose('#academicHistory-1-category', 'Master');
+      fixture.detectChanges();
+
+      const options = (selector: string) => Array.from(page.querySelectorAll<HTMLOptionElement>(`${selector} option`)).map((o) => o.textContent?.trim());
+      expect(options('#academicHistory-0-schoolOrCollegeId')).toEqual([
+        'Not given',
+        'Motijheel Model High School',
+        'Notre Dame College',
+        'Not listed: type the name',
+      ]);
+      expect(options('#academicHistory-1-universityId')).toEqual(['Not given', 'University of Dhaka', 'Not listed: type the name']);
+      choose('#academicHistory-0-schoolOrCollegeId', 'col1');
+      choose('#academicHistory-0-boardId', 'b1');
+      choose('#academicHistory-0-groupId', 'g1');
+      choose('#academicHistory-1-universityId', 'uni1');
+      fixture.detectChanges();
+      expect(page.querySelector('#academicHistory-0-schoolOrCollege')).toBeNull();
+
+      submit();
+      const request = await writeRequest('POST', ROOT);
+
+      const [hsc, master] = request.request.body.academicHistory;
+      expect(hsc).toMatchObject({ schoolOrCollegeId: 'col1', schoolOrCollege: 'Notre Dame College', boardId: 'b1', board: 'Dhaka', groupId: 'g1', group: 'Science' });
+      expect(master).toMatchObject({ universityId: 'uni1', university: 'University of Dhaka', institutionId: null });
+      request.flush(...problem(500, 'boom'));
+      await render();
+    });
+
+    it('shows a catalog choice the service refused on its dropdown', async () => {
+      await open();
+      await fillRequired();
+      button('Add academic-history entry').click();
+      await render();
+      choose('#academicHistory-0-category', 'Master');
+      fixture.detectChanges();
+      choose('#academicHistory-0-universityId', 'uni1');
+
+      submit();
+      (await writeRequest('POST', ROOT)).flush(
+        ...problem(400, 'Invalid', { 'academicHistory[0].universityId': ['Select an active university, or type the name if it is not listed.'] }),
+      );
+      await render();
+
+      expect(page.querySelector('#academicHistory-0-universityId')?.getAttribute('aria-invalid')).toBe('true');
+      expect(page.querySelector('#academicHistory-0-universityId-error')?.textContent).toContain('type the name if it is not listed');
     });
 
     it('requires a category for each history entry and can remove an entry', async () => {
