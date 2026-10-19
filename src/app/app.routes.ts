@@ -9,9 +9,6 @@ import {
 import { ROLE_AREAS, Role } from './core/auth/auth.models';
 import { AuditDetail } from './features/audit/audit-detail';
 import { AuditPage } from './features/audit/audit-page';
-import { CatalogForm } from './features/configuration/catalogs/catalog-form';
-import { CatalogList } from './features/configuration/catalogs/catalog-list';
-import { ConfigurationHome } from './features/configuration/configuration-home';
 import { TeacherForm } from './features/teachers/teacher-form';
 import { TeacherList } from './features/teachers/teacher-list';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
@@ -64,10 +61,11 @@ export const routes: Routes = [
     children: [
       // Audit history lives under /admin, so switching away from Admin leaves it for the new role's landing page.
       roleArea('Admin', [
-        { path: 'configuration', component: ConfigurationHome, title: `Configuration | ${TITLE}` },
-        { path: 'configuration/:resource', component: CatalogList, title: `Configuration | ${TITLE}` },
-        { path: 'configuration/:resource/new', component: CatalogForm, title: `New record | ${TITLE}` },
-        { path: 'configuration/:resource/:id', component: CatalogForm, title: `Edit record | ${TITLE}` },
+        // Loaded on demand, like the other Admin-only screens, so the initial bundle stays small.
+        { path: 'configuration', loadComponent: () => import('./features/configuration/configuration-home').then((m) => m.ConfigurationHome), title: `Configuration | ${TITLE}` },
+        { path: 'configuration/:resource', loadComponent: () => import('./features/configuration/catalogs/catalog-list').then((m) => m.CatalogList), title: `Configuration | ${TITLE}` },
+        { path: 'configuration/:resource/new', loadComponent: () => import('./features/configuration/catalogs/catalog-form').then((m) => m.CatalogForm), title: `New record | ${TITLE}` },
+        { path: 'configuration/:resource/:id', loadComponent: () => import('./features/configuration/catalogs/catalog-form').then((m) => m.CatalogForm), title: `Edit record | ${TITLE}` },
         // Loaded on demand. "new" comes before ":userId" so it is never read as an account identifier.
         { path: 'users', loadComponent: () => import('./features/users/user-list').then((m) => m.UserList), title: `Accounts | ${TITLE}` },
         { path: 'users/new', loadComponent: () => import('./features/users/user-provisioning').then((m) => m.UserProvisioning), title: `Add account | ${TITLE}` },

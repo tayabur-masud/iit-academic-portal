@@ -19,7 +19,7 @@ describe('ConfigurationHome', () => {
       links: Array.from(section.querySelectorAll('li a')).map((a) => a.textContent!.trim()),
     }));
     expect(sections).toEqual([
-      { title: 'IIT academics', links: ['Degrees', 'Semesters', 'Academic sessions', 'Batches'] },
+      { title: 'IIT academics', links: ['Degrees', 'Semesters', 'Academic sessions', 'Batches', 'Courses'] },
       {
         title: 'Other catalogs',
         links: ['Educational institutions', 'Education boards', 'Education groups', 'Examination types', 'Designations', 'Halls'],
@@ -28,6 +28,6 @@ describe('ConfigurationHome', () => {
     ]);
     const hrefs = Array.from(page.querySelectorAll('li a')).map((a) => a.getAttribute('href')).sort();
     expect(hrefs).toEqual(RESOURCES.map((r) => `/admin/configuration/${r.slug}`).sort());
-    expect(RESOURCES.length).toBe(13);
+    expect(RESOURCES.length).toBe(14);
   });
 });

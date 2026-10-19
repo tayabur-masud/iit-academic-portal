@@ -19,6 +19,8 @@ export interface ListOptions {
   pageSize?: number;
   /** Limits a geography list to one parent (a division for districts, a district for upazilas). */
   parentId?: string;
+  /** Limits a typed catalog (courses, educational institutions) to one type. */
+  type?: string;
 }
 
 const ROOT = '/api/admin/configuration';
@@ -41,6 +43,9 @@ export class ConfigurationApi {
     }
     if (options.parentId && resource.parentFilter) {
       params = params.set(resource.parentFilter, options.parentId);
+    }
+    if (options.type && resource.hasType) {
+      params = params.set('type', options.type);
     }
     return this.http.get<ConfigurationPage>(`${ROOT}/${resource.apiPath}`, { params });
   }

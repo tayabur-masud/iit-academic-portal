@@ -482,6 +482,177 @@ describe('CatalogForm', () => {
     });
   });
 
+  describe('a course', () => {
+    const course = (id: string, name: string, extra: Partial<ConfigurationItem> = {}) =>
+      item(id, name, { code: id.toUpperCase(), creditHours: 3, type: 'Mandatory', degreeId: 'd1', ...extra });
+
+    async function openCourse(id?: string, loaded?: ConfigurationItem): Promise<void> {
+      await open('courses', id);
+      await respond(lookup('degrees'), list([item('d1', 'EMIT'), item('d2', 'PGDIT')]));
+      if (id) {
+        await respond(lookup(`courses/${id}`), loaded ?? course(id, 'Loaded'));
+        await respond(
+          lookup('courses', (r) => r.params.get('degreeId') === (loaded?.degreeId ?? 'd1') && r.params.get('status') === 'active'),
+          list([course('c1', 'Basics'), course(id, 'Loaded')]),
+        );
+      }
+    }
+
+    async function pickDegree(degreeId: string, courses: ConfigurationItem[]): Promise<void> {
+      choose('#degreeId', degreeId);
+      await respond(lookup('courses', (r) => r.params.get('degreeId') === degreeId && r.params.get('status') === 'active'), list(courses));
+    }
+
+    function options(selector: string): string[] {
+      return Array.from(page.querySelectorAll<HTMLOptionElement>(`${selector} option`)).map((o) => o.textContent!.trim());
+    }
+
+    it('requires a code, a type, credit hours, and a degree, and offers only Mandatory and Elective', async () => {
+      await openCourse();
+      type('#name', 'Algorithms');
+
+      submit();
+      await settle();
+      fixture.detectChanges();
+
+      for (const field of ['code', 'type', 'creditHours', 'degreeId']) {
+        expect(page.querySelector(`#${field}-error`)).not.toBeNull();
+      }
+      expect(page.querySelector('label[for="code"]')?.textContent?.trim()).toBe('Code');
+      expect(options('#type')).toEqual(['Select a type', 'Mandatory', 'Elective']);
+      http.expectNone(`${ROOT}/courses`);
+    });
+
+    it('offers the active courses of the chosen degree as prerequisites and sends the course with numbers', async () => {
+      await openCourse();
+      expect(options('#prerequisiteCourseId')).toEqual(['Select a degree first']);
+      type('#name', 'Advanced Algorithms');
+      type('#code', ' cse-301 ');
+      type('#creditHours', '3');
+      type('#theoryCreditHours', '2');
+      type('#labCreditHours', '1');
+      choose('#type', 'Elective');
+      await pickDegree('d1', [course('c1', 'Basics')]);
+      expect(options('#prerequisiteCourseId')).toEqual(['No prerequisite', 'C1 · Basics']);
+      choose('#prerequisiteCourseId', 'c1');
+
+      submit();
+      const request = await writeRequest('POST', 'courses');
+
+      expect(request.request.body).toEqual({
+        name: 'Advanced Algorithms',
+        isActive: true,
+        code: 'cse-301',
+        type: 'Elective',
+        creditHours: 3,
+        theoryCreditHours: 2,
+        labCreditHours: 1,
+        prerequisiteCourseId: 'c1',
+        degreeId: 'd1',
+      });
+      request.flush(course('c9', 'Advanced Algorithms'), { status: 201, statusText: 'Created' });
+      await settle();
+    });
+
+    it('sends a missing theory or lab part as null and no prerequisite as null', async () => {
+      await openCourse();
+      type('#name', 'Seminar');
+      type('#code', 'SEM-1');
+      type('#creditHours', '1.5');
+      type('#labCreditHours', '1.5');
+      choose('#type', 'Mandatory');
+      await pickDegree('d2', []);
+
+      submit();
+      const request = await writeRequest('POST', 'courses');
+
+      expect(request.request.body).toMatchObject({ creditHours: 1.5, theoryCreditHours: null, labCreditHours: 1.5, prerequisiteCourseId: null });
+      request.flush(course('c9', 'Seminar'), { status: 201, statusText: 'Created' });
+      await settle();
+    });
+
+    it('rejects a part over the total and parts that do not add up before sending anything', async () => {
+      await openCourse();
+      type('#name', 'Lab Course');
+      type('#code', 'LAB-1');
+      type('#creditHours', '3');
+      type('#theoryCreditHours', '4');
+      choose('#type', 'Mandatory');
+      await pickDegree('d1', []);
+
+      submit();
+      await settle();
+      fixture.detectChanges();
+      expect(page.querySelector('#theoryCreditHours-error')?.textContent).toContain('cannot be more than the total');
+
+      type('#theoryCreditHours', '2');
+      type('#labCreditHours', '2');
+      submit();
+      await settle();
+      fixture.detectChanges();
+      expect(page.querySelector('#labCreditHours-error')?.textContent).toContain('must add up to the total');
+      http.expectNone(`${ROOT}/courses`);
+    });
+
+    it('never offers a course as its own prerequisite and clears a prerequisite of another degree', async () => {
+      await openCourse('c5', course('c5', 'Loaded', { prerequisiteCourseId: 'c1' }));
+
+      expect(options('#prerequisiteCourseId')).toEqual(['No prerequisite', 'C1 · Basics']);
+      expect(page.querySelector<HTMLSelectElement>('#prerequisiteCourseId')?.value).toBe('c1');
+
+      await pickDegree('d2', [course('p1', 'Other Degree Course', { degreeId: 'd2' })]);
+
+      expect(page.querySelector<HTMLSelectElement>('#prerequisiteCourseId')?.value).toBe('');
+      expect(options('#prerequisiteCourseId')).toEqual(['No prerequisite', 'P1 · Other Degree Course']);
+    });
+
+    it('shows a degree change the service refuses against the degree field', async () => {
+      await openCourse('c5', course('c5', 'Loaded'));
+      await pickDegree('d2', []);
+
+      submit();
+      (await writeRequest('PUT', 'courses/c5')).flush(
+        ...problem(400, 'Invalid', { degreeId: ['Active courses in the current degree have this course as their prerequisite. Change their prerequisite first.'] }),
+      );
+      await settle();
+      fixture.detectChanges();
+
+      expect(page.querySelector('#degreeId-error')?.textContent).toContain('have this course as their prerequisite');
+      expect(page.querySelector('#degreeId')?.getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('explains a blocked deactivation and offers no delete for a course', async () => {
+      await openCourse('c1', course('c1', 'Basics'));
+      expect(page.querySelector('#delete-title')).toBeNull();
+
+      page.querySelector<HTMLInputElement>('#isActive')!.click();
+      submit();
+      (await writeRequest('PUT', 'courses/c1')).flush(
+        ...problem(409, 'Active courses have this course as their prerequisite, so it cannot be deactivated.'),
+      );
+      await settle();
+      fixture.detectChanges();
+
+      expect(page.querySelector('[role=alert]')?.textContent).toContain('cannot be deactivated');
+    });
+
+    it('marks credit fields the service rejects', async () => {
+      await openCourse();
+      type('#name', 'X');
+      type('#code', 'X-1');
+      type('#creditHours', '3');
+      choose('#type', 'Mandatory');
+      await pickDegree('d1', []);
+
+      submit();
+      (await writeRequest('POST', 'courses')).flush(...problem(400, 'Invalid', { code: ['A course with this code already exists.'] }));
+      await settle();
+      fixture.detectChanges();
+
+      expect(page.querySelector('#code-error')?.textContent).toContain('already exists');
+    });
+  });
+
   describe('geography', () => {
     it('asks a district for its division', async () => {
       await open('districts');

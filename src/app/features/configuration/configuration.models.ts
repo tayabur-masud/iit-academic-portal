@@ -7,6 +7,12 @@ export interface ConfigurationItem {
   type?: string;
   address?: string;
   creditsToBeCompleted?: number;
+  /** A course's total credit hours, and its optional theory and lab parts. */
+  creditHours?: number;
+  theoryCreditHours?: number;
+  labCreditHours?: number;
+  /** A course's optional prerequisite: another active course of the same degree. */
+  prerequisiteCourseId?: string;
   degreeId?: string;
   startingSemesterId?: string;
   academicSessionId?: string;
@@ -63,14 +69,24 @@ export interface ResourceDescriptor {
   hasType: boolean;
   hasAddress: boolean;
   hasCredits: boolean;
+  /** The code must be given (otherwise it is optional). */
+  codeRequired?: boolean;
+  /** The choices for `type`; institution types when absent. */
+  typeOptions?: readonly string[];
+  /** A course: credit hours with optional theory and lab parts, and an optional prerequisite of the same degree. */
+  isCourse?: boolean;
+  /** False for a resource that is only ever deactivated, never deleted. */
+  canDelete?: boolean;
   references: ReferenceField[];
   /** The query parameter that limits the list to one parent, if the resource has a parent. */
-  parentFilter?: 'divisionId' | 'districtId';
+  parentFilter?: 'divisionId' | 'districtId' | 'degreeId';
   /** For an Upazila: the Division is chosen first and narrows the District choices. */
   cascadeFrom?: string;
 }
 
 export const INSTITUTION_TYPES = ['School', 'College', 'University'] as const;
+
+export const COURSE_TYPES = ['Mandatory', 'Elective'] as const;
 
 const base = { hasCode: false, hasType: false, hasAddress: false, hasCredits: false, references: [] as ReferenceField[] };
 
@@ -181,6 +197,24 @@ export const RESOURCES: ResourceDescriptor[] = [
   },
   {
     ...base,
+    slug: 'courses',
+    apiPath: 'courses',
+    group: 'IIT academics',
+    label: 'Courses',
+    singular: 'course',
+    description:
+      'Each course belongs to one degree and has a unique code, credit hours (optionally split into theory and lab), a Mandatory or Elective type, and an optional prerequisite from the same degree. Courses are deactivated, never deleted.',
+    hasCode: true,
+    codeRequired: true,
+    hasType: true,
+    typeOptions: COURSE_TYPES,
+    isCourse: true,
+    canDelete: false,
+    references: [{ name: 'degreeId', label: 'Degree', resource: 'degrees' }],
+    parentFilter: 'degreeId',
+  },
+  {
+    ...base,
     slug: 'divisions',
     apiPath: 'geography/divisions',
     group: 'Geography',
@@ -228,6 +262,10 @@ export interface ConfigurationRequest {
   type?: string;
   address?: string;
   creditsToBeCompleted?: number;
+  creditHours?: number;
+  theoryCreditHours?: number | null;
+  labCreditHours?: number | null;
+  prerequisiteCourseId?: string | null;
   degreeId?: string;
   startingSemesterId?: string;
   academicSessionId?: string;

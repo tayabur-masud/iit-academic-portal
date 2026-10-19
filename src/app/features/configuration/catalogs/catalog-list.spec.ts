@@ -66,6 +66,74 @@ describe('CatalogList', () => {
     expect(page.textContent).not.toContain('normalized');
   });
 
+  it('lists courses with code, type, degree, credit hours, and status, filtered by degree', async () => {
+    await open('courses');
+    await respond(listRequest('degrees'), [item('d1', 'EMIT'), item('d2', 'PGDIT', { isActive: false })]);
+    await respond(listRequest('courses', (r) => !r.params.has('degreeId')), [
+      item('c1', 'Algorithms', { code: 'CSE-201', type: 'Mandatory', degreeId: 'd1', creditHours: 3, theoryCreditHours: 2, labCreditHours: 1 }),
+      item('c2', 'Seminar', { code: 'SEM-1', type: 'Elective', degreeId: 'd2', creditHours: 1.5, isActive: false }),
+    ]);
+
+    const headers = Array.from(page.querySelectorAll('thead th')).map((th) => th.textContent?.trim());
+    expect(headers).toEqual(['Code', 'Name', 'Type', 'Credit hours', 'Degree', 'Status']);
+    const link = page.querySelector<HTMLAnchorElement>('tbody tr th[scope=row] a')!;
+    expect(link.textContent?.trim()).toBe('CSE-201');
+    expect(link.getAttribute('href')).toBe('/admin/configuration/courses/c1');
+    expect(page.querySelector('tbody tr td')?.textContent?.trim()).toBe('Algorithms');
+    expect(rows()[0]).toContain('CSE-201');
+    expect(rows()[0]).toContain('Mandatory');
+    expect(rows()[0]).toContain('3 (2 theory + 1 lab)');
+    expect(rows()[0]).toContain('EMIT');
+    expect(rows()[1]).toContain('1.5');
+    expect(rows()[1]).toContain('Inactive');
+    expect(page.querySelector('a.btn-primary')?.textContent).toContain('New course');
+
+    const degree = page.querySelector<HTMLSelectElement>('#degree-filter')!;
+    expect(Array.from(degree.options).map((o) => o.textContent?.trim())).toEqual(['All degrees', 'EMIT', 'PGDIT (inactive)']);
+    degree.value = 'd1';
+    degree.dispatchEvent(new Event('change'));
+    await respond(listRequest('courses', (r) => r.params.get('degreeId') === 'd1'), []);
+
+    expect(page.textContent).toContain('No courses match');
+  });
+
+  it('filters courses by type together with the degree', async () => {
+    await open('courses');
+    await respond(listRequest('degrees'), [item('d1', 'EMIT')]);
+    await respond(listRequest('courses', (r) => !r.params.has('type')), []);
+
+    const type = page.querySelector<HTMLSelectElement>('#type-filter')!;
+    expect(page.querySelector('label[for="type-filter"]')?.textContent?.trim()).toBe('Type');
+    expect(Array.from(type.options).map((o) => o.textContent?.trim())).toEqual(['All types', 'Mandatory', 'Elective']);
+    type.value = 'Elective';
+    type.dispatchEvent(new Event('change'));
+    await respond(listRequest('courses', (r) => r.params.get('type') === 'Elective' && !r.params.has('degreeId')), []);
+
+    const degree = page.querySelector<HTMLSelectElement>('#degree-filter')!;
+    degree.value = 'd1';
+    degree.dispatchEvent(new Event('change'));
+    await respond(listRequest('courses', (r) => r.params.get('type') === 'Elective' && r.params.get('degreeId') === 'd1'), []);
+
+    button('Clear').click();
+    await respond(listRequest('courses', (r) => !r.params.has('type') && !r.params.has('degreeId')), []);
+    expect(type.value).toBe('');
+  });
+
+  it('offers institution types as the type filter and no type filter on an untyped catalog', async () => {
+    await open('institutions');
+    await respond(listRequest('institutions', (r) => !r.params.has('type')), []);
+    const type = page.querySelector<HTMLSelectElement>('#type-filter')!;
+    expect(Array.from(type.options).map((o) => o.textContent?.trim())).toEqual(['All types', 'School', 'College', 'University']);
+    type.value = 'College';
+    type.dispatchEvent(new Event('change'));
+    await respond(listRequest('institutions', (r) => r.params.get('type') === 'College'), []);
+    TestBed.resetTestingModule();
+
+    await open('semesters');
+    await respond(listRequest('semesters'), []);
+    expect(page.querySelector('#type-filter')).toBeNull();
+  });
+
   it('shows an inactive record as inactive in text', async () => {
     await open('semesters');
     await respond(listRequest('semesters'), [item('1', 'Spring', { isActive: false })]);

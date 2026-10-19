@@ -12,6 +12,7 @@ import {
   ConfigurationRequest,
   INSTITUTION_TYPES,
   ReferenceField,
+  ReferenceName,
   ResourceDescriptor,
   descriptorFor,
 } from '../configuration.models';
@@ -22,6 +23,10 @@ const FIELDS = [
   'type',
   'address',
   'creditsToBeCompleted',
+  'creditHours',
+  'theoryCreditHours',
+  'labCreditHours',
+  'prerequisiteCourseId',
   'degreeId',
   'startingSemesterId',
   'academicSessionId',
@@ -30,9 +35,14 @@ const FIELDS = [
 ] as const;
 
 
+/** A credit value: up to six digits and two decimal places. */
+const CREDIT_PATTERN = /^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/;
+
 /**
  * Create or edit one configuration record, built from the resource's descriptor. A record is deactivated by turning
- * off Active, never cascaded; a record in use cannot be deleted and the screen offers deactivation instead.
+ * off Active, never cascaded; a record in use cannot be deleted and the screen offers deactivation instead. A course
+ * adds credit hours with optional theory and lab parts and an optional prerequisite chosen from the active courses of
+ * the selected degree; courses are only deactivated, never deleted.
  */
 @Component({
   selector: 'app-catalog-form',
@@ -50,7 +60,7 @@ export class CatalogForm {
 
   protected readonly descriptor = computed(() => descriptorFor(this.resource()));
   protected readonly isNew = computed(() => !this.id());
-  protected readonly types = INSTITUTION_TYPES;
+  protected readonly types = computed<readonly string[]>(() => this.descriptor()?.typeOptions ?? INSTITUTION_TYPES);
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     name: [''],
@@ -58,6 +68,10 @@ export class CatalogForm {
     type: [''],
     address: [''],
     creditsToBeCompleted: [''],
+    creditHours: [''],
+    theoryCreditHours: [''],
+    labCreditHours: [''],
+    prerequisiteCourseId: [''],
     isActive: [true],
     degreeId: [''],
     startingSemesterId: [''],
@@ -82,6 +96,9 @@ export class CatalogForm {
   /** Every record of each referenced resource, for the selectors. */
   private readonly referenced = signal<Record<string, ConfigurationItem[]>>({});
   protected readonly districtsOfDivision = signal<ConfigurationItem[]>([]);
+
+  /** A course's prerequisite choices: the active courses of the selected degree, other than this one. */
+  protected readonly prerequisiteChoices = signal<ConfigurationItem[]>([]);
 
   constructor() {
     effect(() => {
@@ -125,6 +142,13 @@ export class CatalogForm {
 
   /** The Division of the District an Upazila was loaded with, so an inactive one stays selectable. */
   private cascadeStart: string | undefined;
+
+  /** A course's degree decides which courses can be its prerequisite. */
+  protected async referencePicked(name: ReferenceName): Promise<void> {
+    if (name === 'degreeId' && this.descriptor()?.isCourse) {
+      await this.loadPrerequisites(this.form.controls.degreeId.value);
+    }
+  }
 
   protected async divisionPicked(): Promise<void> {
     this.form.controls.districtId.setValue('');
@@ -202,8 +226,14 @@ export class CatalogForm {
     if (!v.name.trim()) {
       errors['name'] = ['Enter a name.'];
     }
+    if (descriptor.codeRequired && !v.code.trim()) {
+      errors['code'] = [`Enter a ${descriptor.singular} code.`];
+    }
     if (descriptor.hasType && !v.type) {
       errors['type'] = ['Select a type.'];
+    }
+    if (descriptor.isCourse) {
+      Object.assign(errors, this.validateCourseCredits(v.creditHours, v.theoryCreditHours, v.labCreditHours));
     }
     if (descriptor.hasCredits) {
       const raw = String(v.creditsToBeCompleted).trim();
@@ -223,6 +253,41 @@ export class CatalogForm {
     return errors;
   }
 
+  /** The same credit rules the service applies, for quick feedback: a positive total, parts between zero and it, and a matching sum. */
+  private validateCourseCredits(totalRaw: unknown, theoryRaw: unknown, labRaw: unknown): Record<string, string[]> {
+    const errors: Record<string, string[]> = {};
+    const text = (value: unknown) => String(value ?? '').trim();
+    const total = text(totalRaw);
+    const totalValue = Number(total);
+    const totalValid = CREDIT_PATTERN.test(total) && totalValue > 0 && totalValue <= 999_999.99;
+    if (!totalValid) {
+      errors['creditHours'] = ['Enter positive credit hours with no more than two decimal places.'];
+    }
+    const part = (raw: unknown, field: string, label: string): number | null => {
+      const value = text(raw);
+      if (!value) {
+        return null;
+      }
+      if (!CREDIT_PATTERN.test(value)) {
+        errors[field] = [`Enter ${label} credit hours of zero or more, with no more than two decimal places.`];
+        return null;
+      }
+      const parsed = Number(value);
+      if (totalValid && parsed > totalValue) {
+        errors[field] = [`The ${label} credit hours cannot be more than the total credit hours.`];
+        return null;
+      }
+      return parsed;
+    };
+    const theory = part(theoryRaw, 'theoryCreditHours', 'theory');
+    const lab = part(labRaw, 'labCreditHours', 'lab');
+    // Compared in hundredths so 0.1 + 0.2 style rounding never decides it.
+    if (totalValid && theory !== null && lab !== null && Math.round(theory * 100) + Math.round(lab * 100) !== Math.round(totalValue * 100)) {
+      errors['labCreditHours'] = ['Theory and lab credit hours must add up to the total credit hours.'];
+    }
+    return errors;
+  }
+
   private buildRequest(descriptor: ResourceDescriptor, isActive: boolean): ConfigurationRequest {
     const v = this.form.getRawValue();
     const body: ConfigurationRequest = { name: v.name.trim(), isActive };
@@ -237,6 +302,13 @@ export class CatalogForm {
     }
     if (descriptor.hasCredits) {
       body.creditsToBeCompleted = Number(v.creditsToBeCompleted);
+    }
+    if (descriptor.isCourse) {
+      const optional = (value: unknown) => (String(value ?? '').trim() ? Number(value) : null);
+      body.creditHours = Number(v.creditHours);
+      body.theoryCreditHours = optional(v.theoryCreditHours);
+      body.labCreditHours = optional(v.labCreditHours);
+      body.prerequisiteCourseId = v.prerequisiteCourseId || null;
     }
     for (const reference of descriptor.references) {
       body[reference.name] = v[reference.name];
@@ -299,6 +371,7 @@ export class CatalogForm {
     this.confirmingDelete.set(false);
     this.deleteConflict.set(null);
     this.original.set(null);
+    this.prerequisiteChoices.set([]);
     this.form.reset({ isActive: true });
 
     try {
@@ -327,6 +400,9 @@ export class CatalogForm {
           type: item.type ?? '',
           address: item.address ?? '',
           creditsToBeCompleted: item.creditsToBeCompleted?.toString() ?? '',
+          creditHours: item.creditHours?.toString() ?? '',
+          theoryCreditHours: item.theoryCreditHours?.toString() ?? '',
+          labCreditHours: item.labCreditHours?.toString() ?? '',
           isActive: item.isActive,
           degreeId: item.degreeId ?? '',
           startingSemesterId: item.startingSemesterId ?? '',
@@ -334,6 +410,9 @@ export class CatalogForm {
           divisionId: item.divisionId ?? '',
           districtId: item.districtId ?? '',
         });
+        if (descriptor.isCourse && item.degreeId) {
+          await this.loadPrerequisites(item.degreeId, item.prerequisiteCourseId);
+        }
         if (descriptor.cascadeFrom && item.districtId) {
           const district = await firstValueFrom(this.api.get(descriptorFor('districts')!, item.districtId));
           this.cascadeStart = district.divisionId;
@@ -350,6 +429,23 @@ export class CatalogForm {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Loads the active courses of a degree as prerequisite choices, never this course itself. The prerequisite already saved stays
+   * selectable even if it was deactivated since; any other choice that is not in the new degree is cleared.
+   */
+  private async loadPrerequisites(degreeId: string, keep?: string): Promise<void> {
+    const courses = descriptorFor('courses')!;
+    const self = this.id();
+    const choices = degreeId ? (await this.api.listAll(courses, 'active', degreeId)).filter((course) => course.id !== self) : [];
+    const saved = this.original()?.prerequisiteCourseId;
+    if (saved && degreeId === this.original()?.degreeId && !choices.some((course) => course.id === saved)) {
+      choices.push(await firstValueFrom(this.api.get(courses, saved)));
+    }
+    this.prerequisiteChoices.set(choices);
+    const wanted = keep ?? this.form.controls.prerequisiteCourseId.value;
+    this.form.controls.prerequisiteCourseId.setValue(choices.some((course) => course.id === wanted) ? wanted : '');
   }
 
   private async loadDistricts(divisionId: string, keepDistrict?: string): Promise<void> {
