@@ -10,6 +10,10 @@ import { AuthBrand } from '../../shared/auth-brand/auth-brand';
 import { PASSWORD_RULES } from '../auth/reset-password/reset-password';
 import { UserApi } from './user-api';
 
+/** Shown for every link that cannot be used; deliberately the same whether the account was activated, the link expired, or it was replaced. */
+export const UNUSABLE_LINK_MESSAGE =
+  'This setup link has already been used or is no longer valid. If you have already set your password, sign in with it. Otherwise ask an Admin to send a new setup email.';
+
 function passwordPolicy(control: AbstractControl<string>): ValidationErrors | null {
   return PASSWORD_RULES.every((rule) => rule.test(control.value)) ? null : { policy: true };
 }
@@ -17,7 +21,8 @@ function passwordPolicy(control: AbstractControl<string>): ValidationErrors | nu
 /**
  * The public page behind the setup email: the account holder chooses a first password, which activates the account. The account ID
  * and one-use proof come from the link; they are removed from the address bar at once, kept only in memory, sent only to the setup
- * endpoint, and never shown. Every invalid, expired, or used link gets the same message, which reveals nothing about the account.
+ * endpoints, and never shown. The link is checked before the form appears, so a used, expired, or replaced link goes straight to the
+ * same message (with a way to sign in) instead of a password form. That message reveals nothing about the account.
  */
 @Component({
   selector: 'app-account-credential-setup',
@@ -41,6 +46,7 @@ export class AccountCredentialSetup implements OnInit {
   private userId = '';
   private proof = '';
   protected readonly linkIncomplete = signal(false);
+  protected readonly checking = signal(false);
   protected readonly submitted = signal(false);
   protected readonly submitting = signal(false);
   protected readonly completed = signal(false);
@@ -57,6 +63,26 @@ export class AccountCredentialSetup implements OnInit {
     // Drop the one-use proof from the address bar and history; it stays only in memory.
     if (this.proof || this.userId) {
       void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    }
+
+    if (!this.linkIncomplete()) {
+      void this.checkLink();
+    }
+  }
+
+  /** Shows the form only for a link that can still be used. If the check itself fails, the form is shown and submitting decides. */
+  private async checkLink(): Promise<void> {
+    this.checking.set(true);
+    try {
+      const result = await firstValueFrom(this.api.checkSetupLink(this.userId, this.proof));
+      if (!result.usable) {
+        this.proof = '';
+        this.linkRejected.set(UNUSABLE_LINK_MESSAGE);
+      }
+    } catch {
+      // Not knowing is not a refusal: the setup endpoint checks the link again on submit.
+    } finally {
+      this.checking.set(false);
     }
   }
 
