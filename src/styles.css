@@ -129,6 +129,22 @@
     cursor: pointer;
   }
 
+  /* A password input with its show/hide button (<app-password-toggle>) inside the right edge. The input keeps room for the button,
+     and the button is a full 44px square target that keeps the shared focus ring. */
+  .password-field {
+    @apply relative flex flex-col;
+  }
+
+  .password-field .field-input {
+    padding-inline-end: var(--control-height-lg);
+  }
+
+  .password-toggle {
+    @apply absolute inset-y-0 right-0 flex items-center justify-center rounded-sm text-text-secondary hover:text-text-primary;
+    width: var(--control-height-lg);
+    height: var(--control-height-lg);
+  }
+
   /* Field errors carry a decorative error icon (circle with exclamation mark) so the error is not
      shown by color alone. The message text carries the meaning; the generated icon has no text
      content, so assistive technology ignores it. */

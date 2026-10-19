@@ -30,16 +30,20 @@
 
       <div class="field">
         <label class="field-label" for="password">Password</label>
-        <input
-          id="password"
-          class="field-input"
-          type="password"
-          formControlName="password"
-          autocomplete="current-password"
-          required
-          [attr.aria-invalid]="showError('password')"
-          [attr.aria-describedby]="showError('password') ? 'password-error' : null"
-        />
+        <div class="password-field">
+          <input
+            #passwordInput
+            id="password"
+            class="field-input"
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+            required
+            [attr.aria-invalid]="showError('password')"
+            [attr.aria-describedby]="showError('password') ? 'password-error' : null"
+          />
+          <app-password-toggle [target]="passwordInput" label="password" />
+        </div>
         @if (showError('password')) {
           <p class="field-error" id="password-error">Enter your password.</p>
         }

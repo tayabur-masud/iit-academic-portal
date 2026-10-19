@@ -45,6 +45,7 @@ default role (Teacher), and the role switcher at the bottom of the menu changes 
 | `src/app/shared/pager/` | `<app-pager>`: the one numbered pager every paged table uses ("Showing X to Y of N", an "Items per page" choice of 10, 25, 50, or 100, Previous, page numbers with an ellipsis, Next), `pageList` that decides which numbers to show, and `PagerPreferences`, which keeps the chosen page size in memory for all tables |
 | `src/app/shared/utc-timestamp/` | `<app-utc-timestamp>`: every audit time is shown in UTC with an explicit "UTC" label inside a `time` element |
 | `src/app/shared/auth-brand/` | Centered IIT logo and portal name used on every authentication screen |
+| `src/app/shared/password-toggle/` | `<app-password-toggle>`: the eye button inside every password field that shows or hides the password; place it after the input inside `.password-field` |
 | `public/images/iit-logo.png` | Approved IIT logo (600×327), shown on the authentication screens and in the signed-in header; do not stretch or recolor it |
 | `public/favicon.ico`, `public/apple-touch-icon.png` | Browser-tab icon (16/32/48px, "IIT" lettermark) and 180px home-screen icon (full logo), generated from the logo per design-system §10 |
 
