@@ -7,6 +7,8 @@ import {
   ConfigurationPage,
   ConfigurationRequest,
   ConfigurationStatus,
+  GradeBandRequest,
+  GradeScalePage,
   ResourceDescriptor,
 } from './configuration.models';
 
@@ -17,7 +19,7 @@ export interface ListOptions {
   /** A 1-based page number: the list then also returns the total count and page count. */
   page?: number;
   pageSize?: number;
-  /** Limits a geography list to one parent (a division for districts, a district for upazilas). */
+  /** Limits a list to one parent (a division for districts, a district for upazilas and city corporations, a degree for courses). */
   parentId?: string;
   /** Limits a typed catalog (courses, educational institutions) to one type. */
   type?: string;
@@ -82,5 +84,15 @@ export class ConfigurationApi {
 
   remove(resource: ResourceDescriptor, id: string): Observable<void> {
     return this.http.delete<void>(`${ROOT}/${resource.apiPath}/${encodeURIComponent(id)}`);
+  }
+
+  /** The whole Grade scale, highest band first; inactive bands too, so the editor can show and keep them. */
+  listGrades(): Observable<GradeScalePage> {
+    return this.http.get<GradeScalePage>(`${ROOT}/grades`, { params: new HttpParams().set('status', 'all') });
+  }
+
+  /** Replaces the Grade scale with the complete set given; returns the saved scale. */
+  replaceGradeScale(bands: GradeBandRequest[]): Observable<GradeScalePage> {
+    return this.http.put<GradeScalePage>(`${ROOT}/grades/scale`, { bands });
   }
 }

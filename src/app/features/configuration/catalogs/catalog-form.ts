@@ -23,6 +23,7 @@ const FIELDS = [
   'type',
   'address',
   'creditsToBeCompleted',
+  'minimumCgpaForCompletion',
   'creditHours',
   'theoryCreditHours',
   'labCreditHours',
@@ -68,6 +69,7 @@ export class CatalogForm {
     type: [''],
     address: [''],
     creditsToBeCompleted: [''],
+    minimumCgpaForCompletion: [''],
     creditHours: [''],
     theoryCreditHours: [''],
     labCreditHours: [''],
@@ -241,6 +243,13 @@ export class CatalogForm {
       if (!/^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/.test(raw) || !Number.isFinite(value) || value <= 0 || value > 999_999.99) {
         errors['creditsToBeCompleted'] = ['Enter a positive credit total with no more than two decimal places.'];
       }
+      const cgpaRaw = String(v.minimumCgpaForCompletion ?? '').trim();
+      const cgpa = Number(cgpaRaw);
+      if (!cgpaRaw) {
+        errors['minimumCgpaForCompletion'] = ['Enter the minimum CGPA for completion.'];
+      } else if (!/^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/.test(cgpaRaw) || !Number.isFinite(cgpa) || cgpa <= 0 || cgpa > 4) {
+        errors['minimumCgpaForCompletion'] = ['Enter a CGPA greater than 0 and at most 4.00, with no more than two decimal places.'];
+      }
     }
     for (const reference of descriptor.references) {
       if (!v[reference.name]) {
@@ -302,6 +311,7 @@ export class CatalogForm {
     }
     if (descriptor.hasCredits) {
       body.creditsToBeCompleted = Number(v.creditsToBeCompleted);
+      body.minimumCgpaForCompletion = Number(v.minimumCgpaForCompletion);
     }
     if (descriptor.isCourse) {
       const optional = (value: unknown) => (String(value ?? '').trim() ? Number(value) : null);
@@ -400,6 +410,7 @@ export class CatalogForm {
           type: item.type ?? '',
           address: item.address ?? '',
           creditsToBeCompleted: item.creditsToBeCompleted?.toString() ?? '',
+          minimumCgpaForCompletion: item.minimumCgpaForCompletion?.toString() ?? '',
           creditHours: item.creditHours?.toString() ?? '',
           theoryCreditHours: item.theoryCreditHours?.toString() ?? '',
           labCreditHours: item.labCreditHours?.toString() ?? '',

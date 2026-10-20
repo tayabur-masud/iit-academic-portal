@@ -7,6 +7,8 @@ export interface ConfigurationItem {
   type?: string;
   address?: string;
   creditsToBeCompleted?: number;
+  /** A degree's minimum CGPA for completion, on the 4.00 scale. */
+  minimumCgpaForCompletion?: number;
   /** A course's total credit hours, and its optional theory and lab parts. */
   creditHours?: number;
   theoryCreditHours?: number;
@@ -82,6 +84,8 @@ export interface ResourceDescriptor {
   parentFilter?: 'divisionId' | 'districtId' | 'degreeId';
   /** For an Upazila: the Division is chosen first and narrows the District choices. */
   cascadeFrom?: string;
+  /** Edited on its own screen (the Grade scale), never through the generic list and form. */
+  ownEditor?: boolean;
 }
 
 export const INSTITUTION_TYPES = ['School', 'College', 'University'] as const;
@@ -215,6 +219,18 @@ export const RESOURCES: ResourceDescriptor[] = [
   },
   {
     ...base,
+    slug: 'grades',
+    apiPath: 'grades',
+    group: 'IIT academics',
+    label: 'Grades',
+    singular: 'grade band',
+    description:
+      'One grade scale shared by every degree: marks percentage bands, each with a letter grade, a numeric grade on the 4.00 scale, and a comment. The bands are edited and saved together.',
+    references: [],
+    ownEditor: true,
+  },
+  {
+    ...base,
     slug: 'divisions',
     apiPath: 'geography/divisions',
     group: 'Geography',
@@ -245,13 +261,64 @@ export const RESOURCES: ResourceDescriptor[] = [
     parentFilter: 'districtId',
     cascadeFrom: 'divisions',
   },
+  {
+    ...base,
+    slug: 'city-corporations',
+    apiPath: 'geography/city-corporations',
+    group: 'Geography',
+    label: 'City corporations',
+    singular: 'city corporation',
+    description: 'Each city corporation belongs to one district. Its name is unique among the city corporations of that district.',
+    references: [{ name: 'districtId', label: 'District', resource: 'districts' }],
+    parentFilter: 'districtId',
+    cascadeFrom: 'divisions',
+  },
 ];
 
 /** The sections of the Configuration home, in the order they are shown. */
 export const GROUPS = ['IIT academics', 'Other catalogs', 'Geography'] as const;
 
+/** A resource the generic list and form serve; one with its own editor (the Grade scale) is not one of them. */
 export function descriptorFor(slug: string | undefined): ResourceDescriptor | undefined {
-  return RESOURCES.find((resource) => resource.slug === slug);
+  return RESOURCES.find((resource) => resource.slug === slug && !resource.ownEditor);
+}
+
+/** One band of the global Grade scale, as the service returns it. */
+export interface GradeBand {
+  id: string;
+  letterGrade: string;
+  /** Inclusive lower bound, a percentage. */
+  marksLowerBound: number;
+  /** Exclusive upper bound, a percentage, except that the band ending at 100 includes it. */
+  marksUpperBound: number;
+  upperBoundInclusive: boolean;
+  /** On the 4.00 scale, with at most two decimals. */
+  numericGrade: number;
+  comment: string;
+  isActive: boolean;
+  createdAtUtc: string;
+  createdByUserId?: string;
+  createdBy?: string;
+  lastModifiedAtUtc: string;
+  lastModifiedByUserId?: string;
+  lastModifiedBy?: string;
+}
+
+/** One band of a requested scale; leave out `id` to create a band. */
+export interface GradeBandRequest {
+  id?: string;
+  letterGrade: string;
+  marksLowerBound: number | null;
+  marksUpperBound: number | null;
+  upperBoundInclusive: boolean;
+  numericGrade: number | null;
+  comment: string;
+  isActive: boolean;
+}
+
+export interface GradeScalePage {
+  items: GradeBand[];
+  nextCursor: null;
 }
 
 /** The body sent to create or update a record. */
@@ -262,6 +329,7 @@ export interface ConfigurationRequest {
   type?: string;
   address?: string;
   creditsToBeCompleted?: number;
+  minimumCgpaForCompletion?: number;
   creditHours?: number;
   theoryCreditHours?: number | null;
   labCreditHours?: number | null;

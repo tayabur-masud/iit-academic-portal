@@ -96,6 +96,27 @@
             <p class="field-error" id="creditsToBeCompleted-error">{{ message }}</p>
           }
         </div>
+
+        <div class="field">
+          <label class="field-label" for="minimumCgpaForCompletion">Minimum CGPA for completion</label>
+          <p class="field-help" id="minimumCgpaForCompletion-help">On the 4.00 scale, for example 2.50.</p>
+          <input
+            id="minimumCgpaForCompletion"
+            class="field-input"
+            type="number"
+            min="0.01"
+            max="4"
+            step="0.01"
+            inputmode="decimal"
+            formControlName="minimumCgpaForCompletion"
+            required
+            [attr.aria-invalid]="errorsFor('minimumCgpaForCompletion').length > 0"
+            [attr.aria-describedby]="describedBy('minimumCgpaForCompletion', true)"
+          />
+          @for (message of errorsFor('minimumCgpaForCompletion'); track message) {
+            <p class="field-error" id="minimumCgpaForCompletion-error">{{ message }}</p>
+          }
+        </div>
       }
 
       @if (d.isCourse) {
