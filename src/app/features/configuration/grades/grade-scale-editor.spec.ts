@@ -181,6 +181,8 @@ describe('GradeScaleEditor', () => {
     // Drop D (40-45) and stretch C down to 40.
     button('Remove band 9').click();
     fixture.detectChanges();
+    button('Yes, remove band 9').click();
+    fixture.detectChanges();
     type(7, 'marksLowerBound', '40');
     button('Add band').click();
     fixture.detectChanges();
@@ -209,6 +211,49 @@ describe('GradeScaleEditor', () => {
     });
     request.flush({ items: scale(), nextCursor: null });
     await settle();
+  });
+
+  it('asks in the row before removing a band, and keeps it when cancelled', async () => {
+    await openWith();
+
+    button('Remove band 2').click();
+    fixture.detectChanges();
+    await settle();
+
+    const confirm = page.querySelector<HTMLButtonElement>('#band-1-confirm-remove')!;
+    expect(rows()[1].textContent).toContain('Remove A?');
+    expect(rows()[1].textContent).toContain('It is deleted when you save the scale.');
+    expect(confirm.className).toContain('btn-danger');
+    expect(document.activeElement).toBe(confirm);
+    expect(rows().length).toBe(10);
+
+    button('Cancel').click();
+    fixture.detectChanges();
+    await settle();
+    expect(rows().length).toBe(10);
+    expect(page.querySelector('#band-1-confirm-remove')).toBeNull();
+    expect(document.activeElement).toBe(page.querySelector('#band-1-remove'));
+
+    button('Remove band 2').click();
+    fixture.detectChanges();
+    button('Yes, remove band 2').click();
+    fixture.detectChanges();
+    await settle();
+    expect(rows().length).toBe(9);
+    expect(input(1, 'letterGrade').value).toBe('A-');
+    expect(document.activeElement).toBe(page.querySelector('#band-1-remove'));
+    http.expectNone(`${ROOT}/grades/scale`);
+  });
+
+  it('says a band added on this screen has not been saved when asking to remove it', async () => {
+    await openWith();
+    button('Add band').click();
+    fixture.detectChanges();
+
+    button('Remove band 11').click();
+    fixture.detectChanges();
+
+    expect(rows()[10].textContent).toContain('It has not been saved yet.');
   });
 
   it('refuses a gap before sending anything, naming the uncovered percentages and the band', async () => {

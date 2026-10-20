@@ -52,6 +52,8 @@ export class GradeScaleEditor {
   protected readonly notice = signal<string | null>(null);
   protected readonly problems = signal<Problems>({});
   protected readonly announcement = signal('');
+  /** The band whose removal is being confirmed in its row, if any. */
+  protected readonly confirming = signal<number | null>(null);
   /** The bands as last loaded or saved, to tell which ones a save would delete and to show who changed the scale last. */
   private readonly saved = signal<GradeBand[]>([]);
   /** Bumped whenever rows are added or removed, so the "removed" note recomputes. */
@@ -101,24 +103,55 @@ export class GradeScaleEditor {
   }
 
   protected addBand(): void {
+    this.confirming.set(null);
     this.bands.push(this.newBand());
     this.rowsChanged.update((n) => n + 1);
     this.notice.set(null);
     this.announcement.set(`Band ${this.bands.length} added.`);
   }
 
-  protected removeBand(index: number): void {
-    const letter = this.bands.at(index).controls.letterGrade.value.trim();
+  /** The letter grade of a band as typed, for confirmation and announcements. */
+  protected letterOf(index: number): string {
+    return this.bands.at(index)?.controls.letterGrade.value.trim() ?? '';
+  }
+
+  /** Whether a band was loaded from the service (so removing it deletes it on save) rather than added on this screen. */
+  protected isSaved(index: number): boolean {
+    return !!this.bands.at(index)?.controls.id.value;
+  }
+
+  /** Asks, in the row, before removing a band; focus moves to the confirming button. */
+  protected askRemove(index: number): void {
+    this.confirming.set(index);
+    this.focus(`band-${index}-confirm-remove`);
+  }
+
+  protected cancelRemove(index: number): void {
+    this.confirming.set(null);
+    this.focus(`band-${index}-remove`);
+  }
+
+  protected confirmRemove(index: number): void {
+    const letter = this.letterOf(index);
+    const saved = this.isSaved(index);
+    this.confirming.set(null);
     this.bands.removeAt(index);
     this.rowsChanged.update((n) => n + 1);
     // Band numbers shift, so errors keyed by the old numbers no longer point at the right rows.
     this.problems.set({});
     this.notice.set(null);
-    this.announcement.set(`Band ${index + 1}${letter ? ` (${letter})` : ''} removed. It is deleted when you save.`);
+    this.announcement.set(`Band ${index + 1}${letter ? ` (${letter})` : ''} removed.${saved ? ' It is deleted when you save.' : ''}`);
+    // Focus stays in the table: the band that took this place, or the one above it, or else Add band.
+    const next = Math.min(index, this.bands.length - 1);
+    this.focus(next >= 0 ? `band-${next}-remove` : 'add-band');
   }
 
   protected reload(): void {
     void this.load();
+  }
+
+  private focus(id: string): void {
+    setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>(`#${id}`)?.focus());
   }
 
   protected async submit(): Promise<void> {
@@ -177,6 +210,7 @@ export class GradeScaleEditor {
   }
 
   private show(items: GradeBand[]): void {
+    this.confirming.set(null);
     this.saved.set(items);
     this.bands.clear();
     for (const item of items) {

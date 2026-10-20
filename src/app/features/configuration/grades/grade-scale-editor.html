@@ -163,9 +163,24 @@
                   </label>
                 </td>
                 <td class="align-top">
-                  <button type="button" class="btn btn-danger-outline btn-sm" (click)="removeBand(i)">
-                    Remove<span class="sr-only"> band {{ i + 1 }}</span>
-                  </button>
+                  @if (confirming() === i) {
+                    <div class="flex max-w-[16rem] flex-col gap-2" role="group" [attr.aria-labelledby]="'band-' + i + '-confirm-text'">
+                      <p class="mb-0 text-compact" [id]="'band-' + i + '-confirm-text'">
+                        Remove {{ letterOf(i) || 'band ' + (i + 1) }}?
+                        {{ isSaved(i) ? 'It is deleted when you save the scale.' : 'It has not been saved yet.' }}
+                      </p>
+                      <div class="flex flex-wrap gap-2">
+                        <button [id]="'band-' + i + '-confirm-remove'" type="button" class="btn btn-danger btn-sm" (click)="confirmRemove(i)">
+                          Yes, remove<span class="sr-only"> band {{ i + 1 }}</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRemove(i)">Cancel</button>
+                      </div>
+                    </div>
+                  } @else {
+                    <button [id]="'band-' + i + '-remove'" type="button" class="btn btn-danger-outline btn-sm" (click)="askRemove(i)">
+                      Remove<span class="sr-only"> band {{ i + 1 }}</span>…
+                    </button>
+                  }
                 </td>
               </tr>
             }
@@ -182,7 +197,7 @@
     }
 
     <div class="mt-4 flex flex-wrap gap-3">
-      <button type="button" class="btn btn-secondary" (click)="addBand()">Add band</button>
+      <button id="add-band" type="button" class="btn btn-secondary" (click)="addBand()">Add band</button>
     </div>
 
     <div class="mt-6 flex flex-wrap gap-3">
