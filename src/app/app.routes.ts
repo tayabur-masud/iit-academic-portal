@@ -63,6 +63,8 @@ export const routes: Routes = [
       roleArea('Admin', [
         // Loaded on demand, like the other Admin-only screens, so the initial bundle stays small.
         { path: 'configuration', loadComponent: () => import('./features/configuration/configuration-home').then((m) => m.ConfigurationHome), title: `Configuration | ${TITLE}` },
+        // The Grade scale has its own editor; it comes before ":resource" so the generic list never claims it.
+        { path: 'configuration/grades', loadComponent: () => import('./features/configuration/grades/grade-scale-editor').then((m) => m.GradeScaleEditor), title: `Grades | ${TITLE}` },
         { path: 'configuration/:resource', loadComponent: () => import('./features/configuration/catalogs/catalog-list').then((m) => m.CatalogList), title: `Configuration | ${TITLE}` },
         { path: 'configuration/:resource/new', loadComponent: () => import('./features/configuration/catalogs/catalog-form').then((m) => m.CatalogForm), title: `New record | ${TITLE}` },
         { path: 'configuration/:resource/:id', loadComponent: () => import('./features/configuration/catalogs/catalog-form').then((m) => m.CatalogForm), title: `Edit record | ${TITLE}` },

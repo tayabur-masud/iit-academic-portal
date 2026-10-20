@@ -1,0 +1,214 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin/configuration">Configuration</a>
+  <span aria-hidden="true"> / </span>
+  <span>Grades</span>
+</nav>
+
+<h1>Grades</h1>
+<p class="text-text-secondary">
+  One grade scale, shared by every degree. Each band runs from its lower bound up to, but not including, its upper bound; the band
+  that ends at 100% includes 100%. The active bands must cover 0% to 100% with no gaps or overlaps. An inactive band is kept but not
+  used. Edit the bands, then save them together.
+</p>
+<p class="sr-only" role="status">{{ announcement() }}</p>
+
+@if (loading()) {
+  <p class="flex items-center gap-2 text-text-secondary">
+    <span class="spinner" aria-hidden="true"></span>
+    Loading the grade scale…
+  </p>
+} @else if (loadError(); as message) {
+  <div class="alert alert-error" role="alert">
+    <strong class="alert-title">The grade scale could not be loaded</strong>
+    <p>{{ message }}</p>
+    <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
+  </div>
+} @else {
+  @if (notice(); as message) {
+    <div class="alert alert-success" role="status">
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  }
+
+  @if (saveError(); as message) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">Not saved</strong>
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  } @else if (hasProblems()) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">Not saved</strong>
+      @for (message of scaleMessages(); track message) {
+        <p>{{ message }}</p>
+      }
+      <p class="mb-0">Correct the highlighted bands, then save again. Nothing was changed.</p>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+    @if (bands.length === 0) {
+      <div class="card">
+        <p>No grade bands yet. Add bands that together cover 0% to 100%, then save.</p>
+      </div>
+    } @else {
+      <div class="data-table-container" formArrayName="bands">
+        <table class="data-table min-w-[56rem]">
+          <caption class="sr-only">Grade bands, highest first</caption>
+          <thead>
+            <tr>
+              <th scope="col">Letter grade</th>
+              <th scope="col">From (%)</th>
+              <th scope="col">To (%)</th>
+              <th scope="col">Numeric grade</th>
+              <th scope="col">Comment</th>
+              <th scope="col">Active</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (band of bands.controls; track band; let i = $index) {
+              <tr [formGroupName]="i">
+                <td class="align-top">
+                  <label class="sr-only" [for]="'band-' + i + '-letterGrade'">Letter grade, band {{ i + 1 }}</label>
+                  <input
+                    [id]="'band-' + i + '-letterGrade'"
+                    class="field-input w-24"
+                    type="text"
+                    autocomplete="off"
+                    formControlName="letterGrade"
+                    [attr.aria-invalid]="errorsFor(i, 'letterGrade').length > 0"
+                    [attr.aria-describedby]="describedBy(i, 'letterGrade')"
+                  />
+                  @for (message of errorsFor(i, 'letterGrade'); track message) {
+                    <p class="field-error" [id]="'band-' + i + '-letterGrade-error'">{{ message }}</p>
+                  }
+                </td>
+                <td class="align-top">
+                  <label class="sr-only" [for]="'band-' + i + '-marksLowerBound'">From percentage, band {{ i + 1 }}</label>
+                  <input
+                    [id]="'band-' + i + '-marksLowerBound'"
+                    class="field-input w-24 text-right"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="any"
+                    inputmode="decimal"
+                    formControlName="marksLowerBound"
+                    [attr.aria-invalid]="errorsFor(i, 'marksLowerBound').length > 0"
+                    [attr.aria-describedby]="describedBy(i, 'marksLowerBound')"
+                  />
+                  @for (message of errorsFor(i, 'marksLowerBound'); track message) {
+                    <p class="field-error" [id]="'band-' + i + '-marksLowerBound-error'">{{ message }}</p>
+                  }
+                </td>
+                <td class="align-top">
+                  <label class="sr-only" [for]="'band-' + i + '-marksUpperBound'">To percentage, band {{ i + 1 }}</label>
+                  <input
+                    [id]="'band-' + i + '-marksUpperBound'"
+                    class="field-input w-24 text-right"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="any"
+                    inputmode="decimal"
+                    formControlName="marksUpperBound"
+                    [attr.aria-invalid]="errorsFor(i, 'marksUpperBound').length + errorsFor(i, 'upperBoundInclusive').length > 0"
+                    [attr.aria-describedby]="describedBy(i, 'marksUpperBound')"
+                  />
+                  @if (band.controls.marksUpperBound.value === 100) {
+                    <p class="field-help mb-0">includes 100%</p>
+                  }
+                  @let upperErrors = errorsFor(i, 'marksUpperBound').concat(errorsFor(i, 'upperBoundInclusive'));
+                  @if (upperErrors.length > 0) {
+                    <p class="field-error" [id]="'band-' + i + '-marksUpperBound-error'">{{ upperErrors.join(' ') }}</p>
+                  }
+                </td>
+                <td class="align-top">
+                  <label class="sr-only" [for]="'band-' + i + '-numericGrade'">Numeric grade, band {{ i + 1 }}</label>
+                  <input
+                    [id]="'band-' + i + '-numericGrade'"
+                    class="field-input w-24 text-right"
+                    type="number"
+                    min="0"
+                    max="4"
+                    step="0.01"
+                    inputmode="decimal"
+                    formControlName="numericGrade"
+                    [attr.aria-invalid]="errorsFor(i, 'numericGrade').length > 0"
+                    [attr.aria-describedby]="describedBy(i, 'numericGrade')"
+                  />
+                  @for (message of errorsFor(i, 'numericGrade'); track message) {
+                    <p class="field-error" [id]="'band-' + i + '-numericGrade-error'">{{ message }}</p>
+                  }
+                </td>
+                <td class="align-top">
+                  <label class="sr-only" [for]="'band-' + i + '-comment'">Comment, band {{ i + 1 }}</label>
+                  <input
+                    [id]="'band-' + i + '-comment'"
+                    class="field-input"
+                    type="text"
+                    autocomplete="off"
+                    formControlName="comment"
+                    [attr.aria-invalid]="errorsFor(i, 'comment').length > 0"
+                    [attr.aria-describedby]="describedBy(i, 'comment')"
+                  />
+                  @for (message of errorsFor(i, 'comment'); track message) {
+                    <p class="field-error" [id]="'band-' + i + '-comment-error'">{{ message }}</p>
+                  }
+                </td>
+                <td class="align-top">
+                  <label class="flex min-h-11 items-center gap-2" [for]="'band-' + i + '-isActive'">
+                    <input [id]="'band-' + i + '-isActive'" type="checkbox" formControlName="isActive" />
+                    <span>Active<span class="sr-only">, band {{ i + 1 }}</span></span>
+                  </label>
+                </td>
+                <td class="align-top">
+                  <button type="button" class="btn btn-danger-outline btn-sm" (click)="removeBand(i)">
+                    Remove<span class="sr-only"> band {{ i + 1 }}</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (removedCount() > 0) {
+      <p class="field-help mt-3">
+        {{ removedCount() === 1 ? 'One band was removed.' : removedCount() + ' bands were removed.' }} Removed bands are deleted when you
+        save; their history is kept.
+      </p>
+    }
+
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button type="button" class="btn btn-secondary" (click)="addBand()">Add band</button>
+    </div>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Saving…
+        } @else {
+          Save grade scale
+        }
+      </button>
+      <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="reload()">Discard changes</button>
+    </div>
+  </form>
+
+  @if (lastChange(); as band) {
+    <section class="card mt-6 max-w-[40rem]" aria-labelledby="history-title">
+      <h2 id="history-title">Record history</h2>
+      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
+        <dt class="font-medium text-text-secondary">Last modified</dt>
+        <dd class="m-0">
+          <app-utc-timestamp [value]="band.lastModifiedAtUtc" />
+          by <span class="break-all">{{ who(band.lastModifiedBy, band.lastModifiedByUserId) }}</span>
+          (band {{ band.letterGrade }})
+        </dd>
+      </dl>
+    </section>
+  }
+}

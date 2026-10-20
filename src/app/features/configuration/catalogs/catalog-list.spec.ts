@@ -281,6 +281,40 @@ describe('CatalogList', () => {
     expect(rows()[0]).toContain('Sadar');
   });
 
+  it('lists city corporations with their district and narrows them by division and then district', async () => {
+    await open('city-corporations');
+    await respond(listRequest('geography/city-corporations'), [item('c1', 'Gazipur City Corporation', { districtId: 'g1' })]);
+    await respond(listRequest('geography/divisions', (r) => r.params.get('status') === 'all'), [item('v1', 'Dhaka')]);
+    await respond(listRequest('geography/districts', (r) => r.params.get('status') === 'all' && !r.params.has('divisionId')), [item('g1', 'Gazipur')]);
+
+    expect(page.querySelector('h1')?.textContent).toContain('City corporations');
+    const headers = Array.from(page.querySelectorAll('thead th')).map((th) => th.textContent?.trim());
+    expect(headers).toContain('District');
+    expect(headers).not.toContain('Code');
+    expect(rows()[0]).toContain('Gazipur City Corporation');
+    expect(rows()[0]).toContain('Gazipur');
+    expect(page.querySelector('#type-filter')).toBeNull();
+
+    const division = page.querySelector<HTMLSelectElement>('#division-filter')!;
+    division.value = 'v1';
+    division.dispatchEvent(new Event('change'));
+    await settle();
+    await respond(listRequest('geography/districts', (r) => r.params.get('divisionId') === 'v1'), [item('g1', 'Gazipur')]);
+    await respond(listRequest('geography/city-corporations', (r) => !r.params.has('districtId')), []);
+
+    const district = page.querySelector<HTMLSelectElement>('#district-filter')!;
+    district.value = 'g1';
+    district.dispatchEvent(new Event('change'));
+    await respond(listRequest('geography/city-corporations', (r) => r.params.get('districtId') === 'g1'), []);
+    expect(page.textContent).toContain('No city corporations match');
+  });
+
+  it('leaves the Grade scale to its own editor', async () => {
+    await open('grades');
+
+    expect(page.querySelector('[role=alert]')?.textContent).toContain('no such configuration resource');
+  });
+
   it('says so when the resource does not exist', async () => {
     await open('no-such-resource');
 

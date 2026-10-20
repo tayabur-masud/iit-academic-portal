@@ -103,10 +103,11 @@ describe('CatalogForm', () => {
       type('#name', '  Bachelor of IT ');
       type('#code', ' bit ');
       type('#creditsToBeCompleted', '120');
+      type('#minimumCgpaForCompletion', '2.5');
 
       submit();
       const request = await writeRequest('POST', 'degrees');
-      expect(request.request.body).toEqual({ name: 'Bachelor of IT', isActive: true, code: 'bit', creditsToBeCompleted: 120 });
+      expect(request.request.body).toEqual({ name: 'Bachelor of IT', isActive: true, code: 'bit', creditsToBeCompleted: 120, minimumCgpaForCompletion: 2.5 });
       request.flush(item('1', 'Bachelor of IT', { code: 'bit', creditsToBeCompleted: 120 }), { status: 201, statusText: 'Created' });
       await settle();
 
@@ -153,19 +154,81 @@ describe('CatalogForm', () => {
       http.expectNone(`${ROOT}/degrees`);
 
       type('#creditsToBeCompleted', '120.50');
+      type('#minimumCgpaForCompletion', '3');
       submit();
       const request = await writeRequest('POST', 'degrees');
-      expect(request.request.body).toEqual({ name: 'Bachelor of IT', isActive: true, code: '', creditsToBeCompleted: 120.5 });
+      expect(request.request.body).toEqual({ name: 'Bachelor of IT', isActive: true, code: '', creditsToBeCompleted: 120.5, minimumCgpaForCompletion: 3 });
       request.flush(item('degree-1', 'Bachelor of IT', { creditsToBeCompleted: 120.5 }), { status: 201, statusText: 'Created' });
       await settle();
     });
 
+    it('requires a minimum CGPA between 0.01 and 4.00 with at most two decimals', async () => {
+      await open('degrees');
+      await settle();
+      fixture.detectChanges();
+
+      const cgpa = page.querySelector<HTMLInputElement>('#minimumCgpaForCompletion')!;
+      expect(page.querySelector('label[for="minimumCgpaForCompletion"]')?.textContent?.trim()).toBe('Minimum CGPA for completion');
+      expect(cgpa.required).toBe(true);
+      expect(cgpa.min).toBe('0.01');
+      expect(cgpa.max).toBe('4');
+      expect(cgpa.step).toBe('0.01');
+      expect(cgpa.getAttribute('aria-describedby')).toContain('minimumCgpaForCompletion-help');
+      type('#name', 'EMIT');
+      type('#creditsToBeCompleted', '48');
+
+      for (const [value, message] of [
+        ['', 'Enter the minimum CGPA'],
+        ['0', 'at most 4.00'],
+        ['4.01', 'at most 4.00'],
+        ['2.555', 'two decimal places'],
+      ]) {
+        type('#minimumCgpaForCompletion', value);
+        submit();
+        await settle();
+        fixture.detectChanges();
+        expect(page.querySelector('#minimumCgpaForCompletion-error')?.textContent).toContain(message);
+        expect(cgpa.getAttribute('aria-invalid')).toBe('true');
+        http.expectNone(`${ROOT}/degrees`);
+      }
+
+      type('#minimumCgpaForCompletion', '4.00');
+      submit();
+      const request = await writeRequest('POST', 'degrees');
+      expect(request.request.body).toMatchObject({ creditsToBeCompleted: 48, minimumCgpaForCompletion: 4 });
+      request.flush(item('d9', 'EMIT', { creditsToBeCompleted: 48, minimumCgpaForCompletion: 4 }), { status: 201, statusText: 'Created' });
+      await settle();
+    });
+
+    it('shows a minimum CGPA the service refuses against its field', async () => {
+      await open('degrees');
+      await settle();
+      fixture.detectChanges();
+      type('#name', 'EMIT');
+      type('#creditsToBeCompleted', '48');
+      type('#minimumCgpaForCompletion', '2.5');
+
+      submit();
+      (await writeRequest('POST', 'degrees')).flush(
+        ...problem(400, 'Invalid', { minimumCgpaForCompletion: ['Enter a CGPA greater than 0 and at most 4.00, with no more than two decimal places.'] }),
+      );
+      await settle();
+      fixture.detectChanges();
+
+      expect(page.querySelector('#minimumCgpaForCompletion-error')?.textContent).toContain('at most 4.00');
+    });
+
     it('loads and updates the Degree credit total', async () => {
       await open('degrees', 'degree-1');
-      await respond(lookup('degrees/degree-1'), item('degree-1', 'Bachelor of IT', { code: 'BIT', creditsToBeCompleted: 120.5 }));
+      await respond(
+        lookup('degrees/degree-1'),
+        item('degree-1', 'Bachelor of IT', { code: 'BIT', creditsToBeCompleted: 120.5, minimumCgpaForCompletion: 2.75 }),
+      );
 
       expect(page.querySelector<HTMLInputElement>('#creditsToBeCompleted')?.value).toBe('120.5');
+      expect(page.querySelector<HTMLInputElement>('#minimumCgpaForCompletion')?.value).toBe('2.75');
       type('#creditsToBeCompleted', '140.25');
+      type('#minimumCgpaForCompletion', '3.5');
       submit();
       const request = await writeRequest('PUT', 'degrees/degree-1');
       expect(request.request.body).toEqual({
@@ -173,6 +236,7 @@ describe('CatalogForm', () => {
         isActive: true,
         code: 'BIT',
         creditsToBeCompleted: 140.25,
+        minimumCgpaForCompletion: 3.5,
       });
       request.flush(item('degree-1', 'Bachelor of IT', { code: 'BIT', creditsToBeCompleted: 140.25 }));
       await settle();
@@ -185,6 +249,7 @@ describe('CatalogForm', () => {
       type('#name', 'Duplicate');
       type('#code', 'D1');
       type('#creditsToBeCompleted', '120');
+      type('#minimumCgpaForCompletion', '2.5');
 
       submit();
       (await writeRequest('POST', 'degrees')).flush(
@@ -251,7 +316,7 @@ describe('CatalogForm', () => {
 
     it('loads a record for editing and saves only through PUT', async () => {
       await open('degrees', 'd1');
-      await respond(lookup('degrees/d1'), item('d1', 'BSc', { code: 'B', creditsToBeCompleted: 120 }));
+      await respond(lookup('degrees/d1'), item('d1', 'BSc', { code: 'B', creditsToBeCompleted: 120, minimumCgpaForCompletion: 2.5 }));
 
       expect(page.querySelector('h1')?.textContent).toContain('Edit degree');
       expect(page.querySelector<HTMLInputElement>('#name')?.value).toBe('BSc');
@@ -260,14 +325,14 @@ describe('CatalogForm', () => {
       type('#name', 'BSc in IT');
       submit();
       const request = await writeRequest('PUT', 'degrees/d1');
-      expect(request.request.body).toEqual({ name: 'BSc in IT', isActive: true, code: 'B', creditsToBeCompleted: 120 });
+      expect(request.request.body).toEqual({ name: 'BSc in IT', isActive: true, code: 'B', creditsToBeCompleted: 120, minimumCgpaForCompletion: 2.5 });
       request.flush(item('d1', 'BSc in IT', { creditsToBeCompleted: 120 }));
       await settle();
     });
 
     it('deactivates by turning Active off and explains an inactive record', async () => {
       await open('degrees', 'd1');
-      await respond(lookup('degrees/d1'), item('d1', 'BSc', { isActive: false, creditsToBeCompleted: 120 }));
+      await respond(lookup('degrees/d1'), item('d1', 'BSc', { isActive: false, creditsToBeCompleted: 120, minimumCgpaForCompletion: 2.5 }));
       expect(page.textContent).toContain('This degree is inactive');
 
       const active = page.querySelector<HTMLInputElement>('#isActive')!;
@@ -718,6 +783,67 @@ describe('CatalogForm', () => {
 
       expect(page.querySelector('#cascadeDivisionId-error')).not.toBeNull();
       expect(page.querySelector('#districtId-error')).not.toBeNull();
+    });
+
+    it('creates a city corporation under a district chosen through its division, with no code field', async () => {
+      await open('city-corporations');
+      await respond(lookup('geography/divisions'), list([item('v1', 'Dhaka'), item('v2', 'Old', { isActive: false })]));
+
+      expect(page.querySelector('h1')?.textContent).toContain('city corporation');
+      expect(page.querySelector('#code')).toBeNull();
+      expect(page.querySelector<HTMLSelectElement>('#districtId option')?.textContent).toContain('Choose a division first');
+      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#cascadeDivisionId option')).map((o) => o.textContent!.trim())).toEqual([
+        'Select a division',
+        'Dhaka',
+      ]);
+
+      choose('#cascadeDivisionId', 'v1');
+      await settle();
+      await respond(
+        lookup('geography/districts', (r) => r.params.get('divisionId') === 'v1'),
+        list([item('g1', 'Gazipur'), item('g2', 'Narayanganj'), item('g3', 'Closed', { isActive: false })]),
+      );
+      // A new city corporation may only be placed in an active district.
+      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#districtId option')).map((o) => o.textContent!.trim())).toEqual([
+        'Select a district',
+        'Gazipur',
+        'Narayanganj',
+      ]);
+      type('#name', 'Gazipur City Corporation');
+      choose('#districtId', 'g1');
+      submit();
+
+      const request = await writeRequest('POST', 'geography/city-corporations');
+      expect(request.request.body).toEqual({ name: 'Gazipur City Corporation', isActive: true, districtId: 'g1' });
+      request.flush(item('c1', 'Gazipur City Corporation'), { status: 201, statusText: 'Created' });
+      await settle();
+    });
+
+    it('requires the division and district of a city corporation and shows a duplicate name from the service', async () => {
+      await open('city-corporations');
+      await respond(lookup('geography/divisions'), list([item('v1', 'Dhaka')]));
+      type('#name', 'Metro');
+
+      submit();
+      await settle();
+      fixture.detectChanges();
+      expect(page.querySelector('#cascadeDivisionId-error')).not.toBeNull();
+      expect(page.querySelector('#districtId-error')).not.toBeNull();
+      http.expectNone(`${ROOT}/geography/city-corporations`);
+
+      choose('#cascadeDivisionId', 'v1');
+      await settle();
+      await respond(lookup('geography/districts', (r) => r.params.get('divisionId') === 'v1'), list([item('g1', 'Gazipur')]));
+      choose('#districtId', 'g1');
+      submit();
+      (await writeRequest('POST', 'geography/city-corporations')).flush(
+        ...problem(400, 'Invalid', { name: ['A city corporation with this name already exists in this district.'] }),
+      );
+      await settle();
+      fixture.detectChanges();
+
+      expect(page.querySelector('#name-error')?.textContent).toContain('already exists in this district');
+      expect(page.querySelector('#name')?.getAttribute('aria-invalid')).toBe('true');
     });
   });
 
