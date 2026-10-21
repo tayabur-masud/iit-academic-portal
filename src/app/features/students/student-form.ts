@@ -33,6 +33,10 @@ export const NOT_LISTED = '__not-listed__';
 
 type AddressKind = 'mailing' | 'permanent';
 
+/** Prefixes of the locality selector's values, which tell an Upazila from a City Corporation. */
+const UPAZILA = 'upazila:';
+const CITY = 'city:';
+
 /** The history fields that apply to each category on the paper form. Values in other fields are kept, just not shown. */
 const APPLICABLE: Record<AcademicHistoryCategory, readonly HistoryField[]> = {
   SscOLevel: ['examination', 'schoolOrCollege', 'board', 'group', 'year', 'marksObtained', 'marksPercentage', 'cgpa', 'division'],
@@ -52,7 +56,7 @@ export function fieldId(key: string): string {
  * Enter a student admission from the paper form, or maintain one. The email finds or creates the Student account: a new email creates
  * a pending account that gets a setup email, a returning Student's email reuses the account and prefills the shared profile, and an
  * email of any other kind of account is refused by the service. The profile (personal details, two addresses with cascading
- * Division, District, and Upazila, and the academic history) is shared by all of the Student's admissions; the program, rolls, hall,
+ * Division, District, and an Upazila or City Corporation, and the academic history) is shared by all of the Student's admissions; the program, rolls, hall,
  * and registration number belong to this admission. Hall and registration number can be recorded later, each on its own. No
  * attachment, photograph, or signature is captured. The service authorizes and validates everything.
  */
@@ -116,6 +120,7 @@ export class StudentForm {
   protected readonly divisions = signal<ConfigurationItem[]>([]);
   protected readonly districts = { mailing: signal<ConfigurationItem[]>([]), permanent: signal<ConfigurationItem[]>([]) };
   protected readonly upazilas = { mailing: signal<ConfigurationItem[]>([]), permanent: signal<ConfigurationItem[]>([]) };
+  protected readonly cityCorporations = { mailing: signal<ConfigurationItem[]>([]), permanent: signal<ConfigurationItem[]>([]) };
   protected readonly selectedDegree = signal('');
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
@@ -201,15 +206,25 @@ export class StudentForm {
 
   protected async divisionPicked(kind: AddressKind): Promise<void> {
     const group = this.address(kind);
-    group.patchValue({ districtId: '', upazilaId: '' });
+    group.patchValue({ districtId: '', locality: '' });
     this.upazilas[kind].set([]);
+    this.cityCorporations[kind].set([]);
     await this.loadDistricts(kind, group.get('divisionId')!.value);
   }
 
   protected async districtPicked(kind: AddressKind): Promise<void> {
     const group = this.address(kind);
-    group.patchValue({ upazilaId: '' });
-    await this.loadUpazilas(kind, group.get('districtId')!.value);
+    group.patchValue({ locality: '' });
+    await this.loadLocalities(kind, group.get('districtId')!.value);
+  }
+
+  /** The service reports a locality problem on `upazilaId` or `cityCorporationId`; both belong to the one locality selector. */
+  protected localityErrors(key: string): string[] {
+    return [...this.errorsFor(`${key}.upazilaId`), ...this.errorsFor(`${key}.cityCorporationId`)];
+  }
+
+  protected localityDescribedBy(key: string): string | null {
+    return this.localityErrors(key).length > 0 ? `${fieldId(key + '.locality')}-error` : null;
   }
 
   protected addHistory(): void {
@@ -309,10 +324,13 @@ export class StudentForm {
     for (const kind of ['mailing', 'permanent'] as const) {
       const a = v[kind];
       const key = kind === 'mailing' ? 'mailingAddress' : 'permanentAddress';
-      if (a.details.trim() || a.upazilaId || a.cellNumber.trim()) {
+      if (a.details.trim() || a.districtId || a.locality || a.cellNumber.trim()) {
         require(`${key}.details`, a.details, 'Enter the address details (house, road, area).');
-        if (!a.upazilaId) {
-          errors[`${key}.upazilaId`] = ['Select the division, district, and upazila.'];
+        if (!a.districtId) {
+          errors[`${key}.districtId`] = ['Select the division and district.'];
+        }
+        if (!a.locality) {
+          errors[`${key}.upazilaId`] = ['Select an upazila or a city corporation.'];
         }
       }
     }
@@ -327,9 +345,16 @@ export class StudentForm {
   private buildRequest(withEmail: boolean): StudentAdmissionRequest {
     const v = this.form.getRawValue();
     const text = (value: string) => (value.trim() ? value.trim() : null);
-    const address = (a: { details: string; upazilaId: string; cellNumber: string }): StudentAddressRequest | null =>
-      a.details.trim() || a.upazilaId || a.cellNumber.trim()
-        ? { details: text(a.details), upazilaId: a.upazilaId || null, cellNumber: text(a.cellNumber) }
+    // The locality selector holds "upazila:<id>" or "city:<id>", so an address always sends exactly one of the two.
+    const address = (a: { details: string; districtId: string; locality: string; cellNumber: string }): StudentAddressRequest | null =>
+      a.details.trim() || a.districtId || a.locality || a.cellNumber.trim()
+        ? {
+            details: text(a.details),
+            districtId: a.districtId || null,
+            upazilaId: a.locality.startsWith(UPAZILA) ? a.locality.slice(UPAZILA.length) : null,
+            cityCorporationId: a.locality.startsWith(CITY) ? a.locality.slice(CITY.length) : null,
+            cellNumber: text(a.cellNumber),
+          }
         : null;
     return {
       ...(withEmail ? { email: v.email.trim() } : {}),
@@ -483,6 +508,7 @@ export class StudentForm {
     group.reset();
     this.districts[kind].set([]);
     this.upazilas[kind].set([]);
+    this.cityCorporations[kind].set([]);
     if (!address) {
       return;
     }
@@ -490,12 +516,12 @@ export class StudentForm {
       await this.loadDistricts(kind, address.divisionId);
     }
     if (address.districtId) {
-      await this.loadUpazilas(kind, address.districtId);
+      await this.loadLocalities(kind, address.districtId);
     }
     group.patchValue({
       divisionId: address.divisionId ?? '',
       districtId: address.districtId ?? '',
-      upazilaId: address.upazilaId ?? '',
+      locality: address.upazilaId ? UPAZILA + address.upazilaId : address.cityCorporationId ? CITY + address.cityCorporationId : '',
       details: address.details ?? '',
       cellNumber: address.cellNumber ?? '',
     });
@@ -505,8 +531,16 @@ export class StudentForm {
     this.districts[kind].set(divisionId ? await this.configuration.listAll(descriptorFor('districts')!, 'all', divisionId) : []);
   }
 
-  private async loadUpazilas(kind: AddressKind, districtId: string): Promise<void> {
-    this.upazilas[kind].set(districtId ? await this.configuration.listAll(descriptorFor('upazilas')!, 'all', districtId) : []);
+  /** Both kinds of locality of one District: its Upazilas and its City Corporations. */
+  private async loadLocalities(kind: AddressKind, districtId: string): Promise<void> {
+    const [upazilas, cityCorporations] = districtId
+      ? await Promise.all([
+          this.configuration.listAll(descriptorFor('upazilas')!, 'all', districtId),
+          this.configuration.listAll(descriptorFor('city-corporations')!, 'all', districtId),
+        ])
+      : [[], []];
+    this.upazilas[kind].set(upazilas);
+    this.cityCorporations[kind].set(cityCorporations);
   }
 
   /** Active records, plus an inactive one this admission already uses so it stays selected. */
@@ -515,13 +549,17 @@ export class StudentForm {
   }
 
   /** Geographic choices for one address: active ones, plus the inactive one already saved there. */
-  protected geography(items: ConfigurationItem[], kind: AddressKind, level: 'divisionId' | 'districtId' | 'upazilaId'): ConfigurationItem[] {
+  protected geography(
+    items: ConfigurationItem[],
+    kind: AddressKind,
+    level: 'divisionId' | 'districtId' | 'upazilaId' | 'cityCorporationId',
+  ): ConfigurationItem[] {
     const saved = this.admission()?.profile[kind === 'mailing' ? 'mailingAddress' : 'permanentAddress']?.[level];
     return items.filter((item) => item.isActive || item.id === saved);
   }
 
   private addressGroup() {
-    return this.fb.group({ divisionId: [''], districtId: [''], upazilaId: [''], details: [''], cellNumber: [''] });
+    return this.fb.group({ divisionId: [''], districtId: [''], locality: [''], details: [''], cellNumber: [''] });
   }
 
   private historyGroup(entry?: AcademicHistoryEntry): FormGroup {
