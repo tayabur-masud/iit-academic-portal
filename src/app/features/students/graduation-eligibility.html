@@ -1,8 +1,9 @@
 <section class="card mt-6 max-w-[48rem]" aria-labelledby="eligibility-title" [attr.aria-busy]="loading()">
   <h2 id="eligibility-title">Graduation eligibility</h2>
   <p class="text-text-secondary">
-    Worked out automatically for this program only. Credits from the student's other admissions do not count. This check never blocks
-    result calculation or publication, and there is no clearance step.
+    Worked out automatically for this program only. Credits and CGPA come from the published results of this admission; those of the
+    student's other admissions do not count, and the portal does not calculate them here. This check never blocks result calculation or
+    publication, and there is no clearance step.
   </p>
 
   @if (loading() && !result()) {
@@ -36,6 +37,15 @@
         completed of
         <strong>{{ current.requiredCredits !== undefined ? (current.requiredCredits | number: '1.0-2') : 'unknown' }}</strong>
         required.
+      </p>
+    }
+
+    @if (current.minimumCgpa !== undefined || current.currentCumulativeCgpa !== undefined) {
+      <p>
+        CGPA:
+        <strong>{{ current.currentCumulativeCgpa !== undefined ? (current.currentCumulativeCgpa | number: '1.2-2') : 'not available' }}</strong>
+        current cumulative, against a minimum of
+        <strong>{{ current.minimumCgpa !== undefined ? (current.minimumCgpa | number: '1.2-2') : 'unknown' }}</strong>.
       </p>
     }
 

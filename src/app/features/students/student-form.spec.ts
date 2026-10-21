@@ -31,6 +31,8 @@ function profile(extra: Partial<StudentProfile> = {}): StudentProfile {
       cellNumber: '01811',
       upazilaId: 'up1',
       upazilaName: 'Kaliakair',
+      cityCorporationId: null,
+      cityCorporationName: null,
       districtId: 'dist1',
       districtName: 'Gazipur',
       divisionId: 'div1',
@@ -101,7 +103,7 @@ describe('StudentForm', () => {
           await settle();
         }
         if (address?.districtId) {
-          respondList(`${CONFIG}/geography/upazilas`, [item('up1', 'Kaliakair', { districtId: 'dist1' })]);
+          respondLocalities();
           await settle();
         }
       }
@@ -113,6 +115,15 @@ describe('StudentForm', () => {
 
   function respondList(url: string, items: ConfigurationItem[]): void {
     http.expectOne((r) => r.method === 'GET' && r.url === url).flush({ items, nextCursor: null });
+  }
+
+  /** Answers the two locality lists a District loads: its Upazilas and its City Corporations. */
+  function respondLocalities(
+    upazilas: ConfigurationItem[] = [item('up1', 'Kaliakair', { districtId: 'dist1' })],
+    cities: ConfigurationItem[] = [item('cc1', 'Gazipur City Corporation', { districtId: 'dist1' })],
+  ): void {
+    respondList(`${CONFIG}/geography/upazilas`, upazilas);
+    respondList(`${CONFIG}/geography/city-corporations`, cities);
   }
 
   async function render(): Promise<void> {
@@ -196,7 +207,7 @@ describe('StudentForm', () => {
       expect(Array.from(page.querySelectorAll('#degreeId option')).map((o) => o.textContent?.trim())).not.toContain('Retired (inactive)');
     });
 
-    it('cascades division, district, and upazila for an address and sends only the upazila with the details', async () => {
+    it('cascades division, district, and an upazila for an address and sends the district with only the upazila', async () => {
       await open();
       await fillRequired();
 
@@ -204,9 +215,9 @@ describe('StudentForm', () => {
       respondList(`${CONFIG}/geography/districts`, [item('dist1', 'Gazipur', { divisionId: 'div1' })]);
       await render();
       choose('#mailing-districtId', 'dist1');
-      respondList(`${CONFIG}/geography/upazilas`, [item('up1', 'Kaliakair', { districtId: 'dist1' })]);
+      respondLocalities();
       await render();
-      choose('#mailingAddress-upazilaId', 'up1');
+      choose('#mailingAddress-locality', 'upazila:up1');
       type('#mailingAddress-details', '  House 12, Road 5 ');
       type('#mailingAddress-cellNumber', '01811000000');
 
@@ -214,13 +225,19 @@ describe('StudentForm', () => {
       const request = await writeRequest('POST', ROOT);
 
       expect(http.match((r) => r.url.includes('districts')).length).toBe(0);
-      expect(request.request.body.mailingAddress).toEqual({ details: 'House 12, Road 5', upazilaId: 'up1', cellNumber: '01811000000' });
+      expect(request.request.body.mailingAddress).toEqual({
+        details: 'House 12, Road 5',
+        districtId: 'dist1',
+        upazilaId: 'up1',
+        cityCorporationId: null,
+        cellNumber: '01811000000',
+      });
       expect(request.request.body.permanentAddress).toBeNull();
       request.flush(...problem(500, 'boom'));
       await render();
     });
 
-    it('asks for an upazila when address details are given without one', async () => {
+    it('asks for the district and a locality when address details are given without them', async () => {
       await open();
       await fillRequired();
       type('#mailingAddress-details', 'House 12');
@@ -228,9 +245,98 @@ describe('StudentForm', () => {
       submit();
       await render();
 
-      expect(page.querySelector('#mailingAddress-upazilaId')?.getAttribute('aria-invalid')).toBe('true');
-      expect(page.querySelector('#mailingAddress-upazilaId-error')?.textContent).toContain('division, district, and upazila');
+      expect(page.querySelector('#mailing-districtId')?.getAttribute('aria-invalid')).toBe('true');
+      expect(page.querySelector('#mailing-districtId-error')?.textContent).toContain('division and district');
+      expect(page.querySelector('#mailingAddress-locality')?.getAttribute('aria-invalid')).toBe('true');
+      expect(page.querySelector('#mailingAddress-locality-error')?.textContent).toContain('upazila or a city corporation');
       expect(http.match(ROOT)).toHaveLength(0);
+    });
+
+    it('offers the upazilas and city corporations of the chosen district only, and sends a city corporation alone', async () => {
+      await open();
+      await fillRequired();
+
+      choose('#permanent-divisionId', 'div1');
+      respondList(`${CONFIG}/geography/districts`, [item('dist1', 'Gazipur', { divisionId: 'div1' })]);
+      await render();
+      choose('#permanent-districtId', 'dist1');
+      const upazilaRequest = http.expectOne((r) => r.url === `${CONFIG}/geography/upazilas`);
+      const cityRequest = http.expectOne((r) => r.url === `${CONFIG}/geography/city-corporations`);
+      expect(upazilaRequest.request.params.get('districtId')).toBe('dist1');
+      expect(cityRequest.request.params.get('districtId')).toBe('dist1');
+      upazilaRequest.flush({ items: [item('up1', 'Kaliakair', { districtId: 'dist1' })], nextCursor: null });
+      cityRequest.flush({
+        items: [item('cc1', 'Gazipur City Corporation', { districtId: 'dist1' }), item('cc0', 'Old City', { districtId: 'dist1', isActive: false })],
+        nextCursor: null,
+      });
+      await render();
+
+      const select = page.querySelector<HTMLSelectElement>('#permanentAddress-locality')!;
+      expect(page.querySelector('label[for="permanentAddress-locality"]')?.textContent).toContain('Upazila or city corporation');
+      expect(Array.from(select.querySelectorAll('optgroup')).map((g) => g.label)).toEqual(['Upazilas', 'City corporations']);
+      expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
+        'Select an upazila or city corporation',
+        'Kaliakair',
+        'Gazipur City Corporation',
+      ]);
+      choose('#permanentAddress-locality', 'city:cc1');
+      type('#permanentAddress-details', 'Holding 7, Tongi');
+
+      submit();
+      const request = await writeRequest('POST', ROOT);
+      expect(request.request.body.permanentAddress).toEqual({
+        details: 'Holding 7, Tongi',
+        districtId: 'dist1',
+        upazilaId: null,
+        cityCorporationId: 'cc1',
+        cellNumber: null,
+      });
+      request.flush(...problem(500, 'boom'));
+      await render();
+    });
+
+    it('clears the locality when the district or division changes', async () => {
+      await open();
+      choose('#mailing-divisionId', 'div1');
+      respondList(`${CONFIG}/geography/districts`, [item('dist1', 'Gazipur', { divisionId: 'div1' }), item('dist2', 'Narayanganj', { divisionId: 'div1' })]);
+      await render();
+      choose('#mailing-districtId', 'dist1');
+      respondLocalities();
+      await render();
+      choose('#mailingAddress-locality', 'city:cc1');
+
+      choose('#mailing-districtId', 'dist2');
+      respondLocalities([], [item('cc2', 'Narayanganj City Corporation', { districtId: 'dist2' })]);
+      await render();
+      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-locality')?.value).toBe('');
+      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#mailingAddress-locality option')).map((o) => o.textContent?.trim())).toEqual([
+        'Select an upazila or city corporation',
+        'Narayanganj City Corporation',
+      ]);
+
+      choose('#mailingAddress-locality', 'city:cc2');
+      choose('#mailing-divisionId', '');
+      await render();
+      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-locality')?.value).toBe('');
+      expect(page.querySelector<HTMLSelectElement>('#mailing-districtId')?.value).toBe('');
+    });
+
+    it('shows a mixed or cross-district locality refused by the service on the one locality selector', async () => {
+      await open();
+      await fillRequired();
+
+      submit();
+      (await writeRequest('POST', ROOT)).flush(
+        ...problem(400, 'Invalid', {
+          'mailingAddress.cityCorporationId': ['The selected city corporation is not in the selected district.'],
+          'permanentAddress.districtId': ['Select the division and district.'],
+        }),
+      );
+      await render();
+
+      expect(page.querySelector('#mailingAddress-locality')?.getAttribute('aria-invalid')).toBe('true');
+      expect(page.querySelector('#mailingAddress-locality-error')?.textContent).toContain('not in the selected district');
+      expect(page.querySelector('#permanent-districtId-error')?.textContent).toContain('division and district');
     });
 
     it('offers all six history categories, shows the fields that apply, and sends text exactly as typed', async () => {
@@ -391,14 +497,14 @@ describe('StudentForm', () => {
       await settle();
       respondList(`${CONFIG}/geography/districts`, [item('dist1', 'Gazipur', { divisionId: 'div1' })]);
       await settle();
-      respondList(`${CONFIG}/geography/upazilas`, [item('up1', 'Kaliakair', { districtId: 'dist1' })]);
+      respondLocalities();
       await render();
 
       expect(page.querySelector('[role=status].alert')?.textContent).toContain('Returning student');
       expect(page.textContent).toContain('PGDIT · PGDIT Batch 1');
       expect(page.querySelector<HTMLInputElement>('#applicantName')?.value).toBe('Ayesha Rahman');
       expect(page.querySelector<HTMLInputElement>('#academicHistory-0-board')?.value).toBe('Dhaka Board (old)');
-      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-upazilaId')?.value).toBe('up1');
+      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-locality')?.value).toBe('upazila:up1');
     });
 
     it('warns when the email belongs to a staff account', async () => {
@@ -429,7 +535,7 @@ describe('StudentForm', () => {
       );
       await render();
 
-      expect(page.querySelector('#mailingAddress-upazilaId-error')?.textContent).toContain('Select an active upazila.');
+      expect(page.querySelector('#mailingAddress-locality-error')?.textContent).toContain('Select an active upazila.');
       expect(page.querySelector('#academicHistory-0-category')?.getAttribute('aria-invalid')).toBe('true');
       expect(page.querySelector('#batchId-error')?.textContent).toContain('does not belong');
     });
@@ -454,6 +560,27 @@ describe('StudentForm', () => {
       await render();
     }
 
+    it('shows a saved city corporation address with its district and division', async () => {
+      const loaded = admission();
+      loaded.profile = {
+        ...loaded.profile,
+        permanentAddress: {
+          details: 'Holding 7',
+          cityCorporationId: 'cc1',
+          cityCorporationName: 'Gazipur City Corporation',
+          districtId: 'dist1',
+          districtName: 'Gazipur',
+          divisionId: 'div1',
+          divisionName: 'Dhaka',
+        },
+      };
+      await openExisting(loaded);
+
+      expect(page.querySelector<HTMLSelectElement>('#permanentAddress-locality')?.value).toBe('city:cc1');
+      expect(page.querySelector<HTMLSelectElement>('#permanent-districtId')?.value).toBe('dist1');
+      expect(page.querySelector<HTMLSelectElement>('#permanent-divisionId')?.value).toBe('div1');
+    });
+
     it('shows the account, the other programs, and the current values without an email field', async () => {
       await openExisting(
         admission({
@@ -467,7 +594,7 @@ describe('StudentForm', () => {
       expect(page.querySelector('a[href="/admin/students/a0"]')?.textContent).toContain('PGDIT · PGDIT Batch 0');
       expect(page.querySelector('a[href="/admin/users/u1"]')).not.toBeNull();
       expect(page.querySelector<HTMLSelectElement>('#batchId')?.value).toBe('pb1');
-      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-upazilaId')?.value).toBe('up1');
+      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-locality')?.value).toBe('upazila:up1');
       expect(page.querySelector('app-graduation-eligibility')).not.toBeNull();
     });
 
@@ -486,7 +613,7 @@ describe('StudentForm', () => {
       await settle();
       respondList(`${CONFIG}/geography/districts`, [item('dist1', 'Gazipur', { divisionId: 'div1' })]);
       await settle();
-      respondList(`${CONFIG}/geography/upazilas`, [item('up1', 'Kaliakair', { districtId: 'dist1' })]);
+      respondLocalities();
       await render();
       http.expectOne(`${ROOT}/a1/graduation-eligibility`).flush({ admissionId: 'a1', eligible: false, requirements: [] });
       await render();

@@ -8,8 +8,9 @@ import { GraduationEligibility as Eligibility, REQUIREMENT_LABELS } from './stud
 
 /**
  * The computed graduation eligibility of one admission: eligible only when this admission's passed-course credits reach its degree's
- * requirement and both its hall and registration number are recorded. Each unmet or unavailable requirement is listed. It is read-only:
- * there is no clearance action, and it never blocks result calculation or publication.
+ * requirement, its current cumulative CGPA from published results reaches the degree's minimum, and both its hall and registration
+ * number are recorded. Each unmet or unavailable requirement is listed. It is read-only: there is no result entry or CGPA calculation,
+ * no clearance action, and it never blocks result calculation or publication.
  */
 @Component({
   selector: 'app-graduation-eligibility',

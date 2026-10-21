@@ -312,29 +312,54 @@
           </div>
           <div class="field">
             <label class="field-label" [for]="kind + '-districtId'">District</label>
-            <select class="field-input" formControlName="districtId" [id]="kind + '-districtId'" (change)="districtPicked(k)">
+            <select
+              class="field-input"
+              formControlName="districtId"
+              [id]="kind + '-districtId'"
+              (change)="districtPicked(k)"
+              [attr.aria-invalid]="errorsFor(key + '.districtId').length > 0"
+              [attr.aria-describedby]="errorsFor(key + '.districtId').length > 0 ? kind + '-districtId-error' : null"
+            >
               <option value="">{{ address(k).get('divisionId')?.value ? 'Select a district' : 'Select a division first' }}</option>
               @for (option of geography(districts[k](), k, 'districtId'); track option.id) {
                 <option [value]="option.id">{{ option.name }}</option>
               }
             </select>
+            @for (message of errorsFor(key + '.districtId'); track message) {
+              <p class="field-error" [id]="kind + '-districtId-error'">{{ message }}</p>
+            }
           </div>
           <div class="field">
-            <label class="field-label" [for]="fieldId(key + '.upazilaId')">Upazila</label>
+            <label class="field-label" [for]="fieldId(key + '.locality')">Upazila or city corporation</label>
             <select
               class="field-input"
-              formControlName="upazilaId"
-              [id]="fieldId(key + '.upazilaId')"
-              [attr.aria-invalid]="errorsFor(key + '.upazilaId').length > 0"
-              [attr.aria-describedby]="describedBy(key + '.upazilaId')"
+              formControlName="locality"
+              [id]="fieldId(key + '.locality')"
+              [attr.aria-invalid]="localityErrors(key).length > 0"
+              [attr.aria-describedby]="localityDescribedBy(key)"
             >
-              <option value="">{{ address(k).get('districtId')?.value ? 'Select an upazila' : 'Select a district first' }}</option>
-              @for (option of geography(upazilas[k](), k, 'upazilaId'); track option.id) {
-                <option [value]="option.id">{{ option.name }}</option>
+              <option value="">{{ address(k).get('districtId')?.value ? 'Select an upazila or city corporation' : 'Select a district first' }}</option>
+              @if (geography(upazilas[k](), k, 'upazilaId'); as options) {
+                @if (options.length > 0) {
+                  <optgroup label="Upazilas">
+                    @for (option of options; track option.id) {
+                      <option [value]="'upazila:' + option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+                    }
+                  </optgroup>
+                }
+              }
+              @if (geography(cityCorporations[k](), k, 'cityCorporationId'); as options) {
+                @if (options.length > 0) {
+                  <optgroup label="City corporations">
+                    @for (option of options; track option.id) {
+                      <option [value]="'city:' + option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+                    }
+                  </optgroup>
+                }
               }
             </select>
-            @for (message of errorsFor(key + '.upazilaId'); track message) {
-              <p class="field-error" [id]="fieldId(key + '.upazilaId') + '-error'">{{ message }}</p>
+            @for (message of localityErrors(key); track message) {
+              <p class="field-error" [id]="fieldId(key + '.locality') + '-error'">{{ message }}</p>
             }
           </div>
         </div>

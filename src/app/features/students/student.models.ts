@@ -75,16 +75,23 @@ export interface StudentAddress {
   cellNumber?: string | null;
   upazilaId?: string | null;
   upazilaName?: string | null;
+  cityCorporationId?: string | null;
+  cityCorporationName?: string | null;
   districtId?: string | null;
   districtName?: string | null;
   divisionId?: string | null;
   divisionName?: string | null;
 }
 
-/** An address as sent: no District or Division, which the service derives from the Upazila. */
+/**
+ * An address as sent: the District the locality was chosen from (checked by the service, not stored) and exactly one locality, an
+ * Upazila or a City Corporation. The Division is never sent; the service derives it.
+ */
 export interface StudentAddressRequest {
   details: string | null;
+  districtId: string | null;
   upazilaId: string | null;
+  cityCorporationId: string | null;
   cellNumber: string | null;
 }
 
@@ -212,7 +219,7 @@ export interface StudentLookup {
 export type RequirementStatus = 'Met' | 'NotMet' | 'Unavailable';
 
 export interface EligibilityRequirement {
-  requirement: 'Credits' | 'AssignedHall' | 'RegistrationNumber';
+  requirement: 'Credits' | 'MinimumCgpa' | 'AssignedHall' | 'RegistrationNumber';
   status: RequirementStatus;
   message: string;
 }
@@ -222,11 +229,16 @@ export interface GraduationEligibility {
   eligible: boolean;
   requiredCredits?: number;
   completedCredits?: number;
+  /** The selected Degree's minimum CGPA for completion. */
+  minimumCgpa?: number;
+  /** This admission's current cumulative CGPA from published results; the portal never calculates it. */
+  currentCumulativeCgpa?: number;
   requirements: EligibilityRequirement[];
 }
 
 export const REQUIREMENT_LABELS: Record<EligibilityRequirement['requirement'], string> = {
   Credits: 'Credits',
+  MinimumCgpa: 'Minimum CGPA',
   AssignedHall: 'Assigned hall',
   RegistrationNumber: 'Registration number',
 };
