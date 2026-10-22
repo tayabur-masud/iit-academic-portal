@@ -1,4 +1,4 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <a routerLink="/admin/notifications">Notifications</a>
@@ -6,11 +6,15 @@
   <span>Templates</span>
 </nav>
 
-<h1>Message templates</h1>
-<p class="text-text-secondary">
-  The wording of each email the portal sends. Each save creates a new revision; messages already requested keep the wording they were
-  requested with.
-</p>
+<div class="page-header">
+  <div class="min-w-0">
+    <h1>Message templates</h1>
+    <p class="page-header-description">
+      The wording of each email the portal sends. Each save creates a new revision; messages already requested keep the wording they were
+      requested with.
+    </p>
+  </div>
+</div>
 
 <app-notification-sections />
 
@@ -19,7 +23,7 @@
   <p class="sr-only" role="status">{{ announcement() }}</p>
 
   @if (loading()) {
-    <p class="flex items-center gap-2 text-text-secondary" role="status">
+    <p class="loading-state" role="status">
       <span class="spinner" aria-hidden="true"></span>
       Loading templates…
     </p>
@@ -32,9 +36,9 @@
       </div>
     </div>
   } @else if (templates().length === 0) {
-    <div class="card max-w-[40rem]">
-      <h3 class="mb-2 text-heading font-semibold">No templates</h3>
-      <p class="mb-0">No message templates are set up yet.</p>
+    <div class="empty-state">
+      <h3 class="empty-state-title">No templates</h3>
+      <p class="empty-state-text">No message templates are set up yet.</p>
     </div>
   } @else {
     <div class="data-table-container">

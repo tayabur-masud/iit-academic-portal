@@ -1,4 +1,6 @@
 import { Component, computed, input } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { heroSquares2x2 } from '@ng-icons/heroicons/outline';
 
 import { ROLE_AREAS, Role } from '../../core/auth/auth.models';
 
@@ -8,11 +10,18 @@ import { ROLE_AREAS, Role } from '../../core/auth/auth.models';
  */
 @Component({
   selector: 'app-role-landing',
+  imports: [NgIcon],
+  viewProviders: [provideIcons({ heroSquares2x2 })],
   template: `
-    <h1>{{ module() }}</h1>
-    <section class="card max-w-[40rem]" aria-labelledby="empty-title">
-      <h2 id="empty-title">Nothing here yet</h2>
-      <p>{{ module() }} features will appear here as they become available.</p>
+    <div class="page-header">
+      <div class="min-w-0">
+        <h1>{{ module() }}</h1>
+      </div>
+    </div>
+    <section class="empty-state" aria-labelledby="empty-title">
+      <ng-icon name="heroSquares2x2" />
+      <h2 id="empty-title" class="empty-state-title">Nothing here yet</h2>
+      <p class="empty-state-text">{{ module() }} features will appear here as they become available.</p>
     </section>
   `,
 })

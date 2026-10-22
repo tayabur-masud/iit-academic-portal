@@ -1,14 +1,18 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <span>Notifications</span>
 </nav>
 
-<h1>Notifications</h1>
-<p class="text-text-secondary">
-  Every email the portal has been asked to send, newest first, with what happened to it. Times are in UTC. "Sent" means the delivery
-  service accepted the message, not that it reached an inbox.
-</p>
+<div class="page-header">
+  <div class="min-w-0">
+    <h1>Notifications</h1>
+    <p class="page-header-description">
+      Every email the portal has been asked to send, newest first, with what happened to it. Times are in UTC. "Sent" means the delivery
+      service accepted the message, not that it reached an inbox.
+    </p>
+  </div>
+</div>
 
 <app-notification-sections />
 
@@ -16,7 +20,7 @@
   <fieldset class="m-0">
     <legend class="mb-2 text-heading font-semibold">Filters</legend>
 
-    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div class="filter-grid md:grid-cols-2 xl:grid-cols-3">
       <div class="field mb-0">
         <label class="field-label" for="recipient">Recipient</label>
         <p class="field-help" id="recipient-help">The user ID or the email address the message was sent to.</p>
@@ -93,9 +97,9 @@
       </div>
     </div>
 
-    <div class="mt-3 flex flex-wrap gap-3">
+    <div class="filter-actions">
       <button type="submit" class="btn btn-primary" [disabled]="loading()">Apply filters</button>
-      <button type="button" class="btn btn-secondary btn-sm" [disabled]="loading()" (click)="clear()">Clear filters</button>
+      <button type="button" class="btn btn-secondary" [disabled]="loading()" (click)="clear()">Clear filters</button>
     </div>
   </fieldset>
 </form>
@@ -105,7 +109,7 @@
   <p class="sr-only" role="status">{{ announcement() }}</p>
 
   @if (loading() && items().length === 0) {
-    <p class="flex items-center gap-2 text-text-secondary">
+    <p class="loading-state">
       <span class="spinner" aria-hidden="true"></span>
       Loading notifications…
     </p>
@@ -120,11 +124,11 @@
       </div>
     }
   } @else if (loaded() && items().length === 0) {
-    <div class="card max-w-[40rem]">
-      <h3 class="mb-2 text-heading font-semibold">
+    <div class="empty-state">
+      <h3 class="empty-state-title">
         {{ filtered() ? 'No notifications match these filters' : 'No notifications yet' }}
       </h3>
-      <p class="mb-0">
+      <p class="empty-state-text">
         {{
           filtered()
             ? 'Widen the date range or clear a filter, then apply the filters again.'
@@ -184,7 +188,7 @@
           <button type="button" class="btn btn-secondary btn-sm" (click)="retryMore()">Try again</button>
         </div>
       } @else if (loading()) {
-        <p class="m-0 inline-flex items-center gap-2 text-compact text-text-secondary" role="status">
+        <p class="loading-state m-0" role="status">
           <span class="spinner" aria-hidden="true"></span>Loading more notifications…
         </p>
       } @else if (hasMore()) {

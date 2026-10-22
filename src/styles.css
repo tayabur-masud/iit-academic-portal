@@ -2,18 +2,20 @@
  * Tailwind CSS with the IIT design tokens as its theme (see styles/tokens.css).
  * Shared component patterns from specs/design-system.md stay as classes in the components layer so
  * every page reuses them; use utilities for layout and one-off adjustments. Only theme values are used.
+ * The look follows Tailwind UI's application idiom: soft shadows and rings instead of hard borders, tinted
+ * status colors, and semantic color roles so the dark theme needs no page changes.
  */
 @import 'tailwindcss';
 @import './styles/tokens.css';
 
 @layer base {
   body {
-    @apply bg-background font-sans text-body font-regular leading-body text-text-primary;
+    @apply bg-background font-sans text-body font-regular leading-body text-text-primary antialiased;
   }
 
   h1,
   h2 {
-    @apply mb-3 font-semibold leading-heading;
+    @apply mb-3 font-semibold leading-heading tracking-tight text-text-primary;
   }
 
   h1 {
@@ -29,32 +31,76 @@
   }
 
   a {
-    @apply font-medium text-brand-primary underline hover:text-brand-primary-hover;
+    @apply font-medium text-brand-accent underline decoration-brand-accent/40 underline-offset-2 hover:decoration-brand-accent;
   }
 
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-focus;
   }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--color-brand-primary);
+  }
 }
 
 @layer components {
   .skip-link {
-    @apply absolute left-4 -top-16 z-10 rounded-sm bg-surface px-4 py-2 focus:top-2;
+    @apply absolute left-4 -top-16 z-50 rounded-md bg-surface px-4 py-2 shadow-overlay focus:top-2;
   }
 
   .full-container {
     @apply w-full;
   }
 
+  /* Page header: title, an optional description, and the page's actions on the right from sm: up. */
+  .page-header {
+    @apply mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between;
+  }
+
+  .page-header h1 {
+    @apply mb-1;
+  }
+
+  .page-header-description {
+    @apply m-0 max-w-3xl text-compact text-text-secondary;
+  }
+
+  .page-header-actions {
+    @apply flex flex-none flex-wrap gap-3;
+  }
+
+  .breadcrumb {
+    @apply mb-2 flex flex-wrap items-center gap-1 text-compact text-text-secondary;
+  }
+
+  .breadcrumb a {
+    @apply font-medium text-text-secondary no-underline hover:text-text-primary;
+  }
+
+  .section-title {
+    @apply mb-1 text-base font-semibold text-text-primary;
+  }
+
   /* Buttons */
   .btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm border border-transparent px-4 font-medium no-underline disabled:cursor-not-allowed;
-    min-height: var(--control-height-lg);
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-transparent px-3.5 text-compact font-semibold no-underline shadow-xs transition-colors disabled:cursor-not-allowed;
+    min-height: var(--control-height);
+  }
+
+  /* ng-icon sizes and colors itself from these variables (its own host styles win over classes). */
+  .btn ng-icon {
+    @apply -ml-0.5 flex-none;
+    --ng-icon__size: 1.25rem;
   }
 
   .btn-sm {
-    @apply px-3 text-helper;
+    @apply px-2.5 text-helper;
     min-height: var(--control-height-sm);
+  }
+
+  .btn-sm ng-icon {
+    --ng-icon__size: 1rem;
   }
 
   .btn-lg {
@@ -68,47 +114,152 @@
     }
   }
 
+  /* Controls are 40px with a mouse on wide screens and 44px on touch or narrow screens. */
+  :root {
+    --control-height: var(--control-height-md);
+  }
+
+  @media (pointer: coarse), (max-width: 48rem) {
+    :root {
+      --control-height: var(--control-height-lg);
+    }
+  }
+
   .btn-primary {
-    @apply bg-brand-primary text-surface hover:not-disabled:bg-brand-primary-hover hover:not-disabled:text-surface active:not-disabled:bg-brand-primary-active disabled:bg-brand-secondary;
+    @apply bg-brand-primary text-on-brand hover:not-disabled:bg-brand-primary-hover hover:not-disabled:text-on-brand active:not-disabled:bg-brand-primary-active disabled:opacity-60;
   }
 
   .btn-secondary {
-    @apply border-control-border bg-surface text-brand-primary hover:not-disabled:bg-surface-hover active:not-disabled:bg-surface-selected disabled:text-text-disabled;
+    @apply border-border bg-surface text-text-primary hover:not-disabled:bg-surface-hover active:not-disabled:bg-surface-selected disabled:text-text-disabled dark:bg-surface-raised;
   }
 
   /* Destructive actions use the semantic error color (design-system section 6, Buttons). Filled confirms; outlined offers. */
   .btn-danger {
-    @apply bg-error text-surface hover:not-disabled:bg-[color-mix(in_srgb,var(--color-error)_85%,black)] hover:not-disabled:text-surface active:not-disabled:bg-[color-mix(in_srgb,var(--color-error)_70%,black)] disabled:opacity-60;
+    @apply bg-error-fill text-white hover:not-disabled:bg-error-fill-hover hover:not-disabled:text-white disabled:opacity-60;
   }
 
   .btn-danger-outline {
-    @apply border-error bg-surface text-error hover:not-disabled:bg-[color-mix(in_srgb,var(--color-error)_8%,white)] active:not-disabled:bg-[color-mix(in_srgb,var(--color-error)_16%,white)] disabled:opacity-60;
+    @apply border-error/40 bg-surface text-error hover:not-disabled:bg-error-subtle active:not-disabled:bg-error-subtle disabled:opacity-60;
   }
 
   .btn-block {
     @apply w-full;
   }
 
+  /* An icon-only button (it must carry an aria-label). */
+  .btn-icon {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-md text-text-secondary hover:bg-surface-hover hover:text-text-primary;
+    width: var(--control-height-lg);
+    height: var(--control-height-lg);
+  }
+
+  .btn-icon ng-icon {
+    --ng-icon__size: 1.5rem;
+  }
+
   .spinner {
     @apply size-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none motion-reduce:border-r-current motion-reduce:opacity-60;
   }
 
-  /* Forms */
+  /* Forms (Tailwind UI stacked form): label, control, then any error and the help text under the control. The help stays before
+     the control in the DOM (and is linked by aria-describedby), so assistive technology hears it first. */
   .field {
-    @apply mb-4 flex flex-col gap-1.5;
+    @apply mb-6 flex flex-col gap-2;
+  }
+
+  .field > * {
+    order: 1;
+  }
+
+  .field > :is(.field-label, legend) {
+    order: 0;
+  }
+
+  .field > .field-error {
+    order: 2;
+  }
+
+  .field > .field-help {
+    order: 3;
+  }
+
+  /* A checkbox with its label as the field (an attestation, an option). */
+  .field > label:not(.field-label) {
+    @apply text-compact;
   }
 
   .field-label {
-    @apply font-medium;
+    @apply text-compact font-medium text-text-primary;
   }
 
   .field-help {
     @apply m-0 text-helper text-text-secondary;
   }
 
+  /* Related fields side by side (two columns from sm:, more with md:/xl: utilities); the grid owns the spacing. */
+  .form-grid {
+    @apply mb-6 grid gap-6 sm:grid-cols-2;
+  }
+
+  .form-grid > .field {
+    @apply mb-0;
+  }
+
+  /* Filter panels on list pages: controls in a grid, then the Search / Clear filters row. */
+  .filter-grid {
+    @apply grid gap-4;
+  }
+
+  .filter-actions {
+    @apply mt-4 flex flex-wrap gap-3;
+  }
+
+  .card > :is(.field, .form-grid):last-child {
+    @apply mb-0;
+  }
+
+  /* The form's buttons: secondary first, primary last, aligned right. In a card they form its footer bar. */
+  .form-actions {
+    @apply mt-8 flex flex-wrap items-center justify-end gap-3 border-t border-divider pt-6;
+  }
+
+  .card > .form-actions,
+  .card > :is(form, fieldset) > .form-actions,
+  .card > form > fieldset > .form-actions {
+    @apply -mx-4 -mb-4 mt-6 rounded-b-lg bg-surface-hover px-4 py-4 sm:-mx-6 sm:-mb-6 sm:px-6;
+  }
+
+  /* A card's section heading and the sentence under it. A legend is floated so it sits inside the card, not on its border. */
+  .card > h2,
+  .card > fieldset > legend,
+  fieldset.card > legend {
+    @apply mb-4 text-base leading-6 font-semibold text-text-primary;
+  }
+
+  fieldset.card > legend {
+    @apply float-left mb-4 w-full p-0;
+  }
+
+  fieldset.card > legend + * {
+    @apply clear-both;
+  }
+
+  .card > h2 + p,
+  .card > fieldset > legend + p {
+    @apply -mt-3 mb-6 text-compact text-text-secondary;
+  }
+
+  fieldset.card > legend + p {
+    @apply -mt-3 mb-6 text-compact text-text-secondary;
+  }
+
   .field-input {
-    @apply rounded-sm border border-control-border bg-surface px-3 text-text-primary aria-invalid:border-error aria-invalid:shadow-[inset_0_0_0_1px_var(--color-error)];
-    min-height: var(--control-height-lg);
+    @apply w-full rounded-md border border-control-border bg-surface px-3 py-1.5 text-compact text-text-primary shadow-xs transition-colors placeholder:text-text-disabled focus:border-brand-primary focus:outline-2 focus:-outline-offset-1 focus:outline-brand-primary disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-text-disabled aria-invalid:border-error aria-invalid:outline-error dark:bg-white/5;
+    min-height: var(--control-height);
+  }
+
+  textarea.field-input {
+    @apply py-2 leading-6;
   }
 
   /* One shared select trigger style across filters, forms, pagination, and the account menu. */
@@ -129,6 +280,11 @@
     cursor: pointer;
   }
 
+  select.field-input option {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+  }
+
   /* A password input with its show/hide button (<app-password-toggle>) inside the right edge. The input keeps room for the button,
      and the button is a full 44px square target that keeps the shared focus ring. */
   .password-field {
@@ -136,13 +292,13 @@
   }
 
   .password-field .field-input {
-    padding-inline-end: var(--control-height-lg);
+    padding-inline-end: var(--control-height);
   }
 
   .password-toggle {
-    @apply absolute inset-y-0 right-0 flex items-center justify-center rounded-sm text-text-secondary hover:text-text-primary;
-    width: var(--control-height-lg);
-    height: var(--control-height-lg);
+    @apply absolute inset-y-0 right-0 flex items-center justify-center rounded-md text-text-secondary hover:text-text-primary;
+    width: var(--control-height);
+    height: var(--control-height);
   }
 
   /* Field errors carry a decorative error icon (circle with exclamation mark) so the error is not
@@ -165,7 +321,7 @@
   }
 
   .choice {
-    @apply mb-2 flex cursor-pointer items-center gap-3 rounded-sm border border-control-border px-3 hover:bg-surface-hover has-checked:border-brand-primary has-checked:bg-surface-selected has-checked:font-medium;
+    @apply mb-2 flex cursor-pointer items-center gap-3 rounded-md border border-border bg-surface px-3 text-compact shadow-xs hover:bg-surface-hover has-checked:border-brand-primary has-checked:bg-surface-selected has-checked:font-medium;
     min-height: var(--control-height-lg);
   }
 
@@ -174,16 +330,22 @@
   }
 
   legend {
-    @apply mb-2;
+    @apply mb-2 text-compact font-medium;
   }
 
-  /* Alerts: status is carried by the heading text, not color alone. */
+  /* Alerts: a tinted panel with a matching ring. Status is carried by the heading text, not color alone. */
   .alert {
-    @apply mb-4 rounded-sm border border-l-4 border-current bg-surface px-4 py-3;
+    @apply mb-4 rounded-md bg-surface p-4 text-compact ring-1 ring-current/20 ring-inset;
   }
 
   .alert p {
     @apply m-0 text-text-primary;
+  }
+
+  .alert p + p,
+  .alert p + div,
+  .alert-title + p {
+    @apply mt-1;
   }
 
   .alert-title {
@@ -191,24 +353,24 @@
   }
 
   .alert-error {
-    @apply text-error;
+    @apply bg-error-subtle text-error;
   }
 
   .alert-success {
-    @apply text-success;
+    @apply bg-success-subtle text-success;
   }
 
   .alert-info {
-    @apply text-info;
+    @apply bg-info-subtle text-info;
   }
 
   .alert-warning {
-    @apply text-warning;
+    @apply bg-warning-subtle text-warning;
   }
 
   /* Cards and badges */
   .card {
-    @apply rounded-md border border-border bg-surface p-4;
+    @apply rounded-lg bg-surface p-4 shadow-panel sm:p-6;
   }
 
   .card:has(> .card-body) {
@@ -216,7 +378,7 @@
   }
 
   .card-body {
-    padding: 20px;
+    @apply p-4 sm:p-6;
   }
 
   .card-title {
@@ -233,30 +395,37 @@
   }
 
   .badge {
-    @apply inline-flex items-center rounded-sm bg-surface-selected px-3 text-compact font-medium text-brand-primary;
-    min-height: var(--control-height-sm);
-  }
-
-  .badge-md {
-    @apply rounded-md px-3 py-1 text-sm leading-5 font-semibold text-brand-primary;
-  }
-
-  .badge-pill {
-    @apply rounded-full px-2 py-1 text-xs leading-4;
+    @apply inline-flex items-center gap-1 rounded-md bg-surface-selected px-2 py-0.5 text-helper font-medium whitespace-nowrap text-brand-accent ring-1 ring-brand-accent/20 ring-inset;
     min-height: 1.5rem;
   }
 
-  .badge-pill-primary {
-    @apply bg-brand-primary text-surface;
+  .badge-md {
+    @apply px-2.5 py-1 text-compact leading-5 font-semibold;
   }
 
-  /* Status badges: white surface with a border so the text keeps AA contrast. */
+  .badge-pill {
+    @apply rounded-full px-2 py-0.5 text-xs leading-4;
+  }
+
+  .badge-pill-primary {
+    @apply bg-brand-primary text-on-brand ring-0;
+  }
+
+  /* Status badges: tinted, with the status in the text. */
   .badge-success {
-    @apply border border-border bg-surface text-success;
+    @apply bg-success-subtle text-success ring-success/25;
   }
 
   .badge-error {
-    @apply border border-border bg-surface text-error;
+    @apply bg-error-subtle text-error ring-error/25;
+  }
+
+  .badge-warning {
+    @apply bg-warning-subtle text-warning ring-warning/25;
+  }
+
+  .badge-neutral {
+    @apply bg-surface-hover text-text-secondary ring-text-secondary/20;
   }
 
   /*
@@ -264,21 +433,21 @@
    * lazy loading keep working) and the current one is marked with aria-current="page", not the ARIA tab pattern.
    */
   .tabs {
-    @apply m-0 mb-6 flex list-none flex-wrap gap-x-6 border-b border-border p-0;
+    @apply m-0 mb-6 flex list-none flex-wrap gap-x-8 border-b border-border p-0;
   }
 
   .tab {
-    @apply -mb-px inline-flex items-center border-b-2 border-transparent px-1 font-medium text-text-secondary no-underline hover:border-border hover:text-brand-primary;
+    @apply -mb-px inline-flex items-center gap-2 border-b-2 border-transparent px-1 text-compact font-medium text-text-secondary no-underline hover:border-control-border/50 hover:text-text-primary;
     min-height: var(--control-height-lg);
   }
 
   .tab[aria-current='page'] {
-    @apply border-brand-primary font-semibold text-brand-primary;
+    @apply border-brand-accent font-semibold text-brand-accent;
   }
 
   /* Shared compact geometry for audit, configuration, and teacher data tables. */
   .data-table-container {
-    @apply relative overflow-x-auto rounded-md border border-border bg-surface;
+    @apply relative overflow-x-auto rounded-lg bg-surface shadow-panel;
   }
 
   .data-table-scroll {
@@ -292,8 +461,16 @@
 
   .data-table th,
   .data-table td {
-    padding: 0.5rem 0.75rem;
+    padding: 0.875rem 0.75rem;
     vertical-align: top;
+  }
+
+  .data-table :is(th, td):first-child {
+    padding-inline-start: 1rem;
+  }
+
+  .data-table :is(th, td):last-child {
+    padding-inline-end: 1rem;
   }
 
   .data-table th {
@@ -301,19 +478,16 @@
   }
 
   .data-table thead tr {
-    height: 2.75rem;
-    border-bottom: var(--border-width) solid var(--color-divider);
-    color: var(--color-text-secondary);
+    border-bottom: var(--border-width) solid var(--color-border);
+    color: var(--color-text-primary);
     background-color: var(--color-surface-hover);
   }
 
   .data-table thead th {
-    padding-block: 0.75rem;
     font-weight: var(--font-weight-semibold);
   }
 
   .data-table tbody tr {
-    height: 2.75rem;
     border-bottom: var(--border-width) solid var(--color-divider);
   }
 
@@ -326,16 +500,96 @@
   }
 
   .infinite-scroll-footer {
-    @apply mt-3 flex flex-col items-center gap-2;
+    @apply mt-4 flex flex-col items-center gap-2;
   }
 
   .infinite-scroll-sentinel {
     height: 1px;
   }
 
+  /* Label/value pairs for record details and history: direct dt/dd children, a 12rem label column from sm: up, a divider
+     between pairs. .description-list-stacked keeps every label above its value (long values such as message text). */
+  .description-list {
+    @apply m-0 grid grid-cols-1 text-compact sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-x-6;
+  }
+
+  .description-list > dt {
+    @apply pt-3 font-medium text-text-secondary sm:pb-3;
+  }
+
+  .description-list > dd {
+    @apply m-0 min-w-0 pt-1 pb-3 break-words text-text-primary sm:pt-3;
+  }
+
+  .description-list > dt:first-of-type,
+  .description-list > dt:first-of-type + dd {
+    @apply sm:pt-0;
+  }
+
+  .description-list > dt:first-of-type {
+    @apply pt-0;
+  }
+
+  .description-list > dt:not(:first-of-type) {
+    @apply border-t border-divider;
+  }
+
+  .description-list > dt:not(:first-of-type) + dd {
+    @apply sm:border-t sm:border-divider;
+  }
+
+  .description-list > :is(dt, dd):last-child,
+  .description-list > dt:nth-last-child(2) {
+    @apply sm:pb-0;
+  }
+
+  .description-list > dd:last-child {
+    @apply pb-0;
+  }
+
+  .description-list-stacked {
+    @apply sm:grid-cols-1;
+  }
+
+  .description-list-stacked > dt:not(:first-of-type) + dd {
+    @apply sm:border-t-0;
+  }
+
+  .description-list-stacked > dd {
+    @apply sm:pt-1;
+  }
+
+  /* An empty collection or no search matches: a dashed panel with a title, one sentence, and an optional action. */
+  .empty-state {
+    @apply flex flex-col items-center rounded-lg border-2 border-dashed border-border px-6 py-10 text-center;
+  }
+
+  .empty-state ng-icon {
+    @apply mb-3;
+    --ng-icon__size: 2.5rem;
+    --ng-icon__color: var(--color-text-disabled);
+  }
+
+  .empty-state-title {
+    @apply m-0 text-compact font-semibold text-text-primary;
+  }
+
+  .empty-state-text {
+    @apply mt-1 mb-0 max-w-prose text-compact text-text-secondary;
+  }
+
+  .empty-state-text + :is(.btn, a) {
+    @apply mt-6;
+  }
+
+  /* Loading text with a spinner, for a page, a section, or the end of a list. */
+  .loading-state {
+    @apply flex items-center gap-2 text-compact text-text-secondary;
+  }
+
   /* List groups */
   .list-group {
-    @apply m-0 list-none overflow-hidden rounded-lg border border-border bg-surface p-0;
+    @apply m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-panel;
   }
 
   .list-group-compact {
@@ -343,7 +597,7 @@
   }
 
   .list-group-flush {
-    @apply rounded-none border-0 bg-transparent;
+    @apply rounded-none bg-transparent shadow-none ring-0;
   }
 
   .list-group-item {
@@ -372,7 +626,7 @@
   }
 
   .list-marker {
-    @apply m-0 list-disc pl-5 text-compact leading-5 text-text-secondary marker:text-brand-primary;
+    @apply m-0 list-disc pl-5 text-compact leading-5 text-text-secondary marker:text-brand-accent;
   }
 
   .list-marker > :not(:last-child) {
@@ -399,17 +653,40 @@
     font-size: 1rem;
     font-weight: var(--font-weight-medium);
     line-height: 1.25rem;
-    color: var(--color-brand-primary);
+    color: var(--color-brand-accent);
     content: '\2713';
   }
 
-  /* Compact profile dropdown; native details/summary preserves disclosure semantics and keyboard activation. */
+  /* Sidebar navigation (application shell). */
+  .nav-link {
+    @apply flex min-h-11 items-center gap-x-3 rounded-md px-2 py-2 text-compact font-semibold text-text-secondary no-underline hover:bg-surface-hover hover:text-text-primary;
+  }
+
+  .nav-link ng-icon {
+    @apply flex-none;
+    --ng-icon__size: 1.5rem;
+    --ng-icon__color: var(--color-text-disabled);
+  }
+
+  .nav-link:hover ng-icon {
+    --ng-icon__color: var(--color-text-secondary);
+  }
+
+  .nav-link[aria-current='page'] {
+    @apply bg-surface-selected text-brand-accent;
+  }
+
+  .nav-link[aria-current='page'] ng-icon {
+    --ng-icon__color: var(--color-brand-accent);
+  }
+
+  /* Sidebar account menu (opens upward); native details/summary preserves disclosure semantics and keyboard activation. */
   .account-dropdown {
     position: relative;
   }
 
   .account-dropdown-trigger {
-    @apply flex w-full cursor-pointer items-center gap-3 rounded-sm border border-control-border bg-surface px-3 py-2 text-left hover:bg-surface-hover;
+    @apply flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-surface-hover;
     min-height: var(--control-height-lg);
     list-style: none;
   }
@@ -423,11 +700,11 @@
   }
 
   .account-dropdown-avatar {
-    @apply grid size-9 shrink-0 place-items-center rounded-full bg-surface-selected text-compact font-semibold text-brand-primary;
+    @apply grid size-8 shrink-0 place-items-center rounded-full bg-brand-primary text-compact font-semibold text-on-brand;
   }
 
   .account-dropdown-copy {
-    @apply flex min-w-0 flex-1 flex-col;
+    @apply flex min-w-0 flex-col;
   }
 
   .account-dropdown-label {
@@ -442,6 +719,8 @@
     width: 0.45rem;
     height: 0.45rem;
     flex: none;
+    margin-inline-start: 0.25rem;
+    color: var(--color-text-secondary);
     transform: rotate(45deg);
     border-right: 1.5px solid currentColor;
     border-bottom: 1.5px solid currentColor;
@@ -457,7 +736,7 @@
     inset-inline: 0;
     bottom: calc(100% + 0.5rem);
     z-index: 50;
-    @apply rounded-md border border-border bg-surface p-2 shadow-overlay;
+    @apply rounded-md bg-surface-raised p-2 shadow-overlay;
   }
 
   .account-role-group {
@@ -467,18 +746,17 @@
   }
 
   .account-role-group legend {
-    @apply mb-0 px-2 text-helper font-medium text-text-secondary;
+    @apply mb-0 px-2 py-1 text-helper font-medium text-text-secondary;
   }
 
   .account-role-option {
-    @apply flex min-h-11 cursor-pointer items-center gap-3 rounded-sm px-2 text-compact text-text-primary hover:bg-surface-hover;
+    @apply flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 text-compact text-text-primary hover:bg-surface-hover;
   }
 
   .account-role-option input[type='radio'] {
     width: 1rem;
     height: 1rem;
     flex: none;
-    accent-color: var(--color-brand-primary);
   }
 
   .account-dropdown-sign-out {
@@ -486,24 +764,45 @@
   }
 
   .account-dropdown-divider {
-    @apply my-2 border-t border-divider;
+    @apply -mx-2 my-2 border-t border-divider;
   }
 
   .account-dropdown-item {
-    @apply flex w-full cursor-not-allowed items-center rounded-sm px-3 py-2 text-left text-compact text-text-disabled;
+    @apply flex w-full cursor-not-allowed items-center gap-3 rounded-md px-2 py-2 text-left text-compact text-text-disabled;
     min-height: var(--control-height-lg);
+  }
+
+  .account-dropdown-item ng-icon,
+  .theme-option ng-icon {
+    @apply flex-none;
+    --ng-icon__size: 1.25rem;
+  }
+
+  /* Light / Dark / System choice in the header: a segmented group of icon-only toggle buttons (aria-pressed, aria-label). */
+  .theme-switch {
+    @apply flex flex-none gap-0.5 rounded-md bg-surface-hover p-0.5 ring-1 ring-border ring-inset;
+  }
+
+  .theme-option {
+    @apply flex size-9 cursor-pointer items-center justify-center rounded-sm text-text-secondary hover:text-text-primary aria-pressed:bg-surface aria-pressed:text-brand-accent aria-pressed:shadow-xs dark:aria-pressed:bg-gray-700;
+  }
+
+  @media (pointer: coarse) {
+    .theme-option {
+      @apply size-11;
+    }
   }
 
   /* Focused authentication screens (design-system §10). */
   .auth-page {
-    @apply flex min-h-screen items-start justify-center px-4 pt-6 pb-12 md:pt-12;
+    @apply relative flex min-h-screen flex-col items-center justify-start px-4 pt-10 pb-12 sm:pt-16;
   }
 
   .auth-card {
-    @apply w-full max-w-md;
+    @apply w-full max-w-md sm:rounded-xl sm:px-10 sm:py-10;
   }
 
   .auth-footer {
-    @apply mt-6 mb-0;
+    @apply mt-6 mb-0 text-center text-compact text-text-secondary;
   }
 }

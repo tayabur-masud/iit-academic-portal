@@ -154,7 +154,7 @@ describe('NotificationHistory', () => {
 
     expect(rows().length).toBe(3);
     expect(page.textContent).toContain('All 3 matching notifications loaded');
-    expect(page.querySelector('button.btn-secondary.btn-sm:not([disabled])')?.textContent).not.toContain('Load more');
+    expect(Array.from(page.querySelectorAll('button')).some((b) => b.textContent?.includes('Load more'))).toBe(false);
   });
 
   it('keeps the rows already loaded when a later batch fails and retries only that batch', async () => {

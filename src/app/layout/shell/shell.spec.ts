@@ -188,4 +188,41 @@ describe('Shell', () => {
     expect(roleInputs().find((input) => input.value === 'Teacher')?.checked).toBe(true);
     expect(TestBed.inject(AuthSession).activeRole()).toBe('Teacher');
   });
+
+  it('offers Light, Dark, and System themes as labelled toggle buttons at the right of the header', async () => {
+    await render(context(['Student'], 'Student'));
+
+    const group = page.querySelector<HTMLElement>('header [role=group][aria-label="Theme"]')!;
+    expect(page.querySelector('header')!.lastElementChild).toBe(group);
+    expect(page.querySelector('details.account-dropdown [aria-label="Theme"]')).toBeNull();
+    const option = (label: string) => group.querySelector<HTMLButtonElement>(`button[aria-label="${label} theme"]`)!;
+    expect(Array.from(group.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Light theme',
+      'Dark theme',
+      'System theme',
+    ]);
+
+    option('Dark').click();
+    fixture.detectChanges();
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(option('Dark').getAttribute('aria-pressed')).toBe('true');
+    expect(option('Light').getAttribute('aria-pressed')).toBe('false');
+
+    option('Light').click();
+    fixture.detectChanges();
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    option('System').click();
+  });
+
+  it('labels the icon-only menu button and its state', async () => {
+    await render(context(['Student'], 'Student'));
+    const button = page.querySelector<HTMLButtonElement>('header button[aria-controls="app-sidebar"]')!;
+
+    expect(button.getAttribute('aria-label')).toBe('Open menu');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    button.click();
+    fixture.detectChanges();
+    expect(button.getAttribute('aria-label')).toBe('Close menu');
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+  });
 });

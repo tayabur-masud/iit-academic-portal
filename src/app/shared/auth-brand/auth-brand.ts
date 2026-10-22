@@ -13,9 +13,9 @@ import { Component } from '@angular/core';
       alt="IIT, University of Dhaka"
       width="600"
       height="327"
-      class="h-20 w-auto"
+      class="h-20 w-auto dark:rounded-md dark:bg-white dark:p-1"
     />
-    <p class="m-0 text-heading font-semibold text-brand-primary">IIT Academic Portal</p>
+    <p class="m-0 text-heading font-semibold tracking-tight text-text-primary">IIT Academic Portal</p>
   `,
 })
 export class AuthBrand {}

@@ -1,4 +1,4 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <a routerLink="/admin/notifications">Notifications</a>
@@ -10,7 +10,7 @@
 <p class="sr-only" role="status">{{ announcement() }}</p>
 
 @if (loading()) {
-  <p class="flex items-center gap-2 text-text-secondary" role="status">
+  <p class="loading-state" role="status">
     <span class="spinner" aria-hidden="true"></span>
     Loading…
   </p>
@@ -21,21 +21,21 @@
     <p class="mb-0"><a routerLink="/admin/notifications">Back to notifications</a></p>
   </div>
 } @else if (detail(); as d) {
-  <section class="card mb-6 max-w-[48rem]" aria-labelledby="facts-title">
+  <section class="card mb-6 max-w-3xl" aria-labelledby="facts-title">
     <h2 id="facts-title">Delivery facts</h2>
-    <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[12rem_1fr]">
-      <dt class="font-medium text-text-secondary">Message</dt>
-      <dd class="m-0">{{ eventLabel(d.notification.eventType) }}</dd>
-      <dt class="font-medium text-text-secondary">Status</dt>
-      <dd class="m-0">
+    <dl class="description-list">
+      <dt>Message</dt>
+      <dd>{{ eventLabel(d.notification.eventType) }}</dd>
+      <dt>Status</dt>
+      <dd>
         <span [class]="statusBadgeClass(d.notification.status)">{{ statusLabel(d.notification.status) }}</span>
         <div class="text-helper text-text-secondary">{{ statusHelp(d.notification.status) }}</div>
         @if (d.notification.failureCode) {
           <div class="text-helper text-text-secondary">Reason: {{ d.notification.failureCode }}</div>
         }
       </dd>
-      <dt class="font-medium text-text-secondary">Sent to</dt>
-      <dd class="m-0 break-all">
+      <dt>Sent to</dt>
+      <dd class="break-all">
         @if (d.notification.destination) {
           {{ d.notification.destination }}
         } @else {
@@ -43,26 +43,26 @@
         }
         <div class="text-helper text-text-secondary">Recipient ID: {{ d.notification.recipientUserId }}</div>
       </dd>
-      <dt class="font-medium text-text-secondary">Requested</dt>
-      <dd class="m-0"><app-utc-timestamp [value]="d.notification.requestedAtUtc" /></dd>
+      <dt>Requested</dt>
+      <dd><app-utc-timestamp [value]="d.notification.requestedAtUtc" /></dd>
       @if (d.notification.sentAtUtc) {
-        <dt class="font-medium text-text-secondary">Accepted by the delivery service</dt>
-        <dd class="m-0"><app-utc-timestamp [value]="d.notification.sentAtUtc" /></dd>
+        <dt>Accepted by the delivery service</dt>
+        <dd><app-utc-timestamp [value]="d.notification.sentAtUtc" /></dd>
       }
-      <dt class="font-medium text-text-secondary">Template revision</dt>
-      <dd class="m-0">{{ d.templateRevision }}</dd>
-      <dt class="font-medium text-text-secondary">Source occurrence</dt>
-      <dd class="m-0 break-all">{{ d.occurrenceId }}</dd>
+      <dt>Template revision</dt>
+      <dd>{{ d.templateRevision }}</dd>
+      <dt>Source occurrence</dt>
+      <dd class="break-all">{{ d.occurrenceId }}</dd>
       @if (d.notification.parentNotificationId) {
-        <dt class="font-medium text-text-secondary">Resend of</dt>
-        <dd class="m-0">
+        <dt>Resend of</dt>
+        <dd>
           <a [routerLink]="['/admin/notifications', d.notification.parentNotificationId]">The earlier notification</a>
         </dd>
       }
     </dl>
   </section>
 
-  <section class="card mb-6 max-w-[48rem]" aria-labelledby="content-title">
+  <section class="card mb-6 max-w-3xl" aria-labelledby="content-title">
     <h2 id="content-title">Message</h2>
     @if (d.notification.contentWithheld) {
       <div class="alert alert-info mb-0" role="note">
@@ -73,18 +73,18 @@
         </p>
       </div>
     } @else if (d.subject !== undefined && d.body !== undefined) {
-      <dl class="mb-0">
-        <dt class="font-medium text-text-secondary">Subject</dt>
-        <dd class="m-0 mb-3" data-testid="content-subject">{{ d.subject }}</dd>
-        <dt class="font-medium text-text-secondary">Message</dt>
-        <dd class="m-0"><pre class="m-0 whitespace-pre-wrap break-words font-[inherit]" data-testid="content-body">{{ d.body }}</pre></dd>
+      <dl class="description-list description-list-stacked">
+        <dt>Subject</dt>
+        <dd data-testid="content-subject">{{ d.subject }}</dd>
+        <dt>Message</dt>
+        <dd><pre class="m-0 whitespace-pre-wrap break-words font-[inherit]" data-testid="content-body">{{ d.body }}</pre></dd>
       </dl>
     } @else {
       <p class="mb-0 text-text-secondary">No message was prepared, because it was not sent.</p>
     }
   </section>
 
-  <section class="card mb-6 max-w-[48rem]" aria-labelledby="attempts-title">
+  <section class="card mb-6 max-w-3xl" aria-labelledby="attempts-title">
     <h2 id="attempts-title">Delivery attempts</h2>
     @if (d.attempts.length === 0) {
       <p class="mb-0 text-text-secondary">No delivery attempt has been made.</p>
@@ -118,7 +118,7 @@
   </section>
 
   @if (resent(); as created) {
-    <div class="alert alert-success max-w-[48rem]" role="status">
+    <div class="alert alert-success max-w-3xl" role="status">
       <strong class="alert-title">Resend requested</strong>
       <p class="mb-0">
         A new notification was created and will be delivered in the background. This one is unchanged.
@@ -126,7 +126,7 @@
       </p>
     </div>
   } @else if (canResend()) {
-    <section class="card max-w-[48rem]" aria-labelledby="resend-title">
+    <section class="card max-w-3xl" aria-labelledby="resend-title">
       <h2 id="resend-title">Resend</h2>
       <p>
         Sends this message again as a new notification. The original and its attempts are kept as they are. It is sent to the same

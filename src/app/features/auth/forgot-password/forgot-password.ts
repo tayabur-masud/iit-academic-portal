@@ -6,10 +6,11 @@ import { firstValueFrom } from 'rxjs';
 import { AuthApi } from '../../../core/auth/auth-api';
 import { problemMessage } from '../../../core/http/problem';
 import { AuthBrand } from '../../../shared/auth-brand/auth-brand';
+import { ThemeToggle } from '../../../shared/theme-toggle/theme-toggle';
 
 @Component({
   selector: 'app-forgot-password',
-  imports: [ReactiveFormsModule, RouterLink, AuthBrand],
+  imports: [ReactiveFormsModule, RouterLink, AuthBrand, ThemeToggle],
   templateUrl: './forgot-password.html',
 })
 export class ForgotPassword {

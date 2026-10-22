@@ -1,5 +1,5 @@
 @if (descriptor(); as d) {
-  <nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <nav aria-label="Breadcrumb" class="breadcrumb">
     <a routerLink="/admin/configuration">Configuration</a>
     <span aria-hidden="true"> / </span>
     <a [routerLink]="['/admin/configuration', d.slug]">{{ d.label }}</a>
@@ -11,7 +11,7 @@
   <p class="sr-only" role="status">{{ announcement() }}</p>
 
   @if (loading()) {
-    <p class="flex items-center gap-2 text-text-secondary">
+    <p class="loading-state">
       <span class="spinner" aria-hidden="true"></span>
       Loading…
     </p>
@@ -39,7 +39,7 @@
       </div>
     }
 
-    <form class="card max-w-[40rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+    <form class="card max-w-3xl" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
       <div class="field">
         <label class="field-label" for="name">Name</label>
         <input
@@ -295,7 +295,8 @@
         </p>
       </div>
 
-      <div class="flex flex-wrap gap-3">
+      <div class="form-actions">
+        <a class="btn btn-secondary" [routerLink]="['/admin/configuration', d.slug]">Cancel</a>
         <button type="submit" class="btn btn-primary" [disabled]="saving()">
           @if (saving()) {
             <span class="spinner" aria-hidden="true"></span>
@@ -304,21 +305,20 @@
             {{ isNew() ? 'Create ' + d.singular : 'Save changes' }}
           }
         </button>
-        <a class="btn btn-secondary" [routerLink]="['/admin/configuration', d.slug]">Cancel</a>
       </div>
     </form>
 
     @if (!isNew() && original(); as record) {
-      <section class="card mt-6 max-w-[40rem]" aria-labelledby="history-title">
+      <section class="card mt-6 max-w-3xl" aria-labelledby="history-title">
         <h2 id="history-title">Record history</h2>
-        <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-          <dt class="font-medium text-text-secondary">Created</dt>
-          <dd class="m-0">
+        <dl class="description-list">
+          <dt>Created</dt>
+          <dd>
             <app-utc-timestamp [value]="record.createdAtUtc" />
             by <span class="break-all">{{ who(record.createdBy, record.createdByUserId) }}</span>
           </dd>
-          <dt class="font-medium text-text-secondary">Last modified</dt>
-          <dd class="m-0">
+          <dt>Last modified</dt>
+          <dd>
             <app-utc-timestamp [value]="record.lastModifiedAtUtc" />
             by <span class="break-all">{{ who(record.lastModifiedBy, record.lastModifiedByUserId) }}</span>
           </dd>
@@ -327,7 +327,7 @@
     }
 
     @if (!isNew() && d.canDelete !== false) {
-      <section class="card mt-6 max-w-[40rem]" aria-labelledby="delete-title">
+      <section class="card mt-6 max-w-3xl" aria-labelledby="delete-title">
         <h2 id="delete-title">Delete this {{ d.singular }}</h2>
         <p>
           Deleting hides the {{ d.singular }} from every list and selector. The record is kept in the database but cannot be restored

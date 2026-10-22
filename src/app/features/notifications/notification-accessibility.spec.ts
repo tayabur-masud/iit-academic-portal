@@ -270,7 +270,7 @@ describe('Notification administration screens', () => {
     await render(NotificationHistory);
     await answer('/api/admin/notifications', { items: [row('1')], nextCursor: null });
 
-    const grid = page.querySelector('form .grid')!;
+    const grid = page.querySelector('form .filter-grid')!;
     expect(grid.className).toContain('md:grid-cols-2');
     expect(grid.className).not.toMatch(/(^|\s)grid-cols-[2-9]/);
     expect(page.querySelector('.data-table-container')).not.toBeNull();

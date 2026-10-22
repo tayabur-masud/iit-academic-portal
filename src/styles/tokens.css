@@ -4,39 +4,109 @@
  * the design-system document. Confirmed brand values: primary #2E3192; secondary #4B4FB0.
  *
  * Tokens in a Tailwind namespace live in @theme, so each one is both a CSS variable and a utility
- * (--color-brand-primary -> bg-brand-primary, --spacing-4 -> p-4, --radius-md -> rounded-md,
+ * (--color-brand-600 -> bg-brand-600, --color-surface -> bg-surface, --radius-md -> rounded-md,
  * --breakpoint-md -> md:). `static` emits every variable so plain CSS can always use var(--…).
+ *
+ * Two layers of color: the scales (brand, gray, and the four status families, Tailwind's own values) and the semantic roles
+ * (background, surface, text-*, border, success, …) that point at them. Pages use the semantic roles; dark mode re-points only
+ * the roles (the `.dark` block below), so a page written with roles needs no dark-specific classes.
  */
 @theme static {
-  /* Only design-system colors exist: Tailwind's default palette (red-500, …) is removed. */
+  /* Only these colors exist: Tailwind's other families (indigo, rose, …) are removed so pages stay on the system. */
   --color-*: initial;
 
-  /* IIT brand colors supplied by the project. */
-  --color-brand-primary: #2e3192;
-  --color-brand-secondary: #4b4fb0;
-  --color-brand-accent: var(--color-brand-primary);
+  --color-white: #fff;
+  --color-black: #000;
 
-  /* Semantic colors. */
-  --color-background: #f8f9fc;
-  --color-surface: #ffffff;
-  --color-surface-raised: #ffffff;
-  --color-text-primary: #111827;
-  --color-text-secondary: #4b5563;
-  --color-text-disabled: #9ca3af;
-  --color-border: #d1d5db;
-  --color-control-border: #6b7280;
-  --color-divider: #e5e7eb;
-  --color-success: #15803d;
-  --color-warning: #b45309;
-  --color-error: #b91c1c;
-  --color-info: #0369a1;
-  --color-focus: #2e3192;
+  /* IIT brand scale around the supplied primary (600 = #2E3192) and secondary (500 = #4B4FB0). */
+  --color-brand-50: #eef0fb;
+  --color-brand-100: #e0e3f6;
+  --color-brand-200: #c6caef;
+  --color-brand-300: #a2a7e3;
+  --color-brand-400: #7c80d3;
+  --color-brand-500: #4b4fb0;
+  --color-brand-600: #2e3192;
+  --color-brand-700: #252873;
+  --color-brand-800: #1f215e;
+  --color-brand-900: #1a1c52;
+  --color-brand-950: #10113a;
 
-  /* Interaction variants. */
-  --color-brand-primary-hover: #252873;
-  --color-brand-primary-active: #1a1c52;
-  --color-surface-hover: #f2f3fa;
-  --color-surface-selected: #eeeff8;
+  /* Tailwind's gray and status scales, unchanged. */
+  --color-gray-50: oklch(98.5% 0.002 247.839);
+  --color-gray-100: oklch(96.7% 0.003 264.542);
+  --color-gray-200: oklch(92.8% 0.006 264.531);
+  --color-gray-300: oklch(87.2% 0.01 258.338);
+  --color-gray-400: oklch(70.7% 0.022 261.325);
+  --color-gray-500: oklch(55.1% 0.027 264.364);
+  --color-gray-600: oklch(44.6% 0.03 256.802);
+  --color-gray-700: oklch(37.3% 0.034 259.733);
+  --color-gray-800: oklch(27.8% 0.033 256.848);
+  --color-gray-900: oklch(21% 0.034 264.665);
+  --color-gray-950: oklch(13% 0.028 261.692);
+
+  --color-red-50: oklch(97.1% 0.013 17.38);
+  --color-red-100: oklch(93.6% 0.032 17.717);
+  --color-red-300: oklch(80.8% 0.114 19.571);
+  --color-red-400: oklch(70.4% 0.191 22.216);
+  --color-red-500: oklch(63.7% 0.237 25.331);
+  --color-red-600: oklch(57.7% 0.245 27.325);
+  --color-red-700: oklch(50.5% 0.213 27.518);
+  --color-red-800: oklch(44.4% 0.177 26.899);
+
+  --color-green-50: oklch(98.2% 0.018 155.826);
+  --color-green-400: oklch(79.2% 0.209 151.711);
+  --color-green-500: oklch(72.3% 0.219 149.579);
+  --color-green-600: oklch(62.7% 0.194 149.214);
+  --color-green-700: oklch(52.7% 0.154 150.069);
+  --color-green-800: oklch(44.8% 0.119 151.328);
+
+  --color-amber-50: oklch(98.7% 0.022 95.277);
+  --color-amber-400: oklch(82.8% 0.189 84.429);
+  --color-amber-500: oklch(76.9% 0.188 70.08);
+  --color-amber-600: oklch(66.6% 0.179 58.318);
+  --color-amber-700: oklch(55.5% 0.163 48.998);
+  --color-amber-800: oklch(47.3% 0.137 46.201);
+
+  --color-sky-50: oklch(97.7% 0.013 236.62);
+  --color-sky-400: oklch(74.6% 0.16 232.661);
+  --color-sky-500: oklch(68.5% 0.169 237.323);
+  --color-sky-600: oklch(58.8% 0.158 241.966);
+  --color-sky-700: oklch(50% 0.134 242.749);
+  --color-sky-800: oklch(44.3% 0.11 240.79);
+
+  /* Semantic roles (light theme). */
+  --color-brand-primary: var(--color-brand-600);
+  --color-brand-primary-hover: var(--color-brand-700);
+  --color-brand-primary-active: var(--color-brand-800);
+  --color-brand-secondary: var(--color-brand-500);
+  /* Brand-colored text and links: the accent that keeps AA contrast on the page background in each theme. */
+  --color-brand-accent: var(--color-brand-600);
+  --color-on-brand: var(--color-white);
+
+  --color-background: var(--color-gray-50);
+  --color-surface: var(--color-white);
+  --color-surface-raised: var(--color-white);
+  --color-surface-hover: var(--color-gray-50);
+  --color-surface-selected: var(--color-brand-50);
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-disabled: var(--color-gray-400);
+  /* Decorative edges (cards, tables) are soft; a control's edge keeps 3:1 against its surface. */
+  --color-border: var(--color-gray-200);
+  --color-control-border: var(--color-gray-500);
+  --color-divider: var(--color-gray-200);
+
+  --color-success: var(--color-green-700);
+  --color-success-subtle: var(--color-green-50);
+  --color-warning: var(--color-amber-700);
+  --color-warning-subtle: var(--color-amber-50);
+  --color-error: var(--color-red-700);
+  --color-error-subtle: var(--color-red-50);
+  --color-error-fill: var(--color-red-600);
+  --color-error-fill-hover: var(--color-red-700);
+  --color-info: var(--color-sky-700);
+  --color-info-subtle: var(--color-sky-50);
+  --color-focus: var(--color-brand-600);
 
   /* Typography. */
   --font-family-primary: 'DM Sans', 'Noto Sans Bengali', sans-serif;
@@ -45,21 +115,18 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
 
-  /* Spacing (4px base). */
-  --spacing-1: 0.25rem;
-  --spacing-2: 0.5rem;
-  --spacing-3: 0.75rem;
-  --spacing-4: 1rem;
-  --spacing-6: 1.25rem;
-  --spacing-8: 1.5rem;
-  --spacing-12: 2rem;
-  --spacing-16: 2.5rem;
+  /* Spacing: Tailwind's default 4px step (p-4 = 1rem, p-6 = 1.5rem, …). */
+  --spacing: 0.25rem;
 
-  /* Shape and elevation. */
+  /* Shape and elevation: Tailwind's radii and shadows, the panel shadow (a hairline ring plus a small shadow, for cards, tables,
+     and list groups), and the overlay shadow for menus. The ring color is re-pointed in the dark theme. */
   --radius-sm: 0.25rem;
-  --radius-md: 0.4375rem;
+  --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
-  --shadow-overlay: 0 4px 12px rgba(17, 24, 39, 0.08), 0 1px 3px rgba(17, 24, 39, 0.06);
+  --radius-xl: 0.75rem;
+  --color-surface-ring: rgb(0 0 0 / 0.05);
+  --shadow-panel: 0 0 0 1px var(--color-surface-ring), 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-overlay: 0 0 0 1px var(--color-surface-ring), 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
   /* Breakpoints (sm: md: lg: xl: variants). */
   --breakpoint-sm: 40rem;
@@ -77,8 +144,48 @@
   --leading-body: var(--line-height-body);
 }
 
+/* Dark theme: `.dark` on <html> (set by ThemeService and the inline script in index.html) re-points the semantic roles. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root.dark {
+  color-scheme: dark;
+
+  --color-brand-primary: var(--color-brand-500);
+  --color-brand-primary-hover: var(--color-brand-600);
+  --color-brand-primary-active: var(--color-brand-700);
+  --color-brand-secondary: var(--color-brand-400);
+  --color-brand-accent: var(--color-brand-300);
+
+  --color-background: var(--color-gray-950);
+  --color-surface: var(--color-gray-900);
+  --color-surface-raised: var(--color-gray-800);
+  --color-surface-hover: var(--color-gray-800);
+  --color-surface-selected: color-mix(in oklab, var(--color-brand-500) 25%, var(--color-gray-900));
+  --color-text-primary: var(--color-gray-100);
+  --color-text-secondary: var(--color-gray-400);
+  --color-text-disabled: var(--color-gray-600);
+  --color-border: var(--color-gray-700);
+  --color-control-border: var(--color-gray-500);
+  --color-divider: var(--color-gray-800);
+
+  --color-success: var(--color-green-400);
+  --color-success-subtle: color-mix(in oklab, var(--color-green-500) 12%, var(--color-gray-900));
+  --color-warning: var(--color-amber-400);
+  --color-warning-subtle: color-mix(in oklab, var(--color-amber-500) 12%, var(--color-gray-900));
+  --color-error: var(--color-red-400);
+  --color-error-subtle: color-mix(in oklab, var(--color-red-500) 12%, var(--color-gray-900));
+  --color-error-fill: var(--color-red-600);
+  --color-error-fill-hover: var(--color-red-700);
+  --color-info: var(--color-sky-400);
+  --color-info-subtle: color-mix(in oklab, var(--color-sky-500) 12%, var(--color-gray-900));
+  --color-focus: var(--color-brand-300);
+  --color-surface-ring: rgb(255 255 255 / 0.1);
+}
+
 /* Design-system tokens outside Tailwind's namespaces; use with var(--…) or utilities such as h-(--header-height). */
 :root {
+  color-scheme: light;
+
   --font-size-page-title: 1.5rem;
   --font-size-heading: 1.125rem;
   --font-size-body: 0.9375rem;
@@ -93,6 +200,6 @@
   --control-height-lg: 2.75rem;
 
   --content-max-width: 80rem;
-  --sidebar-width: 15rem;
+  --sidebar-width: 16rem;
   --header-height: 4rem;
 }

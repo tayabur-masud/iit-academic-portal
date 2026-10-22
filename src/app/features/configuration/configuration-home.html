@@ -1,8 +1,12 @@
-<h1>Configuration</h1>
-<p class="max-w-[48rem] text-text-secondary">
-  Maintain the reference data the portal relies on. Inactive records stay on existing links but cannot be chosen for new
-  ones, and a record that is in use cannot be deleted.
-</p>
+<div class="page-header">
+  <div class="min-w-0">
+    <h1>Configuration</h1>
+    <p class="page-header-description">
+      Maintain the reference data the portal relies on. Inactive records stay on existing links but cannot be chosen for new
+      ones, and a record that is in use cannot be deleted.
+    </p>
+  </div>
+</div>
 
 @for (group of groups; track group.name) {
   <section class="mb-8" [attr.aria-labelledby]="'group-' + $index">
