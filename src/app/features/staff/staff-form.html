@@ -1,0 +1,209 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin">Admin</a>
+  <span aria-hidden="true"> / </span>
+  <a routerLink="/admin/staff">Staff</a>
+  <span aria-hidden="true"> / </span>
+  <span>{{ isNew() ? 'Add' : 'Edit' }}</span>
+</nav>
+
+<h1>{{ isNew() ? 'Add staff member' : 'Edit staff profile' }}</h1>
+<p class="sr-only" role="status">{{ announcement() }}</p>
+
+@if (loading()) {
+  <p class="flex items-center gap-2 text-text-secondary">
+    <span class="spinner" aria-hidden="true"></span>
+    Loading…
+  </p>
+} @else if (loadError(); as message) {
+  <div class="alert alert-error" role="alert">
+    <strong class="alert-title">Not shown</strong>
+    <p>{{ message }}</p>
+    <p class="mb-0"><a routerLink="/admin/staff">Back to staff</a></p>
+  </div>
+} @else {
+  @if (notice(); as message) {
+    <div class="alert alert-success" role="status">
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  }
+
+  @if (profile(); as current) {
+    @if (!current.isActive) {
+      <div class="alert alert-info" role="status">
+        <strong class="alert-title">This staff member is deactivated</strong>
+        <p class="mb-0">Their account cannot sign in. The profile and its history are kept as they were and cannot be changed.</p>
+      </div>
+    } @else if (current.accountStatus === 'Deactivated') {
+      <div class="alert alert-info" role="status">
+        <strong class="alert-title">This account is deactivated</strong>
+        <p class="mb-0">The profile is kept as it was and cannot be changed.</p>
+      </div>
+    } @else if (!current.hasAdminRole) {
+      <div class="alert alert-info" role="status">
+        <strong class="alert-title">This account no longer has the Admin role</strong>
+        <p class="mb-0">
+          The profile is kept as it was and cannot be changed. Roles are managed in
+          <a [routerLink]="['/admin/users', current.userId]">Accounts</a>.
+        </p>
+      </div>
+    }
+  } @else {
+    <div class="alert alert-info" role="note">
+      <strong class="alert-title">A new or existing Admin account</strong>
+      <p class="mb-0">
+        For a new email, an Admin account is created and a credential setup email is sent. For the email of an existing Admin account
+        without a staff profile, only the staff details are added: its roles and sign-in stay as they are.
+      </p>
+    </div>
+  }
+
+  @if (errorMessage(); as message) {
+    <div class="alert alert-error" role="alert">
+      <strong class="alert-title">Not saved</strong>
+      <p class="mb-0">{{ message }}</p>
+    </div>
+  }
+
+  <form class="card max-w-[40rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+    @if (isNew()) {
+      <div class="field">
+        <label class="field-label" for="email">Email address</label>
+        <p class="field-help" id="email-help">The staff member's sign-in email. It cannot be changed here later.</p>
+        <input
+          id="email"
+          class="field-input"
+          type="email"
+          autocomplete="off"
+          formControlName="email"
+          required
+          maxlength="256"
+          [attr.aria-invalid]="errorsFor('email').length > 0"
+          [attr.aria-describedby]="describedBy('email', true)"
+        />
+        @for (message of errorsFor('email'); track message) {
+          <p class="field-error" id="email-error">{{ message }}</p>
+        }
+      </div>
+    } @else if (profile(); as current) {
+      <div class="field">
+        <span class="field-label">Account</span>
+        <p class="mb-0 break-all">
+          <a [routerLink]="['/admin/users', current.userId]">{{ current.email }}</a>
+          · {{ current.hasAdminRole ? statusLabel(current.accountStatus) : 'No Admin role' }}
+          @if (!current.isActive) {
+            · Staff deactivated
+          }
+        </p>
+      </div>
+    }
+
+    <fieldset class="m-0 border-0 p-0" [disabled]="locked()">
+      <div class="field">
+        <label class="field-label" for="name">Name</label>
+        <input
+          id="name"
+          class="field-input"
+          type="text"
+          autocomplete="off"
+          formControlName="name"
+          required
+          maxlength="200"
+          [attr.aria-invalid]="errorsFor('name').length > 0"
+          [attr.aria-describedby]="describedBy('name')"
+        />
+        @for (message of errorsFor('name'); track message) {
+          <p class="field-error" id="name-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="mobileNumber">Mobile number</label>
+        <p class="field-help" id="mobileNumber-help">A contact number. The portal does not verify it.</p>
+        <input
+          id="mobileNumber"
+          class="field-input"
+          type="tel"
+          autocomplete="off"
+          formControlName="mobileNumber"
+          required
+          maxlength="50"
+          [attr.aria-invalid]="errorsFor('mobileNumber').length > 0"
+          [attr.aria-describedby]="describedBy('mobileNumber', true)"
+        />
+        @for (message of errorsFor('mobileNumber'); track message) {
+          <p class="field-error" id="mobileNumber-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="designationId">Designation</label>
+        <select
+          id="designationId"
+          class="field-input"
+          formControlName="designationId"
+          required
+          [attr.aria-invalid]="errorsFor('designationId').length > 0"
+          [attr.aria-describedby]="describedBy('designationId')"
+        >
+          <option value="">Select a designation</option>
+          @for (option of designationChoices(); track option.id) {
+            <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+          }
+        </select>
+        @for (message of errorsFor('designationId'); track message) {
+          <p class="field-error" id="designationId-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label class="flex items-start gap-2" for="manualVerificationConfirmed">
+          <input
+            id="manualVerificationConfirmed"
+            class="mt-1"
+            type="checkbox"
+            formControlName="manualVerificationConfirmed"
+            [attr.aria-invalid]="errorsFor('manualVerificationConfirmed').length > 0"
+            [attr.aria-describedby]="describedBy('manualVerificationConfirmed', true)"
+          />
+          <span>I have manually verified this name, mobile number, and designation against the institution's records.</span>
+        </label>
+        <p class="field-help" id="manualVerificationConfirmed-help">
+          Needed for every save. Your confirmation is recorded with the change in the audit history; no document is uploaded or kept.
+        </p>
+        @for (message of errorsFor('manualVerificationConfirmed'); track message) {
+          <p class="field-error" id="manualVerificationConfirmed-error">{{ message }}</p>
+        }
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <button type="submit" class="btn btn-primary" [disabled]="saving() || locked()">
+          @if (saving()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Saving…
+          } @else {
+            {{ isNew() ? 'Add staff member' : 'Save changes' }}
+          }
+        </button>
+        <a class="btn btn-secondary" routerLink="/admin/staff">Back to staff</a>
+      </div>
+    </fieldset>
+  </form>
+
+  @if (profile(); as record) {
+    <section class="card mt-6 max-w-[40rem]" aria-labelledby="history-title">
+      <h2 id="history-title">Record history</h2>
+      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
+        <dt class="font-medium text-text-secondary">Created</dt>
+        <dd class="m-0">
+          <app-utc-timestamp [value]="record.createdAtUtc" />
+          by <span class="break-all">{{ who(record.createdBy, record.createdByUserId) }}</span>
+        </dd>
+        <dt class="font-medium text-text-secondary">Last modified</dt>
+        <dd class="m-0">
+          <app-utc-timestamp [value]="record.lastModifiedAtUtc" />
+          by <span class="break-all">{{ who(record.lastModifiedBy, record.lastModifiedByUserId) }}</span>
+        </dd>
+      </dl>
+    </section>
+  }
+}

@@ -1,0 +1,161 @@
+<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+  <a routerLink="/admin">Admin</a>
+  <span aria-hidden="true"> / </span>
+  <span>Staff</span>
+</nav>
+
+<div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+  <h1 class="mb-0">Staff</h1>
+  <a class="btn btn-primary shrink-0" routerLink="/admin/staff/new">Add staff member</a>
+</div>
+<p class="text-text-secondary">
+  The name, mobile number, and designation of each Admin staff member, entered after you check them against the institution's records.
+  Adding a staff member with a new email creates their Admin account. Your own profile is changed here too, the same way. Roles are
+  managed in <a routerLink="/admin/users">Accounts</a>.
+</p>
+
+@if (notice(); as message) {
+  <div class="alert alert-success" role="status">
+    <p>{{ message }}</p>
+    <button type="button" class="btn btn-secondary btn-sm mt-2" (click)="dismissNotice()">Dismiss</button>
+  </div>
+}
+
+<form class="card mb-6" (submit)="$event.preventDefault(); applyFilters()" [attr.aria-busy]="loading()">
+  <div class="field mb-0 max-w-[32rem]">
+    <label class="field-label" for="search">Search</label>
+    <p class="field-help" id="search-help">Name, email address, mobile number, or designation.</p>
+    <input id="search" class="field-input" type="search" autocomplete="off" aria-describedby="search-help" [formControl]="search" />
+  </div>
+
+  <div class="mt-3 flex flex-wrap gap-3">
+    <button type="submit" class="btn btn-primary" [disabled]="loading()">Search</button>
+    <button type="button" class="btn btn-secondary btn-sm" [disabled]="loading()" (click)="clearFilters()">Clear search</button>
+  </div>
+</form>
+
+<section aria-labelledby="results-title">
+  <h2 id="results-title" class="sr-only">Staff results</h2>
+  <p class="sr-only" role="status">{{ announcement() }}</p>
+
+  @if (loading() && items().length === 0) {
+    <p class="flex items-center gap-2 text-text-secondary">
+      <span class="spinner" aria-hidden="true"></span>
+      Loading staff…
+    </p>
+  } @else if (items().length === 0 && errorMessage()) {
+    @if (errorMessage(); as message) {
+      <div class="alert alert-error" role="alert">
+        <strong class="alert-title">Staff not shown</strong>
+        <p>{{ message }}</p>
+        <div class="mt-3">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
+        </div>
+      </div>
+    }
+  } @else if (loaded() && items().length === 0) {
+    <div class="card max-w-[40rem]">
+      <h3 class="mb-2 text-heading font-semibold">{{ filtered() ? 'No staff profiles match' : 'No staff profiles yet' }}</h3>
+      <p class="mb-0">
+        {{ filtered() ? 'Change the search, or clear it.' : 'Add a staff member to get started.' }}
+      </p>
+    </div>
+  } @else if (items().length > 0) {
+    <div class="data-table-container" [class.opacity-60]="loading()" [attr.aria-busy]="loading()">
+      <table class="data-table min-w-[60rem]">
+        <caption class="sr-only">
+          Staff profiles, {{ items().length }} loaded
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Mobile number</th>
+            <th scope="col">Designation</th>
+            <th scope="col">Account</th>
+            <th scope="col">Staff</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (staff of items(); track staff.id) {
+            <tr>
+              <th scope="row" class="text-left">
+                <a [routerLink]="['/admin/staff', staff.id]">{{ staff.name }}</a>
+              </th>
+              <td class="break-all">{{ staff.email }}</td>
+              <td>{{ staff.mobileNumber }}</td>
+              <td>{{ staff.designationName ?? '' }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-success]="staff.accountStatus === 'Active' && staff.hasAdminRole"
+                  [class.badge-error]="staff.accountStatus === 'Deactivated' || !staff.hasAdminRole"
+                >
+                  {{ staff.hasAdminRole ? statusLabel(staff.accountStatus) : 'No Admin role' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class.badge-success]="staff.isActive" [class.badge-error]="!staff.isActive">
+                  {{ staff.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="align-top">
+                @if (confirming() === staff.id) {
+                  <div class="flex max-w-[18rem] flex-col gap-2" role="group" [attr.aria-labelledby]="'staff-' + staff.id + '-confirm-text'">
+                    <p class="mb-0 text-compact" [id]="'staff-' + staff.id + '-confirm-text'">
+                      Deactivate {{ staff.name }}? Their account is deactivated and every session ends. The profile and history are kept.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-danger btn-sm" [disabled]="deactivating() === staff.id" (click)="confirmDeactivate(staff)">
+                        @if (deactivating() === staff.id) {
+                          <span class="spinner" aria-hidden="true"></span>
+                          Deactivating…
+                        } @else {
+                          Yes, deactivate<span class="sr-only"> {{ staff.name }}</span>
+                        }
+                      </button>
+                      <button type="button" class="btn btn-secondary btn-sm" [disabled]="deactivating() === staff.id" (click)="cancelDeactivate()">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                } @else if (canDeactivate(staff)) {
+                  <button type="button" class="btn btn-danger-outline btn-sm" (click)="askDeactivate(staff.id)">
+                    Deactivate<span class="sr-only"> {{ staff.name }}</span>…
+                  </button>
+                }
+                @if (rowError(); as failure) {
+                  @if (failure.id === staff.id) {
+                    <p class="field-error mb-0 mt-2" role="alert">{{ failure.message }}</p>
+                  }
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="infinite-scroll-footer">
+      @if (hasMore()) {
+        <div class="infinite-scroll-sentinel" appInfiniteScrollSentinel (reachedEnd)="loadMore()" aria-hidden="true"></div>
+      }
+      @if (errorMessage(); as message) {
+        <div class="alert alert-error w-full" role="alert">
+          <strong class="alert-title">More staff not shown</strong>
+          <p>{{ message }}</p>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="retryMore()">Try again</button>
+        </div>
+      } @else if (loading()) {
+        <p class="m-0 inline-flex items-center gap-2 text-compact text-text-secondary" role="status">
+          <span class="spinner" aria-hidden="true"></span>Loading more staff…
+        </p>
+      } @else if (hasMore()) {
+        <button type="button" class="btn btn-secondary btn-sm" (click)="loadMore()">Load more staff</button>
+      } @else {
+        <p class="m-0 text-helper text-text-secondary" role="status">All {{ items().length }} matching staff profiles loaded.</p>
+      }
+    </div>
+  }
+</section>
