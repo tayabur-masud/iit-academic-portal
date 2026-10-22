@@ -1,4 +1,4 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <a routerLink="/admin/teachers">Teachers</a>
@@ -10,7 +10,7 @@
 <p class="sr-only" role="status">{{ announcement() }}</p>
 
 @if (loading()) {
-  <p class="flex items-center gap-2 text-text-secondary">
+  <p class="loading-state">
     <span class="spinner" aria-hidden="true"></span>
     Loading…
   </p>
@@ -58,7 +58,7 @@
     </div>
   }
 
-  <form class="card max-w-[40rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+  <form class="card max-w-3xl" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
     <div class="field">
       <label class="field-label" for="displayName">Name</label>
       <input
@@ -94,36 +94,38 @@
       }
     </div>
 
-    <div class="field">
-      <label class="field-label" for="employeeStaffId">Staff ID (optional)</label>
-      <input
-        id="employeeStaffId"
-        class="field-input"
-        type="text"
-        autocomplete="off"
-        formControlName="employeeStaffId"
-        [attr.aria-invalid]="errorsFor('employeeStaffId').length > 0"
-        [attr.aria-describedby]="describedBy('employeeStaffId')"
-      />
-      @for (message of errorsFor('employeeStaffId'); track message) {
-        <p class="field-error" id="employeeStaffId-error">{{ message }}</p>
-      }
-    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label class="field-label" for="employeeStaffId">Staff ID (optional)</label>
+        <input
+          id="employeeStaffId"
+          class="field-input"
+          type="text"
+          autocomplete="off"
+          formControlName="employeeStaffId"
+          [attr.aria-invalid]="errorsFor('employeeStaffId').length > 0"
+          [attr.aria-describedby]="describedBy('employeeStaffId')"
+        />
+        @for (message of errorsFor('employeeStaffId'); track message) {
+          <p class="field-error" id="employeeStaffId-error">{{ message }}</p>
+        }
+      </div>
 
-    <div class="field">
-      <label class="field-label" for="phone">Phone (optional)</label>
-      <input
-        id="phone"
-        class="field-input"
-        type="tel"
-        autocomplete="off"
-        formControlName="phone"
-        [attr.aria-invalid]="errorsFor('phone').length > 0"
-        [attr.aria-describedby]="describedBy('phone')"
-      />
-      @for (message of errorsFor('phone'); track message) {
-        <p class="field-error" id="phone-error">{{ message }}</p>
-      }
+      <div class="field">
+        <label class="field-label" for="phone">Phone (optional)</label>
+        <input
+          id="phone"
+          class="field-input"
+          type="tel"
+          autocomplete="off"
+          formControlName="phone"
+          [attr.aria-invalid]="errorsFor('phone').length > 0"
+          [attr.aria-describedby]="describedBy('phone')"
+        />
+        @for (message of errorsFor('phone'); track message) {
+          <p class="field-error" id="phone-error">{{ message }}</p>
+        }
+      </div>
     </div>
 
     <div class="field">
@@ -145,7 +147,8 @@
       }
     </div>
 
-    <div class="flex flex-wrap gap-3">
+    <div class="form-actions">
+      <a class="btn btn-secondary" routerLink="/admin/teachers">Cancel</a>
       <button type="submit" class="btn btn-primary" [disabled]="saving()">
         @if (saving()) {
           <span class="spinner" aria-hidden="true"></span>
@@ -154,12 +157,11 @@
           {{ isNew() ? 'Add teacher' : 'Save changes' }}
         }
       </button>
-      <a class="btn btn-secondary" routerLink="/admin/teachers">Cancel</a>
     </div>
   </form>
 
   @if (!isNew() && teacher(); as current) {
-    <section class="card mt-6 max-w-[40rem]" aria-labelledby="roles-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="roles-title">
       <h2 id="roles-title">Roles</h2>
       <p>Teacher stays assigned while the teacher is active. Student is never assigned to a teacher.</p>
 
@@ -213,19 +215,21 @@
             }
           </div>
 
-          <button type="submit" class="btn btn-primary" [disabled]="savingRoles()">
-            @if (savingRoles()) {
-              <span class="spinner" aria-hidden="true"></span>
-              Saving…
-            } @else {
-              Save roles
-            }
-          </button>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="savingRoles()">
+              @if (savingRoles()) {
+                <span class="spinner" aria-hidden="true"></span>
+                Saving…
+              } @else {
+                Save roles
+              }
+            </button>
+          </div>
         </form>
       }
     </section>
 
-    <section class="card mt-6 max-w-[40rem]" aria-labelledby="status-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="status-title">
       <h2 id="status-title">Account status</h2>
       <p>
         <span
@@ -239,7 +243,7 @@
     </section>
 
     @if (!isDeactivated()) {
-      <section class="card mt-6 max-w-[40rem]" aria-labelledby="deactivate-title">
+      <section class="card mt-6 max-w-3xl" aria-labelledby="deactivate-title">
         <h2 id="deactivate-title">Deactivate this teacher</h2>
         <p>
           Deactivating disables the account and ends every active session at once. The profile, roles, and history are kept, and the
@@ -271,16 +275,16 @@
       </section>
     }
 
-    <section class="card mt-6 max-w-[40rem]" aria-labelledby="history-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="history-title">
       <h2 id="history-title">Record history</h2>
-      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-        <dt class="font-medium text-text-secondary">Created</dt>
-        <dd class="m-0">
+      <dl class="description-list">
+        <dt>Created</dt>
+        <dd>
           <app-utc-timestamp [value]="current.createdAtUtc" />
           by <span class="break-all">{{ who(current.createdBy, current.createdByUserId) }}</span>
         </dd>
-        <dt class="font-medium text-text-secondary">Last modified</dt>
-        <dd class="m-0">
+        <dt>Last modified</dt>
+        <dd>
           <app-utc-timestamp [value]="current.lastModifiedAtUtc" />
           by <span class="break-all">{{ who(current.lastModifiedBy, current.lastModifiedByUserId) }}</span>
         </dd>

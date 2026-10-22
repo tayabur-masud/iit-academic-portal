@@ -1,4 +1,4 @@
-<section class="card mt-6 max-w-[48rem]" aria-labelledby="eligibility-title" [attr.aria-busy]="loading()">
+<section class="card mt-6 max-w-3xl" aria-labelledby="eligibility-title" [attr.aria-busy]="loading()">
   <h2 id="eligibility-title">Graduation eligibility</h2>
   <p class="text-text-secondary">
     Worked out automatically for this program only. Credits and CGPA come from the published results of this admission; those of the
@@ -7,7 +7,7 @@
   </p>
 
   @if (loading() && !result()) {
-    <p class="flex items-center gap-2 text-text-secondary" role="status">
+    <p class="loading-state" role="status">
       <span class="spinner" aria-hidden="true"></span>
       Checking eligibility…
     </p>

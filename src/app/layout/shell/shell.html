@@ -1,27 +1,42 @@
 <!-- Full-height shell: only <main> scrolls, so the sidebar account section stays in view on wide screens. <main> is positioned so hidden (sr-only) text stays inside its scroll area and cannot add a second page scrollbar. -->
-<div class="flex h-dvh flex-col">
+<div class="flex h-dvh flex-col bg-background">
   <a class="skip-link" href="#main">Skip to main content</a>
 
   <header
-    class="flex min-h-(--header-height) flex-none items-center gap-4 border-b border-divider bg-surface px-4 py-2"
+    class="relative z-20 flex min-h-(--header-height) flex-none items-center gap-3 border-b border-divider bg-surface px-4 shadow-xs sm:px-6"
   >
     <button
       type="button"
-      class="btn btn-secondary md:hidden"
+      class="btn-icon -ml-2 md:hidden"
       aria-controls="app-sidebar"
       [attr.aria-expanded]="navOpen()"
+      [attr.aria-label]="navOpen() ? 'Close menu' : 'Open menu'"
       (click)="toggleNav()"
     >
-      Menu
+      <ng-icon [name]="navOpen() ? 'heroXMark' : 'heroBars3'" />
     </button>
     <img
       src="images/iit-logo.png"
       alt="IIT, University of Dhaka"
       width="600"
       height="327"
-      class="h-10 w-auto flex-none"
+      class="h-9 w-auto flex-none dark:rounded-sm dark:bg-white dark:p-0.5"
     />
-    <span class="font-semibold text-brand-primary">IIT Academic Portal</span>
+    <span class="hidden text-base font-semibold tracking-tight whitespace-nowrap text-text-primary sm:inline">IIT Academic Portal</span>
+    <div role="group" aria-label="Theme" class="theme-switch ml-auto">
+      @for (option of themeOptions; track option.mode) {
+        <button
+          type="button"
+          class="theme-option"
+          [attr.aria-label]="option.label + ' theme'"
+          [attr.aria-pressed]="theme.mode() === option.mode"
+          [title]="option.label + ' theme'"
+          (click)="theme.setMode(option.mode)"
+        >
+          <ng-icon [name]="option.icon" />
+        </button>
+      }
+    </div>
   </header>
 
   <div class="flex min-h-0 flex-1 flex-col md:flex-row">
@@ -30,17 +45,18 @@
       class="border-b border-divider bg-surface md:flex md:w-(--sidebar-width) md:flex-none md:flex-col md:overflow-y-auto md:border-r md:border-b-0"
       [class.hidden]="!navOpen()"
     >
-      <nav aria-label="Main" class="p-3 md:flex-1">
-        <ul>
+      <nav aria-label="Main" class="px-3 py-4 md:flex-1">
+        <ul class="m-0 flex list-none flex-col gap-1 p-0">
           @for (item of navItems(); track item.path) {
             <li>
               <a
+                class="nav-link"
                 [routerLink]="item.path"
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: item.exact }"
                 ariaCurrentWhenActive="page"
-                class="block min-h-11 rounded-sm border-l-3 border-transparent px-3 py-2.5 text-text-primary no-underline hover:bg-surface-hover aria-[current=page]:border-brand-primary aria-[current=page]:bg-surface-selected aria-[current=page]:font-semibold aria-[current=page]:text-brand-primary"
-                >{{ item.label }}</a
+                (click)="navOpen.set(false)"
+                ><ng-icon [name]="item.icon" />{{ item.label }}</a
               >
             </li>
           }
@@ -50,9 +66,9 @@
       <!-- Account dropdown stays pinned to the bottom of the sidebar. -->
       <section aria-label="Your account" class="flex flex-col gap-2 border-t border-divider p-3">
         <details #accountMenu class="account-dropdown">
-          <summary class="account-dropdown-trigger" aria-controls="account-dropdown-panel">
+          <summary class="account-dropdown-trigger w-full" aria-controls="account-dropdown-panel">
             <span class="account-dropdown-avatar" aria-hidden="true">{{ session.activeRole()?.charAt(0) ?? 'U' }}</span>
-            <span class="account-dropdown-copy">
+            <span class="account-dropdown-copy flex-1">
               <span class="account-dropdown-label">Account</span>
               <span class="account-dropdown-role">Role: {{ session.activeRole() }}</span>
             </span>
@@ -62,7 +78,7 @@
             @if (session.availableRoles().length > 1) {
               <fieldset class="account-role-group" [disabled]="switching()" [attr.aria-busy]="switching()">
                 <legend>Active role</legend>
-                  @for (role of session.availableRoles(); track role) {
+                @for (role of session.availableRoles(); track role) {
                   <label class="account-role-option">
                     <input
                       type="radio"
@@ -73,20 +89,22 @@
                     />
                     <span>{{ role }}</span>
                   </label>
-                  }
+                }
               </fieldset>
             } @else if (session.activeRole(); as role) {
-              <span class="badge self-start">Role: {{ role }}</span>
+              <span class="badge mx-2 self-start">Role: {{ role }}</span>
             }
             <div class="account-dropdown-divider" aria-hidden="true"></div>
-            <button type="button" class="account-dropdown-item" disabled aria-disabled="true">My Profile</button>
+            <button type="button" class="account-dropdown-item" disabled aria-disabled="true">
+              <ng-icon name="heroUserCircle" />My Profile
+            </button>
             <button
               type="button"
-              class="btn btn-secondary btn-sm account-dropdown-sign-out w-full"
+              class="btn btn-secondary btn-sm account-dropdown-sign-out mt-1 w-full"
               [disabled]="signingOut()"
               (click)="signOut()"
             >
-              Sign out
+              <ng-icon name="heroArrowLeftStartOnRectangle" />Sign out
             </button>
           </div>
         </details>
@@ -94,7 +112,7 @@
     </aside>
 
     <main id="main" class="relative min-h-0 flex-1 overflow-y-auto" tabindex="-1">
-      <div class="mx-auto w-full max-w-(--content-max-width) px-4 py-4 md:px-6 md:py-6">
+      <div class="mx-auto w-full max-w-(--content-max-width) px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <p class="sr-only" role="status">{{ announcement() }}</p>
         @if (switchError(); as message) {
           <div class="alert alert-error" role="alert">

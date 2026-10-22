@@ -1,13 +1,34 @@
 import { Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import {
+  heroAcademicCap,
+  heroArrowLeftStartOnRectangle,
+  heroBars3,
+  heroBell,
+  heroBriefcase,
+  heroClipboardDocumentList,
+  heroCog6Tooth,
+  heroComputerDesktop,
+  heroHome,
+  heroMoon,
+  heroSun,
+  heroUserCircle,
+  heroUserGroup,
+  heroUsers,
+  heroXMark,
+} from '@ng-icons/heroicons/outline';
 
 import { AuthSession } from '../../core/auth/auth-session';
 import { ROLE_AREAS, Role, landingWithin } from '../../core/auth/auth.models';
 import { problemMessage } from '../../core/http/problem';
+import { ThemeMode, ThemeService } from '../../core/theme/theme';
 
 interface NavItem {
   path: string;
   label: string;
+  /** A Heroicons outline icon name, shown before the label; decorative. */
+  icon: string;
   /** True when only the exact path counts as the current page, not its sub-pages. */
   exact: boolean;
 }
@@ -15,24 +36,49 @@ interface NavItem {
 /** Pages that belong to one role only, listed under its module. */
 const ROLE_PAGES: Partial<Record<Role, NavItem[]>> = {
   Admin: [
-    { path: '/admin/users', label: 'Accounts', exact: false },
-    { path: '/admin/teachers', label: 'Teachers', exact: false },
-    { path: '/admin/staff', label: 'Staff', exact: false },
-    { path: '/admin/students', label: 'Students', exact: false },
-    { path: '/admin/configuration', label: 'Configuration', exact: false },
-    { path: '/admin/notifications', label: 'Notifications', exact: false },
-    { path: '/admin/audit', label: 'Audit history', exact: false },
+    { path: '/admin/users', label: 'Accounts', icon: 'heroUsers', exact: false },
+    { path: '/admin/teachers', label: 'Teachers', icon: 'heroAcademicCap', exact: false },
+    { path: '/admin/staff', label: 'Staff', icon: 'heroBriefcase', exact: false },
+    { path: '/admin/students', label: 'Students', icon: 'heroUserGroup', exact: false },
+    { path: '/admin/configuration', label: 'Configuration', icon: 'heroCog6Tooth', exact: false },
+    { path: '/admin/notifications', label: 'Notifications', icon: 'heroBell', exact: false },
+    { path: '/admin/audit', label: 'Audit history', icon: 'heroClipboardDocumentList', exact: false },
   ],
 };
 
-/** Authenticated application shell: identity, active role, role switching, navigation, sign-out. */
+/** Authenticated application shell: identity, active role, role switching, theme, navigation, sign-out. */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgIcon],
   templateUrl: './shell.html',
+  viewProviders: [
+    provideIcons({
+      heroAcademicCap,
+      heroArrowLeftStartOnRectangle,
+      heroBars3,
+      heroBell,
+      heroBriefcase,
+      heroClipboardDocumentList,
+      heroCog6Tooth,
+      heroComputerDesktop,
+      heroHome,
+      heroMoon,
+      heroSun,
+      heroUserCircle,
+      heroUserGroup,
+      heroUsers,
+      heroXMark,
+    }),
+  ],
 })
 export class Shell {
   protected readonly session = inject(AuthSession);
+  protected readonly theme = inject(ThemeService);
+  protected readonly themeOptions: { mode: ThemeMode; label: string; icon: string }[] = [
+    { mode: 'light', label: 'Light', icon: 'heroSun' },
+    { mode: 'dark', label: 'Dark', icon: 'heroMoon' },
+    { mode: 'system', label: 'System', icon: 'heroComputerDesktop' },
+  ];
   private readonly router = inject(Router);
 
   @ViewChild('accountMenu') private accountMenu?: ElementRef<HTMLDetailsElement>;
@@ -49,7 +95,7 @@ export class Shell {
     if (!role) {
       return [];
     }
-    const area: NavItem = { path: ROLE_AREAS[role].path, label: ROLE_AREAS[role].module, exact: true };
+    const area: NavItem = { path: ROLE_AREAS[role].path, label: ROLE_AREAS[role].module, icon: 'heroHome', exact: true };
     return [area, ...(ROLE_PAGES[role] ?? [])];
   });
 

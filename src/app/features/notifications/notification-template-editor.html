@@ -1,4 +1,4 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <a routerLink="/admin/notifications">Notifications</a>
@@ -14,7 +14,7 @@
 <app-notification-sections />
 
 @if (loading()) {
-  <p class="flex items-center gap-2 text-text-secondary" role="status">
+  <p class="loading-state" role="status">
     <span class="spinner" aria-hidden="true"></span>
     Loading…
   </p>
@@ -56,7 +56,7 @@
     </div>
   }
 
-  <form class="card max-w-[48rem]" [formGroup]="form" (ngSubmit)="save()" novalidate [attr.aria-busy]="saving()">
+  <form class="card max-w-3xl" [formGroup]="form" (ngSubmit)="save()" novalidate [attr.aria-busy]="saving()">
     <div class="field">
       <label class="field-label" for="subject">Subject</label>
       <input
@@ -133,7 +133,7 @@
       <fieldset class="field">
         <legend class="field-label">Sample values for the preview (optional)</legend>
         <p class="field-help" id="sample-help">Used only in the preview. Leave blank to use the built-in sample.</p>
-        <div class="grid gap-3 md:grid-cols-2">
+        <div class="form-grid md:grid-cols-2">
           @for (name of sampleNames(); track name) {
             <div>
               <label class="field-label" [for]="'sample-' + name">{{ name }}</label>
@@ -154,7 +154,8 @@
       </fieldset>
     }
 
-    <div class="flex flex-wrap gap-3">
+    <div class="form-actions">
+      <a class="btn btn-secondary" routerLink="/admin/notifications/templates">Back to templates</a>
       <button type="submit" class="btn btn-primary" [disabled]="saving()">
         @if (saving()) {
           <span class="spinner" aria-hidden="true"></span>
@@ -171,12 +172,11 @@
           Preview
         }
       </button>
-      <a class="btn btn-secondary" routerLink="/admin/notifications/templates">Back to templates</a>
     </div>
   </form>
 
   @if (preview(); as shown) {
-    <section class="card mt-6 max-w-[48rem]" aria-labelledby="preview-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="preview-title">
       <h2 id="preview-title">Preview</h2>
       <p class="text-text-secondary">
         Every message is sent in the standard IIT layout (logo, heading, your wording, footer). Made with sample data. Nothing was sent or saved.
@@ -194,11 +194,11 @@
       ></iframe>
       <h3 class="mb-2 text-heading font-semibold">Plain-text version</h3>
       <p class="field-help">Sent alongside the branded layout, for mail programs that show plain text.</p>
-      <dl class="mb-0">
-        <dt class="font-medium text-text-secondary">Subject</dt>
-        <dd class="m-0 mb-3" data-testid="preview-subject">{{ shown.subject }}</dd>
-        <dt class="font-medium text-text-secondary">Message</dt>
-        <dd class="m-0"><pre class="m-0 whitespace-pre-wrap break-words font-[inherit]" data-testid="preview-body">{{ shown.body }}</pre></dd>
+      <dl class="description-list description-list-stacked">
+        <dt>Subject</dt>
+        <dd data-testid="preview-subject">{{ shown.subject }}</dd>
+        <dt>Message</dt>
+        <dd><pre class="m-0 whitespace-pre-wrap break-words font-[inherit]" data-testid="preview-body">{{ shown.body }}</pre></dd>
       </dl>
     </section>
   }

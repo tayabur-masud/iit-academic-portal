@@ -1,4 +1,4 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <a routerLink="/admin/staff">Staff</a>
@@ -10,7 +10,7 @@
 <p class="sr-only" role="status">{{ announcement() }}</p>
 
 @if (loading()) {
-  <p class="flex items-center gap-2 text-text-secondary">
+  <p class="loading-state">
     <span class="spinner" aria-hidden="true"></span>
     Loading…
   </p>
@@ -64,7 +64,7 @@
     </div>
   }
 
-  <form class="card max-w-[40rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+  <form class="card max-w-3xl" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
     @if (isNew()) {
       <div class="field">
         <label class="field-label" for="email">Email address</label>
@@ -116,43 +116,45 @@
         }
       </div>
 
-      <div class="field">
-        <label class="field-label" for="mobileNumber">Mobile number</label>
-        <p class="field-help" id="mobileNumber-help">A contact number. The portal does not verify it.</p>
-        <input
-          id="mobileNumber"
-          class="field-input"
-          type="tel"
-          autocomplete="off"
-          formControlName="mobileNumber"
-          required
-          maxlength="50"
-          [attr.aria-invalid]="errorsFor('mobileNumber').length > 0"
-          [attr.aria-describedby]="describedBy('mobileNumber', true)"
-        />
-        @for (message of errorsFor('mobileNumber'); track message) {
-          <p class="field-error" id="mobileNumber-error">{{ message }}</p>
-        }
-      </div>
-
-      <div class="field">
-        <label class="field-label" for="designationId">Designation</label>
-        <select
-          id="designationId"
-          class="field-input"
-          formControlName="designationId"
-          required
-          [attr.aria-invalid]="errorsFor('designationId').length > 0"
-          [attr.aria-describedby]="describedBy('designationId')"
-        >
-          <option value="">Select a designation</option>
-          @for (option of designationChoices(); track option.id) {
-            <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+      <div class="form-grid">
+        <div class="field">
+          <label class="field-label" for="mobileNumber">Mobile number</label>
+          <p class="field-help" id="mobileNumber-help">A contact number. The portal does not verify it.</p>
+          <input
+            id="mobileNumber"
+            class="field-input"
+            type="tel"
+            autocomplete="off"
+            formControlName="mobileNumber"
+            required
+            maxlength="50"
+            [attr.aria-invalid]="errorsFor('mobileNumber').length > 0"
+            [attr.aria-describedby]="describedBy('mobileNumber', true)"
+          />
+          @for (message of errorsFor('mobileNumber'); track message) {
+            <p class="field-error" id="mobileNumber-error">{{ message }}</p>
           }
-        </select>
-        @for (message of errorsFor('designationId'); track message) {
-          <p class="field-error" id="designationId-error">{{ message }}</p>
-        }
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="designationId">Designation</label>
+          <select
+            id="designationId"
+            class="field-input"
+            formControlName="designationId"
+            required
+            [attr.aria-invalid]="errorsFor('designationId').length > 0"
+            [attr.aria-describedby]="describedBy('designationId')"
+          >
+            <option value="">Select a designation</option>
+            @for (option of designationChoices(); track option.id) {
+              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+            }
+          </select>
+          @for (message of errorsFor('designationId'); track message) {
+            <p class="field-error" id="designationId-error">{{ message }}</p>
+          }
+        </div>
       </div>
 
       <div class="field">
@@ -175,7 +177,8 @@
         }
       </div>
 
-      <div class="flex flex-wrap gap-3">
+      <div class="form-actions">
+        <a class="btn btn-secondary" routerLink="/admin/staff">Back to staff</a>
         <button type="submit" class="btn btn-primary" [disabled]="saving() || locked()">
           @if (saving()) {
             <span class="spinner" aria-hidden="true"></span>
@@ -184,22 +187,21 @@
             {{ isNew() ? 'Add staff member' : 'Save changes' }}
           }
         </button>
-        <a class="btn btn-secondary" routerLink="/admin/staff">Back to staff</a>
       </div>
     </fieldset>
   </form>
 
   @if (profile(); as record) {
-    <section class="card mt-6 max-w-[40rem]" aria-labelledby="history-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="history-title">
       <h2 id="history-title">Record history</h2>
-      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-        <dt class="font-medium text-text-secondary">Created</dt>
-        <dd class="m-0">
+      <dl class="description-list">
+        <dt>Created</dt>
+        <dd>
           <app-utc-timestamp [value]="record.createdAtUtc" />
           by <span class="break-all">{{ who(record.createdBy, record.createdByUserId) }}</span>
         </dd>
-        <dt class="font-medium text-text-secondary">Last modified</dt>
-        <dd class="m-0">
+        <dt>Last modified</dt>
+        <dd>
           <app-utc-timestamp [value]="record.lastModifiedAtUtc" />
           by <span class="break-all">{{ who(record.lastModifiedBy, record.lastModifiedByUserId) }}</span>
         </dd>

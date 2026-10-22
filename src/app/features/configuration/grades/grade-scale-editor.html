@@ -1,19 +1,23 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin/configuration">Configuration</a>
   <span aria-hidden="true"> / </span>
   <span>Grades</span>
 </nav>
 
-<h1>Grades</h1>
-<p class="text-text-secondary">
-  One grade scale, shared by every degree. Each band runs from its lower bound up to, but not including, its upper bound; the band
-  that ends at 100% includes 100%. The active bands must cover 0% to 100% with no gaps or overlaps. An inactive band is kept but not
-  used. Edit the bands, then save them together.
-</p>
+<div class="page-header">
+  <div class="min-w-0">
+    <h1>Grades</h1>
+    <p class="page-header-description">
+      One grade scale, shared by every degree. Each band runs from its lower bound up to, but not including, its upper bound; the band
+      that ends at 100% includes 100%. The active bands must cover 0% to 100% with no gaps or overlaps. An inactive band is kept but not
+      used. Edit the bands, then save them together.
+    </p>
+  </div>
+</div>
 <p class="sr-only" role="status">{{ announcement() }}</p>
 
 @if (loading()) {
-  <p class="flex items-center gap-2 text-text-secondary">
+  <p class="loading-state">
     <span class="spinner" aria-hidden="true"></span>
     Loading the grade scale…
   </p>
@@ -178,7 +182,7 @@
                     </div>
                   } @else {
                     <button [id]="'band-' + i + '-remove'" type="button" class="btn btn-danger-outline btn-sm" (click)="askRemove(i)">
-                      Remove<span class="sr-only"> band {{ i + 1 }}</span>…
+                      <span>Remove<span class="sr-only"> band {{ i + 1 }}</span>…</span>
                     </button>
                   }
                 </td>
@@ -200,7 +204,8 @@
       <button id="add-band" type="button" class="btn btn-secondary" (click)="addBand()">Add band</button>
     </div>
 
-    <div class="mt-6 flex flex-wrap gap-3">
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="reload()">Discard changes</button>
       <button type="submit" class="btn btn-primary" [disabled]="saving()">
         @if (saving()) {
           <span class="spinner" aria-hidden="true"></span>
@@ -209,16 +214,15 @@
           Save grade scale
         }
       </button>
-      <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="reload()">Discard changes</button>
     </div>
   </form>
 
   @if (lastChange(); as band) {
-    <section class="card mt-6 max-w-[40rem]" aria-labelledby="history-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="history-title">
       <h2 id="history-title">Record history</h2>
-      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-        <dt class="font-medium text-text-secondary">Last modified</dt>
-        <dd class="m-0">
+      <dl class="description-list">
+        <dt>Last modified</dt>
+        <dd>
           <app-utc-timestamp [value]="band.lastModifiedAtUtc" />
           by <span class="break-all">{{ who(band.lastModifiedBy, band.lastModifiedByUserId) }}</span>
           (band {{ band.letterGrade }})

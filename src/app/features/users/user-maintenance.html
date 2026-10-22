@@ -1,4 +1,4 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <a routerLink="/admin/users">Accounts</a>
@@ -10,7 +10,7 @@
 <p class="sr-only" role="status">{{ announcement() }}</p>
 
 @if (loading() && !account()) {
-  <p class="flex items-center gap-2 text-text-secondary">
+  <p class="loading-state">
     <span class="spinner" aria-hidden="true"></span>
     Loading…
   </p>
@@ -22,18 +22,18 @@
   </div>
 } @else if (account(); as current) {
   @if (notice(); as message) {
-    <div class="alert alert-success max-w-[40rem]" role="status">
+    <div class="alert alert-success max-w-3xl" role="status">
       <p class="mb-0">{{ message }}</p>
     </div>
   }
 
-  <section class="card max-w-[40rem]" aria-labelledby="identity-title">
+  <section class="card max-w-3xl" aria-labelledby="identity-title">
     <h2 id="identity-title" class="break-all">{{ current.email }}</h2>
-    <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-      <dt class="font-medium text-text-secondary">Account ID</dt>
-      <dd class="m-0 break-all font-mono text-compact">{{ current.userId }}</dd>
-      <dt class="font-medium text-text-secondary">Status</dt>
-      <dd class="m-0">
+    <dl class="description-list">
+      <dt>Account ID</dt>
+      <dd class="break-all font-mono text-compact">{{ current.userId }}</dd>
+      <dt>Status</dt>
+      <dd>
         <span
           class="badge"
           [class.badge-success]="current.accountStatus === 'Active'"
@@ -42,20 +42,20 @@
           {{ statusLabel(current.accountStatus) }}
         </span>
       </dd>
-      <dt class="font-medium text-text-secondary">Roles</dt>
-      <dd class="m-0">{{ current.roles.length > 0 ? current.roles.join(', ') : 'None' }}</dd>
-      <dt class="font-medium text-text-secondary">Default role</dt>
-      <dd class="m-0">{{ current.defaultRole ?? 'None' }}</dd>
+      <dt>Roles</dt>
+      <dd>{{ current.roles.length > 0 ? current.roles.join(', ') : 'None' }}</dd>
+      <dt>Default role</dt>
+      <dd>{{ current.defaultRole ?? 'None' }}</dd>
       @if (current.createdAtUtc; as created) {
-        <dt class="font-medium text-text-secondary">Created</dt>
-        <dd class="m-0">
+        <dt>Created</dt>
+        <dd>
           <app-utc-timestamp [value]="created" />
           by <span class="break-all">{{ who(current.createdBy, current.createdByUserId) }}</span>
         </dd>
       }
       @if (current.lastModifiedAtUtc; as modified) {
-        <dt class="font-medium text-text-secondary">Last modified</dt>
-        <dd class="m-0">
+        <dt>Last modified</dt>
+        <dd>
           <app-utc-timestamp [value]="modified" />
           by <span class="break-all">{{ who(current.lastModifiedBy, current.lastModifiedByUserId) }}</span>
         </dd>
@@ -64,7 +64,7 @@
   </section>
 
   @if (isTeacher()) {
-    <div class="alert alert-info mt-6 max-w-[40rem]" role="note">
+    <div class="alert alert-info mt-6 max-w-3xl" role="note">
       <strong class="alert-title">This is a teacher account</strong>
       <p class="mb-2">Teacher details, roles, and deactivation are managed in Teacher Management so the teacher profile stays consistent.</p>
       <a class="btn btn-secondary btn-sm" [routerLink]="['/admin/teachers', current.teacherId]">Open in Teachers</a>
@@ -72,7 +72,7 @@
   }
 
   @if (isPending()) {
-    <section class="card mt-6 max-w-[40rem]" aria-labelledby="setup-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="setup-title">
       <h2 id="setup-title">Account setup</h2>
       <p>
         This account cannot sign in until its holder opens the setup email and chooses a password. If the email did not arrive or the link
@@ -103,7 +103,7 @@
     </section>
   }
 
-  <section class="card mt-6 max-w-[40rem]" aria-labelledby="email-title">
+  <section class="card mt-6 max-w-3xl" aria-labelledby="email-title">
     <h2 id="email-title">Email address</h2>
     <p>The address used to sign in and to receive setup and recovery emails. The account ID does not change.</p>
     @if (emailError(); as message) {
@@ -131,19 +131,21 @@
           <p class="field-error" id="email-error">{{ message }}</p>
         }
       </div>
-      <button type="submit" class="btn btn-primary" [disabled]="savingEmail()">
-        @if (savingEmail()) {
-          <span class="spinner" aria-hidden="true"></span>
-          Saving…
-        } @else {
-          Save email address
-        }
-      </button>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="savingEmail()">
+          @if (savingEmail()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Saving…
+          } @else {
+            Save email address
+          }
+        </button>
+      </div>
     </form>
   </section>
 
   @if (!isTeacher()) {
-    <section class="card mt-6 max-w-[40rem]" aria-labelledby="roles-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="roles-title">
       <h2 id="roles-title">Roles</h2>
       @if (isStudent()) {
         <p class="mb-0">A Student account holds only the Student role. It cannot be given another role.</p>
@@ -172,14 +174,16 @@
                 }
               </select>
             </div>
-            <button type="submit" class="btn btn-primary" [disabled]="savingRoles()">
-              @if (savingRoles()) {
-                <span class="spinner" aria-hidden="true"></span>
-                Saving…
-              } @else {
-                Save default role
-              }
-            </button>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" [disabled]="savingRoles()">
+                @if (savingRoles()) {
+                  <span class="spinner" aria-hidden="true"></span>
+                  Saving…
+                } @else {
+                  Save default role
+                }
+              </button>
+            </div>
           </form>
         }
       }
@@ -187,7 +191,7 @@
   }
 
   @if (!isDeactivated() && !isTeacher()) {
-    <section class="card mt-6 max-w-[40rem]" aria-labelledby="deactivate-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="deactivate-title">
       <h2 id="deactivate-title">Deactivate this account</h2>
       <p>
         Deactivating blocks sign-in and ends every active session at once. The account, its roles, and its history are kept, and it cannot
@@ -217,7 +221,7 @@
       }
     </section>
   } @else if (isDeactivated()) {
-    <div class="alert alert-info mt-6 max-w-[40rem]" role="status">
+    <div class="alert alert-info mt-6 max-w-3xl" role="status">
       <strong class="alert-title">This account is deactivated</strong>
       <p class="mb-0">It cannot sign in and has no active sessions. The account, roles, and history are kept.</p>
     </div>

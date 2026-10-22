@@ -1,4 +1,4 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <a routerLink="/admin/students">Students</a>
@@ -10,7 +10,7 @@
 <p class="sr-only" role="status">{{ announcement() }}</p>
 
 @if (loading()) {
-  <p class="flex items-center gap-2 text-text-secondary">
+  <p class="loading-state">
     <span class="spinner" aria-hidden="true"></span>
     Loading…
   </p>
@@ -22,13 +22,13 @@
   </div>
 } @else {
   @if (notice(); as message) {
-    <div class="alert alert-success max-w-[48rem]" role="status">
+    <div class="alert alert-success max-w-3xl" role="status">
       <p class="mb-0">{{ message }}</p>
     </div>
   }
 
   @if (isNew()) {
-    <div class="alert alert-info max-w-[48rem]" role="note">
+    <div class="alert alert-info max-w-3xl" role="note">
       <strong class="alert-title">Typed data only</strong>
       <p class="mb-0">
         Enter the paper form's details. The photograph, attachments, declaration, and signature stay with the paper file and are not
@@ -38,13 +38,13 @@
   }
 
   @if (admission(); as current) {
-    <section class="card max-w-[48rem]" aria-labelledby="account-title">
+    <section class="card max-w-3xl" aria-labelledby="account-title">
       <h2 id="account-title">Student account</h2>
-      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-        <dt class="font-medium text-text-secondary">Email</dt>
-        <dd class="m-0 break-all">{{ current.profile.email }}</dd>
-        <dt class="font-medium text-text-secondary">Account status</dt>
-        <dd class="m-0">
+      <dl class="description-list">
+        <dt>Email</dt>
+        <dd class="break-all">{{ current.profile.email }}</dd>
+        <dt>Account status</dt>
+        <dd>
           <span
             class="badge"
             [class.badge-success]="current.profile.accountStatus === 'Active'"
@@ -72,16 +72,16 @@
   }
 
   @if (errorMessage(); as message) {
-    <div class="alert alert-error mt-6 max-w-[48rem]" role="alert">
+    <div class="alert alert-error mt-6 max-w-3xl" role="alert">
       <strong class="alert-title">Not saved</strong>
       <p class="mb-0">{{ message }}</p>
     </div>
   }
 
-  <form class="mt-6 max-w-[48rem]" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
+  <form class="mt-6 max-w-3xl" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="saving()">
     @if (isNew()) {
       <fieldset class="card">
-        <legend class="text-heading font-semibold">Applicant email</legend>
+        <legend>Applicant email</legend>
         <div class="field mb-0">
           <label class="field-label" for="email">Email address</label>
           <p class="field-help" id="email-help">
@@ -133,8 +133,8 @@
     }
 
     <fieldset class="card mt-6">
-      <legend class="text-heading font-semibold">Program admission</legend>
-      <div class="grid gap-3 md:grid-cols-2">
+      <legend>Program admission</legend>
+      <div class="form-grid md:grid-cols-2">
         <div class="field">
           <label class="field-label" for="degreeId">Degree</label>
           <select
@@ -221,9 +221,9 @@
     </fieldset>
 
     <fieldset class="card mt-6">
-      <legend class="text-heading font-semibold">Hall and registration</legend>
+      <legend>Hall and registration</legend>
       <p class="field-help">Usually assigned after admission. Record either one whenever it is known; both are needed for graduation.</p>
-      <div class="grid gap-3 md:grid-cols-2">
+      <div class="form-grid md:grid-cols-2">
         <div class="field mb-0">
           <label class="field-label" for="assignedHallId">Assigned hall</label>
           <select
@@ -261,11 +261,11 @@
     </fieldset>
 
     <fieldset class="card mt-6">
-      <legend class="text-heading font-semibold">Applicant</legend>
+      <legend>Applicant</legend>
       @if (!isNew() && (admission()?.otherAdmissions?.length ?? 0) > 0) {
         <p class="field-help">These details are shared by all of this student's admissions.</p>
       }
-      <div class="grid gap-3 md:grid-cols-2">
+      <div class="form-grid md:grid-cols-2">
         @for (f of [
           { key: 'applicantName', label: 'Applicant name', type: 'text' },
           { key: 'applicantMobile', label: 'Mobile number', type: 'tel' },
@@ -299,8 +299,8 @@
       @let key = kind === 'mailing' ? 'mailingAddress' : 'permanentAddress';
       @let k = kind === 'mailing' ? 'mailing' : 'permanent';
       <fieldset class="card mt-6" [formGroupName]="k">
-        <legend class="text-heading font-semibold">{{ kind === 'mailing' ? 'Mailing address' : 'Permanent address' }} (optional)</legend>
-        <div class="grid gap-3 md:grid-cols-3">
+        <legend>{{ kind === 'mailing' ? 'Mailing address' : 'Permanent address' }} (optional)</legend>
+        <div class="form-grid md:grid-cols-3">
           <div class="field">
             <label class="field-label" [for]="kind + '-divisionId'">Division</label>
             <select class="field-input" formControlName="divisionId" [id]="kind + '-divisionId'" (change)="divisionPicked(k)">
@@ -363,7 +363,7 @@
             }
           </div>
         </div>
-        <div class="grid gap-3 md:grid-cols-[2fr_1fr]">
+        <div class="form-grid md:grid-cols-[2fr_1fr]">
           <div class="field mb-0">
             <label class="field-label" [for]="fieldId(key + '.details')">Address details</label>
             <input
@@ -388,8 +388,8 @@
     }
 
     <fieldset class="card mt-6">
-      <legend class="text-heading font-semibold">Local guardian / emergency contact (optional)</legend>
-      <div class="grid gap-3 md:grid-cols-2">
+      <legend>Local guardian / emergency contact (optional)</legend>
+      <div class="form-grid md:grid-cols-2">
         @for (f of [
           { key: 'guardianName', label: 'Name', type: 'text' },
           { key: 'guardianRelationship', label: 'Relationship', type: 'text' },
@@ -416,7 +416,7 @@
     </fieldset>
 
     <fieldset class="card mt-6" formArrayName="academicHistory">
-      <legend class="text-heading font-semibold">Academic history</legend>
+      <legend>Academic history</legend>
       <p class="field-help">
         Prior education from the form, shared by all of the student's admissions. Choose the school, college, university, board, and group
         from the lists; if one is not listed, choose "Not listed" and type it as written. Type every other value exactly as on the form. Do
@@ -510,7 +510,8 @@
       <button type="button" class="btn btn-secondary btn-sm mt-3" (click)="addHistory()">Add academic-history entry</button>
     </fieldset>
 
-    <div class="mt-6 flex flex-wrap gap-3">
+    <div class="form-actions">
+      <a class="btn btn-secondary" routerLink="/admin/students">Cancel</a>
       <button type="submit" class="btn btn-primary" [disabled]="saving()">
         @if (saving()) {
           <span class="spinner" aria-hidden="true"></span>
@@ -519,23 +520,22 @@
           {{ isNew() ? 'Add admission' : 'Save changes' }}
         }
       </button>
-      <a class="btn btn-secondary" routerLink="/admin/students">Cancel</a>
     </div>
   </form>
 
   @if (admission(); as current) {
     <app-graduation-eligibility [admissionId]="current.id" [version]="savedVersion()" />
 
-    <section class="card mt-6 max-w-[48rem]" aria-labelledby="history-title">
+    <section class="card mt-6 max-w-3xl" aria-labelledby="history-title">
       <h2 id="history-title">Record history</h2>
-      <dl class="mb-0 grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-        <dt class="font-medium text-text-secondary">Created</dt>
-        <dd class="m-0">
+      <dl class="description-list">
+        <dt>Created</dt>
+        <dd>
           <app-utc-timestamp [value]="current.createdAtUtc" />
           by <span class="break-all">{{ who(current.createdBy, current.createdByUserId) }}</span>
         </dd>
-        <dt class="font-medium text-text-secondary">Last modified</dt>
-        <dd class="m-0">
+        <dt>Last modified</dt>
+        <dd>
           <app-utc-timestamp [value]="current.lastModifiedAtUtc" />
           by <span class="break-all">{{ who(current.lastModifiedBy, current.lastModifiedByUserId) }}</span>
         </dd>

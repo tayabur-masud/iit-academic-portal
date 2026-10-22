@@ -32,7 +32,8 @@ default role (Teacher), and the role switcher at the bottom of the menu changes 
 | Path | Purpose |
 |---|---|
 | `src/styles/tokens.css` | Design tokens from `specs/design-system.md`, declared as the Tailwind theme; the only place color and size values are defined |
-| `src/styles.css` | Tailwind entry point plus shared component classes (buttons, fields, alerts, cards, auth pages) |
+| `src/styles.css` | Tailwind entry point plus shared component classes: buttons, fields, `.form-grid`, `.form-actions`, `.filter-grid`, `.filter-actions`, alerts, cards, badges, tables, `.description-list`, `.empty-state`, `.loading-state`, page header, breadcrumbs, sidebar links, auth pages |
+| `src/app/core/theme/` | `ThemeService`: the Light / Dark / System theme, kept in `localStorage` (`iit-theme`) and applied as `dark` on `<html>`; `index.html` applies it before the first paint |
 | `src/app/core/auth/` | Auth API client, session state, anti-forgery and session-ended interceptors, route guards |
 | `src/app/features/auth/` | Sign-in, forgot-password, and reset-password pages |
 | `src/app/features/configuration/` | Admin-only reference data at `/admin/configuration`: one generic list and form (`catalogs/`) driven by descriptors in `configuration.models.ts` serves all fifteen resources (nine catalogs, batches, courses, and the division, district, upazila, and city corporation geography; all lazy-loaded), with an edit screen that shows a "Record history" panel (who created and last changed the record, and when, in UTC) and a landing page that groups them as IIT academics (degrees with their credits to be completed and minimum CGPA for completion, semesters, academic sessions, batches, courses, listed with the code as the first, linked column, sorted by code, and filtered by degree and type: code, credit hours with optional theory and lab parts, type, degree, and an optional prerequisite chosen from the active courses of that degree; courses are only deactivated), Other catalogs (institutions, boards, groups, examination types, designations, halls), and Geography The Grade scale (`grades/`) has its own editor at `/admin/configuration/grades`: one table of all bands, saved together through `PUT grades/scale`, with the same coverage checks run before sending |
@@ -42,11 +43,12 @@ default role (Teacher), and the role switcher at the bottom of the menu changes 
 | `src/app/features/staff/` | Admin-only Staff Management (lazy-loaded): the staff directory at `/admin/staff` (search by name, email, mobile number, or designation; infinite loading) and `/admin/staff/new` (by email: a new pending Admin account with a setup email, or an existing Admin account without a profile) and `/admin/staff/:id` (Name, Mobile number, Designation, with a manual-verification confirmation required on every save, and record history); "Deactivate…" in a directory row, confirmed in the row, deactivates the staff member and their account. An Admin edits their own profile here too; the account menu's My Profile stays view-only. Roles are not changed here |
 | `src/app/features/notifications/` | Admin-only notification administration under `/admin/notifications` (lazy-loaded): history with combined filters and infinite loading, a detail screen with the exact content of ordinary messages (security content is never stored and is shown as withheld), a confirmed resend of failed notifications, the eight email templates (`/templates`) with an editor and a synthetic-only preview, and the single feedback-reminder lead time (`/settings`) |
 | `src/app/features/audit/` | Admin-only audit history at `/admin/audit` (search with numbered pages and a total count) and `/admin/audit/:eventId` (detail); filters and page position are remembered in memory while an event is open |
-| `src/app/layout/shell/` | Signed-in shell: header, sidebar navigation, and an account section at the bottom of the sidebar (active role or role switcher, sign-out) |
+| `src/app/layout/shell/` | Signed-in shell: header (icon menu button on mobile, Light / Dark / System theme switch at the right), sidebar navigation with an icon per item, and an account section at the bottom of the sidebar (active role or role switcher, sign-out) |
 | `src/app/pages/` | Role landing pages and the unauthorized, no-role, and not-found states |
 | `src/app/shared/pager/` | `<app-pager>`: the one numbered pager every paged table uses ("Showing X to Y of N", an "Items per page" choice of 10, 25, 50, or 100, Previous, page numbers with an ellipsis, Next), `pageList` that decides which numbers to show, and `PagerPreferences`, which keeps the chosen page size in memory for all tables |
 | `src/app/shared/utc-timestamp/` | `<app-utc-timestamp>`: every audit time is shown in UTC with an explicit "UTC" label inside a `time` element |
 | `src/app/shared/auth-brand/` | Centered IIT logo and portal name used on every authentication screen |
+| `src/app/shared/theme-toggle/` | `<app-theme-toggle>`: the icon-only light/dark switch in the corner of the signed-out screens |
 | `src/app/shared/password-toggle/` | `<app-password-toggle>`: the eye button inside every password field that shows or hides the password; place it after the input inside `.password-field` |
 | `public/images/iit-logo.png` | Approved IIT logo (600×327), shown on the authentication screens and in the signed-in header; do not stretch or recolor it |
 | `public/favicon.ico`, `public/apple-touch-icon.png` | Browser-tab icon (16/32/48px, "IIT" lettermark) and 180px home-screen icon (full logo), generated from the logo per design-system §10 |
@@ -55,14 +57,23 @@ default role (Teacher), and the role switcher at the bottom of the menu changes 
 
 Tailwind runs through PostCSS (`.postcssrc.json`). Its theme is the design system:
 
-- Colors: only IIT tokens exist (`bg-brand-primary`, `text-error`, `border-control-border`, …). Tailwind's
-  default palette is removed, so `bg-red-500` does not compile.
-- Spacing, radius, and breakpoints use the token scale (`p-4` = 16px, `rounded-md`, `md:` = 48rem).
+- Colors: pages use the semantic roles (`bg-surface`, `text-text-secondary`, `bg-brand-primary`, `text-brand-accent`,
+  `text-error`, `bg-error-subtle`, …), which the dark theme re-points, so a page needs no `dark:` classes. Behind them are
+  the IIT brand scale (`brand-50`…`950`) and Tailwind's `gray`, `red`, `green`, `amber`, and `sky` scales; other families
+  (`indigo`, `rose`, …) do not compile.
+- Spacing, radius, shadows, and breakpoints are Tailwind's defaults (`p-6` = 24px, `rounded-lg`, `shadow-sm`, `md:` = 48rem).
   Type utilities: `text-page-title`, `text-heading`, `text-compact`, `text-helper`, `leading-body`.
 - Tokens without a utility namespace use the variable syntax: `max-w-(--content-max-width)`.
 - Reuse the shared component classes (`btn btn-primary`, `field-input`, `alert alert-error`, `card`, …) for
   design-system components; use utilities for layout. Add a new shared class to `@layer components` in
-  `src/styles.css` rather than repeating long utility lists.
+  `src/styles.css` rather than repeating long utility lists. Pages open with `.page-header` (title, description, actions).
+  Forms are `.card`s (or `fieldset.card` sections with a `legend`) of `.field`s, `.form-grid` for fields side by side, and a
+  `.form-actions` row (secondary first, primary last); record facts are a `dl.description-list`; empty lists and placeholder
+  pages are an `.empty-state`; loading text is a `.loading-state`. Build every new screen from the class catalog,
+  page recipes, and rules in `specs/design-system.md` §18.
+- Icons: Heroicons outline through `@ng-icons/core` / `@ng-icons/heroicons` 34.0.0 (the last release for Angular 21). Import
+  `NgIcon`, register only the icons used with `provideIcons` in `viewProviders`, and size or color them with
+  `--ng-icon__size` / `--ng-icon__color` (the icon's own host styles override classes). Icon-only buttons need `aria-label`.
 
 ## Security notes
 

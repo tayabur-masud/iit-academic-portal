@@ -1,7 +1,7 @@
 <p class="mb-4"><a routerLink="/admin/audit">&larr; Back to audit history</a></p>
 
 @if (loading()) {
-  <p class="flex items-center gap-2 text-text-secondary" role="status">
+  <p class="loading-state" role="status">
     <span class="spinner" aria-hidden="true"></span>
     Loading the audit event…
   </p>
@@ -19,23 +19,29 @@
     </div>
   </div>
 } @else if (event(); as audit) {
-  <h1>Audit event</h1>
-  <p class="max-w-[48rem] text-text-secondary">{{ audit.eventType }}</p>
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1>Audit event</h1>
+      <p class="page-header-description">
+        {{ audit.eventType }}
+      </p>
+    </div>
+  </div>
 
   <section class="card mb-6" aria-labelledby="facts-title">
     <h2 id="facts-title">Details</h2>
-    <dl class="grid gap-x-6 gap-y-3 md:grid-cols-[12rem_1fr]">
-      <dt class="font-medium text-text-secondary">Time</dt>
-      <dd class="m-0"><app-utc-timestamp [value]="audit.occurredAtUtc" /></dd>
+    <dl class="description-list">
+      <dt>Time</dt>
+      <dd><app-utc-timestamp [value]="audit.occurredAtUtc" /></dd>
 
-      <dt class="font-medium text-text-secondary">Category</dt>
-      <dd class="m-0">{{ audit.category === 'security' ? 'Security' : 'Business' }}</dd>
+      <dt>Category</dt>
+      <dd>{{ audit.category === 'security' ? 'Security' : 'Business' }}</dd>
 
-      <dt class="font-medium text-text-secondary">Outcome</dt>
-      <dd class="m-0">{{ outcomeLabel(audit) }}</dd>
+      <dt>Outcome</dt>
+      <dd>{{ outcomeLabel(audit) }}</dd>
 
-      <dt class="font-medium text-text-secondary">Actor</dt>
-      <dd class="m-0 break-all">
+      <dt>Actor</dt>
+      <dd class="break-all">
         @if (audit.actorDisplay) {
           {{ audit.actorDisplay }}
           <div class="text-helper text-text-secondary">{{ audit.actorUserId }}</div>
@@ -47,8 +53,8 @@
         }
       </dd>
 
-      <dt class="font-medium text-text-secondary">Entity</dt>
-      <dd class="m-0 break-all">
+      <dt>Entity</dt>
+      <dd class="break-all">
         @if (audit.entityType || audit.entityId) {
           {{ audit.entityType }} {{ audit.entityId }}
         } @else {
@@ -56,24 +62,24 @@
         }
       </dd>
 
-      <dt class="font-medium text-text-secondary">Correlation ID</dt>
-      <dd class="m-0 break-all">{{ audit.correlationId ?? 'None' }}</dd>
+      <dt>Correlation ID</dt>
+      <dd class="break-all">{{ audit.correlationId ?? 'None' }}</dd>
 
-      <dt class="font-medium text-text-secondary">Source</dt>
-      <dd class="m-0">{{ audit.source ?? 'None' }}</dd>
+      <dt>Source</dt>
+      <dd>{{ audit.source ?? 'None' }}</dd>
 
-      <dt class="font-medium text-text-secondary">Event ID</dt>
-      <dd class="m-0 break-all">{{ audit.eventId }}</dd>
+      <dt>Event ID</dt>
+      <dd class="break-all">{{ audit.eventId }}</dd>
     </dl>
   </section>
 
   <section class="card mb-6" aria-labelledby="metadata-title">
     <h2 id="metadata-title">Context</h2>
     @if (metadataEntries(audit).length > 0) {
-      <dl class="grid gap-x-6 gap-y-3 md:grid-cols-[12rem_1fr]">
+      <dl class="description-list">
         @for (entry of metadataEntries(audit); track entry[0]) {
-          <dt class="font-medium text-text-secondary break-all">{{ entry[0] }}</dt>
-          <dd class="m-0 break-all">{{ entry[1] }}</dd>
+          <dt class="break-all">{{ entry[0] }}</dt>
+          <dd class="break-all">{{ entry[1] }}</dd>
         }
       </dl>
     } @else {

@@ -1,4 +1,4 @@
-<nav aria-label="Breadcrumb" class="mb-2 text-compact">
+<nav aria-label="Breadcrumb" class="breadcrumb">
   <a routerLink="/admin">Admin</a>
   <span aria-hidden="true"> / </span>
   <a routerLink="/admin/notifications">Notifications</a>
@@ -6,17 +6,21 @@
   <span>Reminder setting</span>
 </nav>
 
-<h1>Feedback reminder setting</h1>
-<p class="text-text-secondary">
-  How long before a feedback window closes each eligible student is reminded. One setting applies to every window; it cannot be
-  changed for a single window.
-</p>
+<div class="page-header">
+  <div class="min-w-0">
+    <h1>Feedback reminder setting</h1>
+    <p class="page-header-description">
+      How long before a feedback window closes each eligible student is reminded. One setting applies to every window; it cannot be
+      changed for a single window.
+    </p>
+  </div>
+</div>
 <p class="sr-only" role="status">{{ announcement() }}</p>
 
 <app-notification-sections />
 
 @if (loading()) {
-  <p class="flex items-center gap-2 text-text-secondary" role="status">
+  <p class="loading-state" role="status">
     <span class="spinner" aria-hidden="true"></span>
     Loading…
   </p>
@@ -51,7 +55,7 @@
     </div>
   }
 
-  <form class="card max-w-[40rem]" [formGroup]="form" (ngSubmit)="save()" novalidate [attr.aria-busy]="saving()">
+  <form class="card max-w-3xl" [formGroup]="form" (ngSubmit)="save()" novalidate [attr.aria-busy]="saving()">
     <div class="field">
       <label class="field-label" for="minutes">Minutes before a window closes</label>
       <p class="field-help" id="minutes-help">
@@ -76,13 +80,15 @@
       }
     </div>
 
-    <button type="submit" class="btn btn-primary" [disabled]="saving()">
-      @if (saving()) {
-        <span class="spinner" aria-hidden="true"></span>
-        Saving…
-      } @else {
-        Save setting
-      }
-    </button>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Saving…
+        } @else {
+          Save setting
+        }
+      </button>
+    </div>
   </form>
 }
