@@ -767,8 +767,9 @@
     @apply -mx-2 my-2 border-t border-divider;
   }
 
+  /* A destination in the account menu (My Profile): a full-width link row, marked when it is the current page. */
   .account-dropdown-item {
-    @apply flex w-full cursor-not-allowed items-center gap-3 rounded-md px-2 py-2 text-left text-compact text-text-disabled;
+    @apply flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-compact font-medium text-text-primary no-underline hover:bg-surface-hover aria-[current=page]:bg-surface-selected aria-[current=page]:text-brand-accent;
     min-height: var(--control-height-lg);
   }
 

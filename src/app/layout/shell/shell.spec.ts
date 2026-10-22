@@ -69,7 +69,7 @@ describe('Shell', () => {
     expect(menu.open).toBe(true);
     expect(menu.querySelectorAll('input[name="active-role"]')).toHaveLength(2);
     expect(menu.textContent).toContain('Sign out');
-    expect(menu.querySelector<HTMLButtonElement>('.account-dropdown-item')).toMatchObject({ disabled: true });
+    expect(menu.querySelector('a.account-dropdown-item')?.getAttribute('href')).toBe('/profile');
     expect(menu.textContent).toContain('My Profile');
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -137,16 +137,40 @@ describe('Shell', () => {
     expect(text).not.toContain('Audit');
   });
 
-  it('keeps My Profile view-only for an Admin: a disabled action with no link to a staff-profile editor', async () => {
-    await render(context(['Admin'], 'Admin'));
-    const menu = page.querySelector<HTMLDetailsElement>('details.account-dropdown')!;
-    menu.querySelector<HTMLElement>('summary')!.click();
+  it.each(['Admin', 'Student', 'Teacher', 'Coordinator'] as const)(
+    'offers My Profile to an active %s as a link to the shared profile page, and closes the menu once chosen',
+    async (role) => {
+      await render(context([role], role));
+      const menu = page.querySelector<HTMLDetailsElement>('details.account-dropdown')!;
+      menu.querySelector<HTMLElement>('summary')!.click();
 
-    const myProfile = Array.from(menu.querySelectorAll<HTMLElement>('button, a')).find((e) => e.textContent?.includes('My Profile'))!;
-    expect(myProfile.tagName).toBe('BUTTON');
-    expect((myProfile as HTMLButtonElement).disabled).toBe(true);
-    expect(menu.querySelector('a[href*="/admin/staff"]')).toBeNull();
-    expect(menu.querySelector('form, input:not([name="active-role"])')).toBeNull();
+      const myProfile = Array.from(menu.querySelectorAll<HTMLElement>('button, a')).find((e) => e.textContent?.includes('My Profile'))!;
+      expect(myProfile.tagName).toBe('A');
+      expect(myProfile.getAttribute('href')).toBe('/profile');
+      expect(menu.querySelector('a[href*="/admin/staff"]')).toBeNull();
+      expect(menu.querySelector('form, input:not([name="active-role"])')).toBeNull();
+
+      myProfile.click();
+      await settle();
+      fixture.detectChanges();
+
+      expect(TestBed.inject(Router).url).toBe('/profile');
+      expect(menu.open).toBe(false);
+      expect(myProfile.getAttribute('aria-current')).toBe('page');
+    },
+  );
+
+  it('stays on My Profile after a role switch, so it shows the new role, while other pages of the old role are left', async () => {
+    await render(context(['Teacher', 'Coordinator'], 'Teacher'));
+    await TestBed.inject(Router).navigateByUrl('/profile');
+
+    await chooseRole('Coordinator');
+    http.expectOne('/api/auth/sessions/current/active-role').flush(context(['Teacher', 'Coordinator'], 'Coordinator'));
+    await settle();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(Router).url).toBe('/profile');
+    expect(TestBed.inject(AuthSession).activeRole()).toBe('Coordinator');
   });
 
   it('offers only the assigned roles and marks the active one', async () => {

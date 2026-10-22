@@ -1,0 +1,222 @@
+<div class="page-header">
+  <div class="min-w-0">
+    <h1>My Profile</h1>
+    <p class="page-header-description">
+      Your details as recorded in the portal for your active role. This page is view-only: if
+      something is wrong, ask the IIT office to correct it.
+    </p>
+  </div>
+</div>
+
+@if (loading()) {
+  <p class="loading-state" role="status">
+    <span class="spinner" aria-hidden="true"></span>
+    Loading your profile…
+  </p>
+} @else if (loadError(); as message) {
+  <div class="alert alert-error max-w-3xl" role="alert">
+    <strong class="alert-title">Profile not shown</strong>
+    <p>{{ message }}</p>
+    <div class="mt-3">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="load()">Try again</button>
+    </div>
+  </div>
+} @else if (view(); as me) {
+  <section class="card max-w-3xl" aria-labelledby="account-title">
+    <h2 id="account-title">Account</h2>
+    <dl class="description-list">
+      <dt>Email address</dt>
+      <dd class="break-all">{{ me.email }}</dd>
+      <dt>Active role</dt>
+      <dd>
+        <span class="badge">{{ me.activeRole }}</span>
+        @if (me.activeRole === 'Coordinator') {
+          <p class="mt-1 mb-0 text-helper text-text-secondary">
+            As a Coordinator, your teacher profile is your profile.
+          </p>
+        }
+      </dd>
+    </dl>
+  </section>
+
+  @if (staff(); as staff) {
+    <section class="card mt-6 max-w-3xl" aria-labelledby="profile-title">
+      <h2 id="profile-title">Staff profile</h2>
+      <dl class="description-list">
+        <dt>Name</dt>
+        <dd>{{ staff.name }}</dd>
+        <dt>Mobile number</dt>
+        <dd>{{ staff.mobileNumber }}</dd>
+        <dt>Designation</dt>
+        <dd>{{ staff.designationName ?? 'Not recorded' }}</dd>
+      </dl>
+    </section>
+  } @else if (teacher(); as teacher) {
+    <section class="card mt-6 max-w-3xl" aria-labelledby="profile-title">
+      <h2 id="profile-title">Teacher profile</h2>
+      <dl class="description-list">
+        <dt>Name</dt>
+        <dd>{{ teacher.displayName }}</dd>
+        <dt>Staff ID</dt>
+        <dd [class.text-text-secondary]="!teacher.employeeStaffId">
+          {{ teacher.employeeStaffId ?? 'Not recorded' }}
+        </dd>
+        <dt>Phone</dt>
+        <dd [class.text-text-secondary]="!teacher.phone">{{ teacher.phone ?? 'Not recorded' }}</dd>
+        <dt>Designation</dt>
+        <dd [class.text-text-secondary]="!teacher.designationName">
+          {{ teacher.designationName ?? 'Not recorded' }}
+        </dd>
+      </dl>
+    </section>
+  } @else if (student(); as student) {
+    <section class="card mt-6 max-w-3xl" aria-labelledby="personal-title">
+      <h2 id="personal-title">Personal details</h2>
+      <dl class="description-list">
+        <dt>Name</dt>
+        <dd>{{ student.applicantName }}</dd>
+        <dt>Mobile number</dt>
+        <dd>{{ student.applicantMobile }}</dd>
+        <dt>Father's name</dt>
+        <dd [class.text-text-secondary]="!student.fatherName">
+          {{ student.fatherName ?? 'Not recorded' }}
+        </dd>
+        <dt>Mother's name</dt>
+        <dd [class.text-text-secondary]="!student.motherName">
+          {{ student.motherName ?? 'Not recorded' }}
+        </dd>
+        <dt>Date of birth</dt>
+        <dd [class.text-text-secondary]="!student.dateOfBirth">
+          @if (student.dateOfBirth; as born) {
+            <time [attr.datetime]="born">{{ dateOf(born) }}</time>
+          } @else {
+            Not recorded
+          }
+        </dd>
+        <dt>Place of birth</dt>
+        <dd [class.text-text-secondary]="!student.placeOfBirth">
+          {{ student.placeOfBirth ?? 'Not recorded' }}
+        </dd>
+        <dt>Marital status</dt>
+        <dd [class.text-text-secondary]="!student.maritalStatus">
+          {{ student.maritalStatus ?? 'Not recorded' }}
+        </dd>
+        <dt>Nationality</dt>
+        <dd [class.text-text-secondary]="!student.nationality">
+          {{ student.nationality ?? 'Not recorded' }}
+        </dd>
+      </dl>
+    </section>
+
+    <section class="card mt-6 max-w-3xl" aria-labelledby="addresses-title">
+      <h2 id="addresses-title">Addresses</h2>
+      <dl class="description-list">
+        @for (
+          entry of [
+            { label: 'Mailing address', address: student.mailingAddress },
+            { label: 'Permanent address', address: student.permanentAddress },
+          ];
+          track entry.label
+        ) {
+          <dt>{{ entry.label }}</dt>
+          <dd [class.text-text-secondary]="!entry.address">
+            @if (entry.address; as address) {
+              <span class="block">{{ addressLine(address) || 'No address details' }}</span>
+              @if (address.cellNumber) {
+                <span class="block text-text-secondary">Cell {{ address.cellNumber }}</span>
+              }
+            } @else {
+              Not recorded
+            }
+          </dd>
+        }
+      </dl>
+    </section>
+
+    <section class="card mt-6 max-w-3xl" aria-labelledby="guardian-title">
+      <h2 id="guardian-title">Local guardian / emergency contact</h2>
+      @if (
+        student.guardianName ||
+        student.guardianRelationship ||
+        student.guardianAddress ||
+        student.guardianCellNumber
+      ) {
+        <dl class="description-list">
+          <dt>Name</dt>
+          <dd [class.text-text-secondary]="!student.guardianName">
+            {{ student.guardianName ?? 'Not recorded' }}
+          </dd>
+          <dt>Relationship</dt>
+          <dd [class.text-text-secondary]="!student.guardianRelationship">
+            {{ student.guardianRelationship ?? 'Not recorded' }}
+          </dd>
+          <dt>Address</dt>
+          <dd [class.text-text-secondary]="!student.guardianAddress">
+            {{ student.guardianAddress ?? 'Not recorded' }}
+          </dd>
+          <dt>Cell number</dt>
+          <dd [class.text-text-secondary]="!student.guardianCellNumber">
+            {{ student.guardianCellNumber ?? 'Not recorded' }}
+          </dd>
+        </dl>
+      } @else {
+        <p class="mb-0 text-compact text-text-secondary">
+          No guardian or emergency contact is recorded.
+        </p>
+      }
+    </section>
+
+    <section class="card mt-6 max-w-3xl" aria-labelledby="history-title">
+      <h2 id="history-title">Academic history</h2>
+      @if (student.academicHistory.length > 0) {
+        <div class="data-table-scroll">
+          <table class="data-table min-w-[40rem]">
+            <caption class="sr-only">
+              Academic history, in the order it was recorded
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Qualification</th>
+                <th scope="col">Institution</th>
+                <th scope="col">Board</th>
+                <th scope="col">Group or subject</th>
+                <th scope="col">Year</th>
+                <th scope="col">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of student.academicHistory; track $index) {
+                <tr>
+                  <th scope="row" class="text-left font-medium">
+                    {{ categoryLabel(entry.category) }}
+                    @if (entry.examination) {
+                      <span class="block font-normal text-text-secondary">{{
+                        entry.examination
+                      }}</span>
+                    }
+                  </th>
+                  <td>{{ institutionOf(entry) }}</td>
+                  <td>{{ entry.board ?? '' }}</td>
+                  <td>{{ fieldOf(entry) }}</td>
+                  <td>{{ entry.year ?? '' }}</td>
+                  <td>{{ resultOf(entry) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="mb-0 text-compact text-text-secondary">No academic history is recorded.</p>
+      }
+    </section>
+  } @else {
+    <section class="empty-state mt-6 max-w-3xl" aria-labelledby="no-profile-title">
+      <ng-icon name="heroIdentification" />
+      <h2 id="no-profile-title" class="empty-state-title">No {{ profileNoun() }} yet</h2>
+      <p class="empty-state-text">
+        Your account has no {{ profileNoun() }} for the {{ me.activeRole }} role, so there are no
+        details to show. The IIT office adds it.
+      </p>
+    </section>
+  }
+}

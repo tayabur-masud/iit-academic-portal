@@ -7,10 +7,6 @@ import {
   homeRedirectGuard,
 } from './core/auth/auth.guards';
 import { ROLE_AREAS, Role } from './core/auth/auth.models';
-import { AuditDetail } from './features/audit/audit-detail';
-import { AuditPage } from './features/audit/audit-page';
-import { TeacherForm } from './features/teachers/teacher-form';
-import { TeacherList } from './features/teachers/teacher-list';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Login } from './features/auth/login/login';
 import { ResetPassword } from './features/auth/reset-password/reset-password';
@@ -76,11 +72,12 @@ export const routes: Routes = [
         { path: 'students', loadComponent: () => import('./features/students/student-list').then((m) => m.StudentList), title: `Students | ${TITLE}` },
         { path: 'students/new', loadComponent: () => import('./features/students/student-form').then((m) => m.StudentForm), title: `Add admission | ${TITLE}` },
         { path: 'students/:admissionId', loadComponent: () => import('./features/students/student-form').then((m) => m.StudentForm), title: `Admission | ${TITLE}` },
-        { path: 'teachers', component: TeacherList, title: `Teachers | ${TITLE}` },
-        { path: 'teachers/new', component: TeacherForm, title: `Add teacher | ${TITLE}` },
-        { path: 'teachers/:id', component: TeacherForm, title: `Edit teacher | ${TITLE}` },
+        // Loaded on demand. "new" comes before ":id" so it is never read as a teacher identifier.
+        { path: 'teachers', loadComponent: () => import('./features/teachers/teacher-list').then((m) => m.TeacherList), title: `Teachers | ${TITLE}` },
+        { path: 'teachers/new', loadComponent: () => import('./features/teachers/teacher-form').then((m) => m.TeacherForm), title: `Add teacher | ${TITLE}` },
+        { path: 'teachers/:id', loadComponent: () => import('./features/teachers/teacher-form').then((m) => m.TeacherForm), title: `Edit teacher | ${TITLE}` },
         // Loaded on demand. "new" comes before ":id" so it is never read as a profile identifier. An Admin's own profile is edited here
-        // like any other; the account menu's My Profile stays view-only.
+        // like any other; My Profile (/profile) only shows it.
         { path: 'staff', loadComponent: () => import('./features/staff/staff-list').then((m) => m.StaffList), title: `Staff | ${TITLE}` },
         { path: 'staff/new', loadComponent: () => import('./features/staff/staff-form').then((m) => m.StaffForm), title: `Add staff profile | ${TITLE}` },
         { path: 'staff/:id', loadComponent: () => import('./features/staff/staff-form').then((m) => m.StaffForm), title: `Edit staff profile | ${TITLE}` },
@@ -90,12 +87,15 @@ export const routes: Routes = [
         { path: 'notifications/templates/:eventType', loadComponent: () => import('./features/notifications/notification-template-editor').then((m) => m.NotificationTemplateEditor), title: `Edit template | ${TITLE}` },
         { path: 'notifications/settings', loadComponent: () => import('./features/notifications/feedback-reminder-setting').then((m) => m.FeedbackReminderSetting), title: `Reminder setting | ${TITLE}` },
         { path: 'notifications/:notificationId', loadComponent: () => import('./features/notifications/notification-detail').then((m) => m.NotificationDetail), title: `Notification | ${TITLE}` },
-        { path: 'audit', component: AuditPage, title: `Audit history | ${TITLE}` },
-        { path: 'audit/:eventId', component: AuditDetail, title: `Audit event | ${TITLE}` },
+        // Loaded on demand, like every other Admin screen.
+        { path: 'audit', loadComponent: () => import('./features/audit/audit-page').then((m) => m.AuditPage), title: `Audit history | ${TITLE}` },
+        { path: 'audit/:eventId', loadComponent: () => import('./features/audit/audit-detail').then((m) => m.AuditDetail), title: `Audit event | ${TITLE}` },
       ]),
       roleArea('Student'),
       roleArea('Teacher'),
       roleArea('Coordinator'),
+      // Shared by every role (see SHARED_PAGES): the active role's own profile, view-only. Loaded on demand.
+      { path: 'profile', loadComponent: () => import('./features/profile/my-profile').then((m) => m.MyProfile), title: `My Profile | ${TITLE}` },
       { path: 'unauthorized', component: Unauthorized, title: `Access denied | ${TITLE}` },
       { path: 'no-role', component: NoRole, title: `No portal role | ${TITLE}` },
     ],

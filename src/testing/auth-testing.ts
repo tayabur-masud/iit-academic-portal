@@ -20,6 +20,7 @@ export const STUB_ROUTES: Routes = [
   'student',
   'teacher',
   'coordinator',
+  'profile',
 ].map((path) => ({ path, component: Stub }));
 
 export function provideAuthTesting(routes: Routes = STUB_ROUTES) {
