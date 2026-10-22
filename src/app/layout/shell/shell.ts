@@ -103,6 +103,14 @@ export class Shell {
     this.navOpen.update((open) => !open);
   }
 
+  /** After choosing a menu destination: close the menu, and the mobile drawer it sits in. */
+  protected closeAccountMenu(): void {
+    if (this.accountMenu) {
+      this.accountMenu.nativeElement.open = false;
+    }
+    this.navOpen.set(false);
+  }
+
   @HostListener('document:click', ['$event'])
   protected closeAccountMenuOnOutsideClick(event: MouseEvent): void {
     const menu = this.accountMenu?.nativeElement;

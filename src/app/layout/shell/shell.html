@@ -95,9 +95,14 @@
               <span class="badge mx-2 self-start">Role: {{ role }}</span>
             }
             <div class="account-dropdown-divider" aria-hidden="true"></div>
-            <button type="button" class="account-dropdown-item" disabled aria-disabled="true">
-              <ng-icon name="heroUserCircle" />My Profile
-            </button>
+            <a
+              class="account-dropdown-item"
+              routerLink="/profile"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              (click)="closeAccountMenu()"
+              ><ng-icon name="heroUserCircle" />My Profile</a
+            >
             <button
               type="button"
               class="btn btn-secondary btn-sm account-dropdown-sign-out mt-1 w-full"

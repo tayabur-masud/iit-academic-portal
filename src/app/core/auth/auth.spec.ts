@@ -26,6 +26,12 @@ describe('auth models', () => {
     expect(landingWithin('/teachers-lounge', 'Teacher')).toBe('/teacher');
     expect(landingWithin(null, 'Student')).toBe('/student');
   });
+
+  it('keeps a shared page such as My Profile for every role, but not a look-alike path', () => {
+    expect(landingWithin('/profile', 'Student')).toBe('/profile');
+    expect(landingWithin('/profile', 'Coordinator')).toBe('/profile');
+    expect(landingWithin('/profiles', 'Admin')).toBe('/admin');
+  });
 });
 
 describe('activeRoleGuard', () => {

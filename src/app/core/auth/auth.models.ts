@@ -28,13 +28,18 @@ export function routeForSession(context: SessionContext): string {
   return context.activeRole ? ROLE_AREAS[context.activeRole].path : '/no-role';
 }
 
+/** Pages every role has (outside the role areas), such as My Profile; they show the active role's view, so they are kept on a switch. */
+export const SHARED_PAGES: readonly string[] = ['/profile'];
+
 /**
- * Keeps `url` only if it lies inside the role's area; otherwise the role's landing page. Used after a
+ * Keeps `url` only if it lies inside the role's area or is a shared page; otherwise the role's landing page. Used after a
  * role switch and for post-sign-in return URLs, so no page from another role is kept or reopened.
  */
 export function landingWithin(url: string | null | undefined, role: Role): string {
   const area = ROLE_AREAS[role].path;
-  if (url && (url === area || url.startsWith(`${area}/`) || url.startsWith(`${area}?`))) {
+  const within = (base: string) =>
+    !!url && (url === base || url.startsWith(`${base}/`) || url.startsWith(`${base}?`));
+  if (url && (within(area) || SHARED_PAGES.some(within))) {
     return url;
   }
   return area;

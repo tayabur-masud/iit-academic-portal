@@ -123,4 +123,14 @@ describe('Configuration routes', () => {
   it('sends a signed-out visitor to sign in', async () => {
     expect(await navigate('/admin/configuration', null)).toContain('/login');
   });
+
+  it.each(['Admin', 'Student', 'Teacher', 'Coordinator'] as const)('opens the shared My Profile page for an active %s', async (role) => {
+    const session: SessionContext = { availableRoles: [role], activeRole: role };
+
+    expect(await navigate('/profile', session)).toBe('/profile');
+  });
+
+  it('sends a signed-out visitor to sign in instead of My Profile', async () => {
+    expect(await navigate('/profile', null)).toBe('/login?returnUrl=%2Fprofile');
+  });
 });
