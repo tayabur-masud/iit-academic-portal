@@ -79,6 +79,11 @@ export const routes: Routes = [
         { path: 'teachers', component: TeacherList, title: `Teachers | ${TITLE}` },
         { path: 'teachers/new', component: TeacherForm, title: `Add teacher | ${TITLE}` },
         { path: 'teachers/:id', component: TeacherForm, title: `Edit teacher | ${TITLE}` },
+        // Loaded on demand. "new" comes before ":id" so it is never read as a profile identifier. An Admin's own profile is edited here
+        // like any other; the account menu's My Profile stays view-only.
+        { path: 'staff', loadComponent: () => import('./features/staff/staff-list').then((m) => m.StaffList), title: `Staff | ${TITLE}` },
+        { path: 'staff/new', loadComponent: () => import('./features/staff/staff-form').then((m) => m.StaffForm), title: `Add staff profile | ${TITLE}` },
+        { path: 'staff/:id', loadComponent: () => import('./features/staff/staff-form').then((m) => m.StaffForm), title: `Edit staff profile | ${TITLE}` },
         // Loaded on demand: these Admin-only screens are not part of the initial bundle. The fixed paths come first so "templates" and "settings" are never read as a notification identifier.
         { path: 'notifications', loadComponent: () => import('./features/notifications/notification-history').then((m) => m.NotificationHistory), title: `Notifications | ${TITLE}` },
         { path: 'notifications/templates', loadComponent: () => import('./features/notifications/notification-templates').then((m) => m.NotificationTemplates), title: `Message templates | ${TITLE}` },

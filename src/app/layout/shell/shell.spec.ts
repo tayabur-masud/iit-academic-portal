@@ -110,13 +110,14 @@ describe('Shell', () => {
     expect(page.querySelector('header')?.textContent).toContain('IIT Academic Portal');
   });
 
-  it('lists Accounts, Teachers, Students, Configuration, Notifications and audit history under the Admin module only', async () => {
+  it('lists Accounts, Teachers, Staff, Students, Configuration, Notifications and audit history under the Admin module only', async () => {
     await render(context(['Admin', 'Teacher'], 'Admin'));
     const links = Array.from(page.querySelectorAll('nav a')).map((a) => [a.textContent?.trim(), a.getAttribute('href')]);
     expect(links).toEqual([
       ['Dashboard', '/admin'],
       ['Accounts', '/admin/users'],
       ['Teachers', '/admin/teachers'],
+      ['Staff', '/admin/staff'],
       ['Students', '/admin/students'],
       ['Configuration', '/admin/configuration'],
       ['Notifications', '/admin/notifications'],
@@ -124,15 +125,28 @@ describe('Shell', () => {
     ]);
   });
 
-  it('shows no Accounts, Teachers, Students, Configuration, Notifications or audit navigation to other roles, even an Admin acting as another role', async () => {
+  it('shows no Accounts, Teachers, Staff, Students, Configuration, Notifications or audit navigation to other roles, even an Admin acting as another role', async () => {
     await render(context(['Admin', 'Teacher'], 'Teacher'));
     const text = page.querySelector('nav')?.textContent;
     expect(text).not.toContain('Accounts');
     expect(text).not.toContain('Teachers');
+    expect(text).not.toContain('Staff');
     expect(text).not.toContain('Students');
     expect(text).not.toContain('Configuration');
     expect(text).not.toContain('Notifications');
     expect(text).not.toContain('Audit');
+  });
+
+  it('keeps My Profile view-only for an Admin: a disabled action with no link to a staff-profile editor', async () => {
+    await render(context(['Admin'], 'Admin'));
+    const menu = page.querySelector<HTMLDetailsElement>('details.account-dropdown')!;
+    menu.querySelector<HTMLElement>('summary')!.click();
+
+    const myProfile = Array.from(menu.querySelectorAll<HTMLElement>('button, a')).find((e) => e.textContent?.includes('My Profile'))!;
+    expect(myProfile.tagName).toBe('BUTTON');
+    expect((myProfile as HTMLButtonElement).disabled).toBe(true);
+    expect(menu.querySelector('a[href*="/admin/staff"]')).toBeNull();
+    expect(menu.querySelector('form, input:not([name="active-role"])')).toBeNull();
   });
 
   it('offers only the assigned roles and marks the active one', async () => {
