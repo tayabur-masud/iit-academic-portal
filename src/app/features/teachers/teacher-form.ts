@@ -11,6 +11,7 @@ import { ConfigurationApi } from '../configuration/configuration-api';
 import { ConfigurationItem, descriptorFor } from '../configuration/configuration.models';
 import { TeacherApi } from './teacher-api';
 import { Teacher, TeacherRequest, statusLabel } from './teacher.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 const PROFILE_FIELDS = ['displayName', 'email', 'employeeStaffId', 'phone', 'designationId'] as const;
 const ROLE_FIELDS = ['roles', 'defaultRole'] as const;
@@ -22,7 +23,7 @@ const ROLE_FIELDS = ['roles', 'defaultRole'] as const;
  */
 @Component({
   selector: 'app-teacher-form',
-  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp],
+  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp, SearchableSelect, SelectOption],
   templateUrl: './teacher-form.html',
 })
 export class TeacherForm {

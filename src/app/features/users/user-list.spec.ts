@@ -4,6 +4,7 @@ import { HttpTestingController, TestRequest } from '@angular/common/http/testing
 import { httpMock, problem, provideAuthTesting, settle } from '../../../testing/auth-testing';
 import { UserAccount, UserAccountPage } from './user.models';
 import { UserList } from './user-list';
+import { chooseOption } from '../../../testing/select-testing';
 
 const ROOT = '/api/admin/users';
 
@@ -54,9 +55,7 @@ describe('UserList', () => {
   }
 
   function choose(selector: string, value: string): void {
-    const select = page.querySelector<HTMLSelectElement>(selector)!;
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    chooseOption(page, selector, value);
   }
 
   function submitSearch(value: string): void {

@@ -34,22 +34,20 @@
 
     <div class="field mb-0">
       <label class="field-label" for="role">Role</label>
-      <select id="role" class="field-input" [formControl]="role" (change)="applyFilters()">
-        <option value="">All</option>
+      <app-select inputId="role" [formControl]="role" (valueChange)="applyFilters()" emptyLabel="All">
         @for (option of roles; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
+          <app-option [value]="option.value" [label]="option.label" />
         }
-      </select>
+      </app-select>
     </div>
 
     <div class="field mb-0">
       <label class="field-label" for="status">Account status</label>
-      <select id="status" class="field-input" [formControl]="status" (change)="applyFilters()">
-        <option value="">All</option>
+      <app-select inputId="status" [formControl]="status" (valueChange)="applyFilters()" emptyLabel="All">
         @for (option of statuses; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
+          <app-option [value]="option.value" [label]="option.label" />
         }
-      </select>
+      </app-select>
     </div>
   </div>
 

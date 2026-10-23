@@ -22,6 +22,7 @@ import {
   statusBadgeClass,
   statusLabel,
 } from './notification.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 /** Query parameter the service reports a problem under, mapped to the form field that holds it. */
 const FIELD_FOR_PARAMETER: Record<string, keyof NotificationFilters> = { fromUtc: 'from', toUtc: 'to' };
@@ -34,7 +35,7 @@ const PARAMETERS = ['recipient', 'eventType', 'status', 'fromUtc', 'toUtc', 'cur
  */
 @Component({
   selector: 'app-notification-history',
-  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel, UtcTimestamp, NotificationSections],
+  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel, UtcTimestamp, NotificationSections, SearchableSelect, SelectOption],
   templateUrl: './notification-history.html',
 })
 export class NotificationHistory implements OnInit {

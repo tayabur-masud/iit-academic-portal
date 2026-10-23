@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { STUB_ROUTES, TEST_CSRF_TOKEN, httpMock, problem, provideAuthTesting, settle } from '../../../../testing/auth-testing';
 import { ConfigurationItem } from '../configuration.models';
 import { CatalogForm } from './catalog-form';
+import { chooseOption, optionLabels, optionValues, selectedValue } from '../../../../testing/select-testing';
 
 @Component({ template: '' })
 class Destination {}
@@ -57,9 +58,7 @@ describe('CatalogForm', () => {
   }
 
   function choose(selector: string, value: string): void {
-    const select = page.querySelector<HTMLSelectElement>(selector)!;
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    chooseOption(page, selector, value);
   }
 
   function submit(): void {
@@ -303,7 +302,7 @@ describe('CatalogForm', () => {
       await settle();
       fixture.detectChanges();
       expect(page.querySelector('#type-error')?.textContent).toContain('Select a type');
-      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#type option')).map((o) => o.value)).toEqual(['', 'School', 'College', 'University']);
+      expect(optionValues(page, '#type')).toEqual(['', 'School', 'College', 'University']);
 
       choose('#type', 'College');
       type('#address', '  1 Main Road ');
@@ -492,7 +491,7 @@ describe('CatalogForm', () => {
     it('offers only active records for a new batch and sends the three references', async () => {
       await openBatch();
 
-      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#degreeId option')).map((o) => o.textContent!.trim())).toEqual([
+      expect(optionLabels(page, '#degreeId')).toEqual([
         'Select a degree',
         'BSc',
       ]);
@@ -518,11 +517,11 @@ describe('CatalogForm', () => {
       await openBatch('b1');
       await respond(lookup('batches/b1'), item('b1', 'Batch 1', { degreeId: 'd2', startingSemesterId: 's1', academicSessionId: 'a1' }));
 
-      const options = Array.from(page.querySelectorAll<HTMLOptionElement>('#degreeId option')).map((o) => o.textContent!.trim());
+      const options = optionLabels(page, '#degreeId');
       expect(options).toEqual(['Select a degree', 'BSc', 'Old degree (inactive)']);
-      expect(page.querySelector<HTMLSelectElement>('#degreeId')?.value).toBe('d2');
+      expect(selectedValue(page, '#degreeId')).toBe('d2');
       // The unused inactive session is not offered.
-      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#academicSessionId option')).map((o) => o.textContent!.trim())).toEqual([
+      expect(optionLabels(page, '#academicSessionId')).toEqual([
         'Select a academic session',
         '2026',
       ]);
@@ -569,7 +568,7 @@ describe('CatalogForm', () => {
     }
 
     function options(selector: string): string[] {
-      return Array.from(page.querySelectorAll<HTMLOptionElement>(`${selector} option`)).map((o) => o.textContent!.trim());
+      return optionLabels(page, `${selector}`);
     }
 
     it('requires a code, a type, credit hours, and a degree, and offers only Mandatory and Elective', async () => {
@@ -663,11 +662,11 @@ describe('CatalogForm', () => {
       await openCourse('c5', course('c5', 'Loaded', { prerequisiteCourseId: 'c1' }));
 
       expect(options('#prerequisiteCourseId')).toEqual(['No prerequisite', 'C1 · Basics']);
-      expect(page.querySelector<HTMLSelectElement>('#prerequisiteCourseId')?.value).toBe('c1');
+      expect(selectedValue(page, '#prerequisiteCourseId')).toBe('c1');
 
       await pickDegree('d2', [course('p1', 'Other Degree Course', { degreeId: 'd2' })]);
 
-      expect(page.querySelector<HTMLSelectElement>('#prerequisiteCourseId')?.value).toBe('');
+      expect(selectedValue(page, '#prerequisiteCourseId')).toBe('');
       expect(options('#prerequisiteCourseId')).toEqual(['No prerequisite', 'P1 · Other Degree Course']);
     });
 
@@ -723,7 +722,7 @@ describe('CatalogForm', () => {
       await open('districts');
       await respond(lookup('geography/divisions'), list([item('v1', 'Dhaka'), item('v2', 'Old', { isActive: false })]));
 
-      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#divisionId option')).map((o) => o.textContent!.trim())).toEqual([
+      expect(optionLabels(page, '#divisionId')).toEqual([
         'Select a division',
         'Dhaka',
       ]);
@@ -739,7 +738,7 @@ describe('CatalogForm', () => {
     it('cascades an upazila: the division narrows the districts and only the district is sent', async () => {
       await open('upazilas');
       await respond(lookup('geography/divisions'), list([item('v1', 'Dhaka'), item('v2', 'Khulna')]));
-      expect(page.querySelector<HTMLSelectElement>('#districtId option')?.textContent).toContain('Choose a division first');
+      expect(optionLabels(page, '#districtId')[0]).toContain('Choose a division first');
 
       choose('#cascadeDivisionId', 'v1');
       await settle();
@@ -747,7 +746,7 @@ describe('CatalogForm', () => {
         lookup('geography/districts', (r) => r.params.get('divisionId') === 'v1'),
         list([item('g1', 'Gazipur'), item('g2', 'Narayanganj')]),
       );
-      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#districtId option')).map((o) => o.textContent!.trim())).toEqual([
+      expect(optionLabels(page, '#districtId')).toEqual([
         'Select a district',
         'Gazipur',
         'Narayanganj',
@@ -758,7 +757,7 @@ describe('CatalogForm', () => {
       choose('#cascadeDivisionId', 'v2');
       await settle();
       await respond(lookup('geography/districts', (r) => r.params.get('divisionId') === 'v2'), list([item('g9', 'Khulna sadar')]));
-      expect(page.querySelector<HTMLSelectElement>('#districtId')?.value).toBe('');
+      expect(selectedValue(page, '#districtId')).toBe('');
 
       choose('#cascadeDivisionId', 'v1');
       await settle();
@@ -791,8 +790,8 @@ describe('CatalogForm', () => {
 
       expect(page.querySelector('h1')?.textContent).toContain('city corporation');
       expect(page.querySelector('#code')).toBeNull();
-      expect(page.querySelector<HTMLSelectElement>('#districtId option')?.textContent).toContain('Choose a division first');
-      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#cascadeDivisionId option')).map((o) => o.textContent!.trim())).toEqual([
+      expect(optionLabels(page, '#districtId')[0]).toContain('Choose a division first');
+      expect(optionLabels(page, '#cascadeDivisionId')).toEqual([
         'Select a division',
         'Dhaka',
       ]);
@@ -804,7 +803,7 @@ describe('CatalogForm', () => {
         list([item('g1', 'Gazipur'), item('g2', 'Narayanganj'), item('g3', 'Closed', { isActive: false })]),
       );
       // A new city corporation may only be placed in an active district.
-      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#districtId option')).map((o) => o.textContent!.trim())).toEqual([
+      expect(optionLabels(page, '#districtId')).toEqual([
         'Select a district',
         'Gazipur',
         'Narayanganj',

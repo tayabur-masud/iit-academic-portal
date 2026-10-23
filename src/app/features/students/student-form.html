@@ -137,37 +137,35 @@
       <div class="form-grid md:grid-cols-2">
         <div class="field">
           <label class="field-label" for="degreeId">Degree</label>
-          <select
-            id="degreeId"
-            class="field-input"
+          <app-select
+            inputId="degreeId"
             formControlName="degreeId"
-            (change)="degreePicked()"
-            [attr.aria-invalid]="errorsFor('degreeId').length > 0"
-            [attr.aria-describedby]="describedBy('degreeId')"
+            (valueChange)="degreePicked()"
+            [invalid]="errorsFor('degreeId').length > 0"
+            [describedBy]="describedBy('degreeId')"
+            emptyLabel="Select a degree"
           >
-            <option value="">Select a degree</option>
             @for (option of degreeChoices(); track option.id) {
-              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+              <app-option [value]="option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
             }
-          </select>
+          </app-select>
           @for (message of errorsFor('degreeId'); track message) {
             <p class="field-error" id="degreeId-error">{{ message }}</p>
           }
         </div>
         <div class="field">
           <label class="field-label" for="batchId">Batch</label>
-          <select
-            id="batchId"
-            class="field-input"
+          <app-select
+            inputId="batchId"
             formControlName="batchId"
-            [attr.aria-invalid]="errorsFor('batchId').length > 0"
-            [attr.aria-describedby]="describedBy('batchId')"
+            [invalid]="errorsFor('batchId').length > 0"
+            [describedBy]="describedBy('batchId')"
+            [emptyLabel]="selectedDegree() ? 'Select a batch' : 'Select a degree first'"
           >
-            <option value="">{{ selectedDegree() ? 'Select a batch' : 'Select a degree first' }}</option>
             @for (option of batchChoices(); track option.id) {
-              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+              <app-option [value]="option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
             }
-          </select>
+          </app-select>
           @for (message of errorsFor('batchId'); track message) {
             <p class="field-error" id="batchId-error">{{ message }}</p>
           }
@@ -226,18 +224,17 @@
       <div class="form-grid md:grid-cols-2">
         <div class="field mb-0">
           <label class="field-label" for="assignedHallId">Assigned hall</label>
-          <select
-            id="assignedHallId"
-            class="field-input"
+          <app-select
+            inputId="assignedHallId"
             formControlName="assignedHallId"
-            [attr.aria-invalid]="errorsFor('assignedHallId').length > 0"
-            [attr.aria-describedby]="describedBy('assignedHallId')"
+            [invalid]="errorsFor('assignedHallId').length > 0"
+            [describedBy]="describedBy('assignedHallId')"
+            emptyLabel="Not assigned yet"
           >
-            <option value="">Not assigned yet</option>
             @for (option of hallChoices(); track option.id) {
-              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+              <app-option [value]="option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
             }
-          </select>
+          </app-select>
           @for (message of errorsFor('assignedHallId'); track message) {
             <p class="field-error" id="assignedHallId-error">{{ message }}</p>
           }
@@ -303,61 +300,54 @@
         <div class="form-grid md:grid-cols-3">
           <div class="field">
             <label class="field-label" [for]="kind + '-divisionId'">Division</label>
-            <select class="field-input" formControlName="divisionId" [id]="kind + '-divisionId'" (change)="divisionPicked(k)">
-              <option value="">Select a division</option>
+            <app-select formControlName="divisionId" [inputId]="kind + '-divisionId'" (valueChange)="divisionPicked(k)" emptyLabel="Select a division">
               @for (option of geography(divisions(), k, 'divisionId'); track option.id) {
-                <option [value]="option.id">{{ option.name }}</option>
+                <app-option [value]="option.id" [label]="option.name" />
               }
-            </select>
+            </app-select>
           </div>
           <div class="field">
             <label class="field-label" [for]="kind + '-districtId'">District</label>
-            <select
-              class="field-input"
+            <app-select
               formControlName="districtId"
-              [id]="kind + '-districtId'"
-              (change)="districtPicked(k)"
-              [attr.aria-invalid]="errorsFor(key + '.districtId').length > 0"
-              [attr.aria-describedby]="errorsFor(key + '.districtId').length > 0 ? kind + '-districtId-error' : null"
+              [inputId]="kind + '-districtId'"
+              (valueChange)="districtPicked(k)"
+              [invalid]="errorsFor(key + '.districtId').length > 0"
+              [describedBy]="errorsFor(key + '.districtId').length > 0 ? kind + '-districtId-error' : null"
+              [emptyLabel]="address(k).get('divisionId')?.value ? 'Select a district' : 'Select a division first'"
             >
-              <option value="">{{ address(k).get('divisionId')?.value ? 'Select a district' : 'Select a division first' }}</option>
               @for (option of geography(districts[k](), k, 'districtId'); track option.id) {
-                <option [value]="option.id">{{ option.name }}</option>
+                <app-option [value]="option.id" [label]="option.name" />
               }
-            </select>
+            </app-select>
             @for (message of errorsFor(key + '.districtId'); track message) {
               <p class="field-error" [id]="kind + '-districtId-error'">{{ message }}</p>
             }
           </div>
           <div class="field">
             <label class="field-label" [for]="fieldId(key + '.locality')">Upazila or city corporation</label>
-            <select
-              class="field-input"
+            <app-select
               formControlName="locality"
-              [id]="fieldId(key + '.locality')"
-              [attr.aria-invalid]="localityErrors(key).length > 0"
-              [attr.aria-describedby]="localityDescribedBy(key)"
+              [inputId]="fieldId(key + '.locality')"
+              [invalid]="localityErrors(key).length > 0"
+              [describedBy]="localityDescribedBy(key)"
+              [emptyLabel]="address(k).get('districtId')?.value ? 'Select an upazila or city corporation' : 'Select a district first'"
             >
-              <option value="">{{ address(k).get('districtId')?.value ? 'Select an upazila or city corporation' : 'Select a district first' }}</option>
               @if (geography(upazilas[k](), k, 'upazilaId'); as options) {
                 @if (options.length > 0) {
-                  <optgroup label="Upazilas">
                     @for (option of options; track option.id) {
-                      <option [value]="'upazila:' + option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+                      <app-option group="Upazilas" [value]="'upazila:' + option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
                     }
-                  </optgroup>
                 }
               }
               @if (geography(cityCorporations[k](), k, 'cityCorporationId'); as options) {
                 @if (options.length > 0) {
-                  <optgroup label="City corporations">
                     @for (option of options; track option.id) {
-                      <option [value]="'city:' + option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+                      <app-option group="City corporations" [value]="'city:' + option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
                     }
-                  </optgroup>
                 }
               }
-            </select>
+            </app-select>
             @for (message of localityErrors(key); track message) {
               <p class="field-error" [id]="fieldId(key + '.locality') + '-error'">{{ message }}</p>
             }
@@ -427,18 +417,17 @@
           <div class="flex flex-wrap items-end justify-between gap-3">
             <div class="field mb-0 min-w-[14rem]">
               <label class="field-label" [for]="fieldId('academicHistory[' + i + '].category')">Category</label>
-              <select
-                class="field-input"
+              <app-select
                 formControlName="category"
-                [id]="fieldId('academicHistory[' + i + '].category')"
-                [attr.aria-invalid]="errorsFor('academicHistory[' + i + '].category').length > 0"
-                [attr.aria-describedby]="describedBy('academicHistory[' + i + '].category')"
+                [inputId]="fieldId('academicHistory[' + i + '].category')"
+                [invalid]="errorsFor('academicHistory[' + i + '].category').length > 0"
+                [describedBy]="describedBy('academicHistory[' + i + '].category')"
+                emptyLabel="Select a category"
               >
-                <option value="">Select a category</option>
                 @for (option of categories; track option.value) {
-                  <option [value]="option.value">{{ option.label }}</option>
+                  <app-option [value]="option.value" [label]="option.label" />
                 }
-              </select>
+              </app-select>
               @for (message of errorsFor('academicHistory[' + i + '].category'); track message) {
                 <p class="field-error" [id]="fieldId('academicHistory[' + i + '].category') + '-error'">{{ message }}</p>
               }
@@ -452,19 +441,18 @@
                 @let idKey = 'academicHistory[' + i + '].' + name + 'Id';
                 <div class="field mb-0">
                   <label class="field-label" [for]="fieldId(idKey)">{{ fieldLabel(name) }}</label>
-                  <select
-                    class="field-input"
+                  <app-select
                     [formControlName]="name + 'Choice'"
-                    [id]="fieldId(idKey)"
-                    [attr.aria-invalid]="errorsFor(idKey).length > 0"
-                    [attr.aria-describedby]="describedBy(idKey)"
+                    [inputId]="fieldId(idKey)"
+                    [invalid]="errorsFor(idKey).length > 0"
+                    [describedBy]="describedBy(idKey)"
+                    emptyLabel="Not given"
                   >
-                    <option value="">Not given</option>
                     @for (option of catalogChoices(name, i); track option.id) {
-                      <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+                      <app-option [value]="option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
                     }
-                    <option [value]="notListed">Not listed: type the name</option>
-                  </select>
+                    <app-option [value]="notListed" label="Not listed: type the name" />
+                  </app-select>
                   @for (message of errorsFor(idKey); track message) {
                     <p class="field-error" [id]="fieldId(idKey) + '-error'">{{ message }}</p>
                   }

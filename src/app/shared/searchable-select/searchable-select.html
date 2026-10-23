@@ -1,0 +1,78 @@
+<input
+  #field
+  type="text"
+  class="field-input searchable-select-field"
+  role="combobox"
+  autocomplete="off"
+  spellcheck="false"
+  aria-autocomplete="list"
+  [id]="inputId()"
+  [disabled]="disabled()"
+  [placeholder]="emptyLabel() ?? ''"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="listId()"
+  [attr.aria-activedescendant]="activeId()"
+  [attr.aria-invalid]="invalid() || null"
+  [attr.aria-required]="required() || null"
+  [attr.aria-describedby]="describedBy()"
+  (input)="typed($event)"
+  (click)="toggle()"
+  (focus)="focused()"
+  (blur)="blurred()"
+  (keydown)="keydown($event)"
+/>
+<span class="searchable-select-chevron" aria-hidden="true"></span>
+
+<ul #list role="listbox" class="searchable-select-list" [id]="listId()" [hidden]="!open()">
+  @for (section of sections(); track $index) {
+    @if (section.group) {
+      <li role="presentation">
+        <div class="searchable-select-group" [id]="inputId() + '-group-' + $index">
+          {{ section.group }}
+        </div>
+        <ul
+          role="group"
+          class="m-0 list-none p-0"
+          [attr.aria-labelledby]="inputId() + '-group-' + $index"
+        >
+          @for (item of section.items; track item.choice.value) {
+            <li
+              role="option"
+              class="searchable-select-option"
+              [id]="optionId(item.index)"
+              [attr.data-value]="item.choice.value"
+              [attr.aria-selected]="item.choice.value === value()"
+              [class.active]="item.index === active()"
+              [class.searchable-select-option-empty]="item.choice.value === ''"
+              (mousedown)="$event.preventDefault()"
+              (click)="choose(item.choice.value)"
+            >
+              {{ item.choice.label }}
+            </li>
+          }
+        </ul>
+      </li>
+    } @else {
+      @for (item of section.items; track item.choice.value) {
+        <li
+          role="option"
+          class="searchable-select-option"
+          [id]="optionId(item.index)"
+          [attr.data-value]="item.choice.value"
+          [attr.aria-selected]="item.choice.value === value()"
+          [class.active]="item.index === active()"
+          [class.searchable-select-option-empty]="item.choice.value === ''"
+          (mousedown)="$event.preventDefault()"
+          (click)="choose(item.choice.value)"
+        >
+          {{ item.choice.label }}
+        </li>
+      }
+    }
+  } @empty {
+    <li role="presentation" class="searchable-select-empty">No matches</li>
+  }
+</ul>
+<p class="sr-only" aria-live="polite">
+  {{ open() && query() ? matches().length + (matches().length === 1 ? ' match' : ' matches') : '' }}
+</p>

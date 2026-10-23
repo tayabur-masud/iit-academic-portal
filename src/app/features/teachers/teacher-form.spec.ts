@@ -7,6 +7,7 @@ import { STUB_ROUTES, TEST_CSRF_TOKEN, httpMock, problem, provideAuthTesting, se
 import { ConfigurationItem } from '../configuration/configuration.models';
 import { Teacher } from './teacher.models';
 import { TeacherForm } from './teacher-form';
+import { chooseOption, optionLabels, selectedValue } from '../../../testing/select-testing';
 
 @Component({ template: '' })
 class Destination {}
@@ -77,9 +78,7 @@ describe('TeacherForm', () => {
   }
 
   function choose(selector: string, value: string): void {
-    const select = page.querySelector<HTMLSelectElement>(selector)!;
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    chooseOption(page, selector, value);
   }
 
   function button(text: string): HTMLButtonElement {
@@ -112,7 +111,7 @@ describe('TeacherForm', () => {
       await open();
 
       expect(page.textContent).toContain('No password is set');
-      expect(Array.from(page.querySelectorAll('#designationId option')).map((o) => o.textContent?.trim())).toEqual([
+      expect(optionLabels(page, '#designationId')).toEqual([
         'No designation',
         'Lecturer',
         'Professor',
@@ -180,7 +179,7 @@ describe('TeacherForm', () => {
       await open('t1');
 
       expect(page.querySelector<HTMLInputElement>('#displayName')?.value).toBe('Ada Lovelace');
-      expect(page.querySelector<HTMLSelectElement>('#designationId')?.value).toBe('d1');
+      expect(selectedValue(page, '#designationId')).toBe('d1');
       expect(page.textContent).toContain('Record history');
       expect(page.textContent).toContain('admin@iit.test');
 
@@ -203,9 +202,9 @@ describe('TeacherForm', () => {
     it('keeps a deactivated designation selectable for the teacher who already has it', async () => {
       await open('t1', teacher({ designationId: 'd3', designationName: 'Retired' }));
 
-      const options = Array.from(page.querySelectorAll('#designationId option')).map((o) => o.textContent?.trim());
+      const options = optionLabels(page, '#designationId');
       expect(options).toContain('Retired (inactive)');
-      expect(page.querySelector<HTMLSelectElement>('#designationId')?.value).toBe('d3');
+      expect(selectedValue(page, '#designationId')).toBe('d3');
     });
 
     it('explains a pending account', async () => {
@@ -239,13 +238,13 @@ describe('TeacherForm', () => {
       const teacherBox = page.querySelector<HTMLInputElement>('#role-teacher')!;
       expect(teacherBox.checked).toBe(true);
       expect(teacherBox.disabled).toBe(true);
-      expect(Array.from(page.querySelectorAll('#defaultRole option')).map((o) => o.textContent?.trim())).toEqual(['Teacher']);
+      expect(optionLabels(page, '#defaultRole')).toEqual(['Teacher']);
 
       const admin = page.querySelector<HTMLInputElement>('#role-admin')!;
       admin.checked = true;
       admin.dispatchEvent(new Event('change'));
       fixture.detectChanges();
-      expect(Array.from(page.querySelectorAll('#defaultRole option')).map((o) => o.textContent?.trim())).toEqual(['Admin', 'Teacher']);
+      expect(optionLabels(page, '#defaultRole')).toEqual(['Admin', 'Teacher']);
       choose('#defaultRole', 'Admin');
 
       page.querySelectorAll('form')[1].dispatchEvent(new Event('submit'));
@@ -263,7 +262,7 @@ describe('TeacherForm', () => {
       expect(page.textContent).toContain('Coordinator is also assigned');
       expect(page.querySelector('#role-coordinator')).toBeNull();
       expect(page.querySelector('#role-student')).toBeNull();
-      expect(Array.from(page.querySelectorAll('#defaultRole option')).map((o) => o.textContent?.trim())).toEqual(['Teacher', 'Coordinator']);
+      expect(optionLabels(page, '#defaultRole')).toEqual(['Teacher', 'Coordinator']);
     });
 
     it('shows the last-Admin conflict from the service and keeps the form as it was', async () => {

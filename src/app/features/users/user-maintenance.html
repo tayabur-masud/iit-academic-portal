@@ -168,11 +168,11 @@
             <div class="field">
               <label class="field-label" for="defaultRole">Default role</label>
               <p class="field-help" id="defaultRole-help">The role the account enters when signing in.</p>
-              <select id="defaultRole" class="field-input" formControlName="defaultRole" aria-describedby="defaultRole-help">
+              <app-select inputId="defaultRole" formControlName="defaultRole" describedBy="defaultRole-help">
                 @for (role of defaultChoices(); track role) {
-                  <option [value]="role">{{ role }}</option>
+                  <app-option [value]="role" [label]="role" />
                 }
-              </select>
+              </app-select>
             </div>
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" [disabled]="savingRoles()">

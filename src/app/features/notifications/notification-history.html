@@ -40,12 +40,11 @@
 
       <div class="field mb-0">
         <label class="field-label" for="eventType">Message</label>
-        <select id="eventType" class="field-input" formControlName="eventType" [attr.aria-invalid]="errorsFor('eventType').length > 0">
-          <option value="">Any</option>
+        <app-select inputId="eventType" formControlName="eventType" [invalid]="errorsFor('eventType').length > 0" emptyLabel="Any">
           @for (type of eventTypes; track type.value) {
-            <option [value]="type.value">{{ type.label }}</option>
+            <app-option [value]="type.value" [label]="type.label" />
           }
-        </select>
+        </app-select>
         @for (message of errorsFor('eventType'); track message) {
           <p class="field-error" id="eventType-error">{{ message }}</p>
         }
@@ -53,12 +52,11 @@
 
       <div class="field mb-0">
         <label class="field-label" for="status">Status</label>
-        <select id="status" class="field-input" formControlName="status" [attr.aria-invalid]="errorsFor('status').length > 0">
-          <option value="">Any</option>
+        <app-select inputId="status" formControlName="status" [invalid]="errorsFor('status').length > 0" emptyLabel="Any">
           @for (status of statuses; track status.value) {
-            <option [value]="status.value">{{ status.label }}</option>
+            <app-option [value]="status.value" [label]="status.label" />
           }
-        </select>
+        </app-select>
         @for (message of errorsFor('status'); track message) {
           <p class="field-error" id="status-error">{{ message }}</p>
         }

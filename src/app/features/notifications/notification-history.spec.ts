@@ -7,6 +7,7 @@ import { NotificationDetail as Detail, NotificationPage, NotificationRow } from 
 import { NotificationDetail } from './notification-detail';
 import { NotificationHistory } from './notification-history';
 import { NotificationSearchState } from './notification-search-state';
+import { chooseOption } from '../../../testing/select-testing';
 
 @Component({ selector: 'app-destination', template: '' })
 class Destination {}
@@ -61,10 +62,10 @@ describe('NotificationHistory', () => {
     return Array.from(page.querySelectorAll('button')).find((b) => b.textContent?.includes(text))!;
   }
 
-  function set(selector: string, value: string, event = 'input'): void {
-    const control = page.querySelector<HTMLInputElement | HTMLSelectElement>(selector)!;
+  function set(selector: string, value: string): void {
+    const control = page.querySelector<HTMLInputElement>(selector)!;
     control.value = value;
-    control.dispatchEvent(new Event(event));
+    control.dispatchEvent(new Event('input'));
   }
 
   it('shows a loading state, then notifications with the status written out and the destination and user ID', async () => {
@@ -109,8 +110,8 @@ describe('NotificationHistory', () => {
     await respond(listRequest(), [row('1')], 'next-1');
 
     set('#recipient', ' student.7@iit.test ');
-    set('#eventType', 'FeedbackWindowOpened', 'change');
-    set('#status', 'Failed', 'change');
+    chooseOption(page, '#eventType', 'FeedbackWindowOpened');
+    chooseOption(page, '#status', 'Failed');
     set('#from', '2026-10-01T00:00');
     set('#to', '2026-10-02T12:30');
     page.querySelector('form')!.dispatchEvent(new Event('submit'));
@@ -196,7 +197,7 @@ describe('NotificationHistory', () => {
     await respond(listRequest(), []);
     expect(page.textContent).toContain('No notifications yet');
 
-    set('#status', 'Failed', 'change');
+    chooseOption(page, '#status', 'Failed');
     page.querySelector('form')!.dispatchEvent(new Event('submit'));
     await respond(listRequest((r) => r.params.get('status') === 'Failed'), []);
 

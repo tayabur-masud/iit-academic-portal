@@ -262,27 +262,62 @@
     @apply py-2 leading-6;
   }
 
-  /* One shared select trigger style across filters, forms, pagination, and the account menu. */
-  select.field-input {
-    appearance: none;
-    padding-inline-end: 2.5rem;
-    background-image:
-      linear-gradient(45deg, transparent 50%, var(--color-text-secondary) 50%),
-      linear-gradient(135deg, var(--color-text-secondary) 50%, transparent 50%);
-    background-position:
-      calc(100% - 0.875rem) 50%,
-      calc(100% - 0.5625rem) 50%;
-    background-repeat: no-repeat;
-    background-size: 0.3125rem 0.3125rem;
+  /* <app-select>: the searchable dropdown every form and filter uses (design-system Section 6). The text field shows the selection;
+     typing filters the list below it. */
+  .searchable-select {
+    @apply relative block;
   }
 
-  select.field-input:not(:disabled) {
+  .searchable-select-field {
+    padding-inline-end: 2.5rem;
+  }
+
+  .searchable-select-field:not(:disabled) {
     cursor: pointer;
   }
 
-  select.field-input option {
-    background-color: var(--color-surface);
-    color: var(--color-text-primary);
+  .searchable-select-field:focus {
+    cursor: text;
+  }
+
+  .searchable-select-chevron {
+    @apply pointer-events-none absolute top-1/2 right-3.5 size-2 -translate-y-3/4 rotate-45 border-r-[1.5px] border-b-[1.5px] border-text-secondary;
+  }
+
+  .searchable-select-list {
+    @apply absolute inset-x-0 top-full z-30 m-0 mt-1 max-h-64 list-none overflow-y-auto rounded-md bg-surface-raised p-1 shadow-overlay;
+  }
+
+  .searchable-select-group {
+    @apply px-2 pt-2 pb-1 text-helper font-semibold text-text-secondary;
+  }
+
+  .searchable-select-option {
+    @apply flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-compact text-text-primary;
+    min-height: 2.25rem;
+  }
+
+  .searchable-select-option.active {
+    @apply bg-surface-hover;
+  }
+
+  .searchable-select-option[aria-selected='true'] {
+    @apply font-semibold text-brand-accent;
+  }
+
+  /* The empty choice ("Select a degree", "All", "Any") reads as a prompt, not as a selection. */
+  .searchable-select-option.searchable-select-option-empty {
+    @apply font-normal text-text-secondary;
+  }
+
+  .searchable-select-empty {
+    @apply px-2 py-2 text-compact text-text-secondary;
+  }
+
+  @media (pointer: coarse) {
+    .searchable-select-option {
+      min-height: var(--control-height-lg);
+    }
   }
 
   /* A password input with its show/hide button (<app-password-toggle>) inside the right edge. The input keeps room for the button,

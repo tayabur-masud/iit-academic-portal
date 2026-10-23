@@ -11,6 +11,7 @@ import { ConfigurationItem, descriptorFor } from '../configuration/configuration
 import { statusLabel } from '../teachers/teacher.models';
 import { StaffApi } from './staff-api';
 import { StaffProfile, StaffProfileRequest, createdNotice } from './staff.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 const FIELDS = ['email', 'name', 'mobileNumber', 'designationId', 'manualVerificationConfirmed'] as const;
 
@@ -22,7 +23,7 @@ const FIELDS = ['email', 'name', 'mobileNumber', 'designationId', 'manualVerific
  */
 @Component({
   selector: 'app-staff-form',
-  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp],
+  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp, SearchableSelect, SelectOption],
   templateUrl: './staff-form.html',
 })
 export class StaffForm {

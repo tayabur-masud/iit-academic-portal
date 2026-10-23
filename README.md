@@ -48,6 +48,7 @@ default role (Teacher), and the role switcher at the bottom of the menu changes 
 | `src/app/pages/` | Role landing pages and the unauthorized, no-role, and not-found states |
 | `src/app/shared/pager/` | `<app-pager>`: the one numbered pager every paged table uses ("Showing X to Y of N", an "Items per page" choice of 10, 25, 50, or 100, Previous, page numbers with an ellipsis, Next), `pageList` that decides which numbers to show, and `PagerPreferences`, which keeps the chosen page size in memory for all tables |
 | `src/app/shared/utc-timestamp/` | `<app-utc-timestamp>`: every audit time is shown in UTC with an explicit "UTC" label inside a `time` element |
+| `src/app/shared/searchable-select/` | `<app-select>` with `<app-option>`s: the searchable dropdown every form and filter uses (type to filter by label or `keywords`, arrow keys, Enter, Escape; option groups; a form control like a select). Tests use `src/testing/select-testing.ts` |
 | `src/app/shared/auth-brand/` | Centered IIT logo and portal name used on every authentication screen |
 | `src/app/shared/theme-toggle/` | `<app-theme-toggle>`: the icon-only light/dark switch in the corner of the signed-out screens |
 | `src/app/shared/password-toggle/` | `<app-password-toggle>`: the eye button inside every password field that shows or hides the password; place it after the input inside `.password-field` |

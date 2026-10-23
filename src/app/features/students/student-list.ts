@@ -10,6 +10,7 @@ import { ConfigurationItem, descriptorFor } from '../configuration/configuration
 import { statusLabel } from '../users/user.models';
 import { StudentApi } from './student-api';
 import { StudentListItem } from './student.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 /**
  * The Admin student directory: one row per program admission (a returning Student appears once per admission), searched by name,
@@ -19,7 +20,7 @@ import { StudentListItem } from './student.models';
  */
 @Component({
   selector: 'app-student-list',
-  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel],
+  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel, SearchableSelect, SelectOption],
   templateUrl: './student-list.html',
 })
 export class StudentList {

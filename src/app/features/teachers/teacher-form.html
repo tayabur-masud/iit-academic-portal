@@ -130,18 +130,17 @@
 
     <div class="field">
       <label class="field-label" for="designationId">Designation (optional)</label>
-      <select
-        id="designationId"
-        class="field-input"
+      <app-select
+        inputId="designationId"
         formControlName="designationId"
-        [attr.aria-invalid]="errorsFor('designationId').length > 0"
-        [attr.aria-describedby]="describedBy('designationId')"
+        [invalid]="errorsFor('designationId').length > 0"
+        [describedBy]="describedBy('designationId')"
+        emptyLabel="No designation"
       >
-        <option value="">No designation</option>
         @for (option of designationChoices(); track option.id) {
-          <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+          <app-option [value]="option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
         }
-      </select>
+      </app-select>
       @for (message of errorsFor('designationId'); track message) {
         <p class="field-error" id="designationId-error">{{ message }}</p>
       }
@@ -199,17 +198,16 @@
           <div class="field">
             <label class="field-label" for="defaultRole">Default role</label>
             <p class="field-help" id="defaultRole-help">The role the teacher enters when signing in.</p>
-            <select
-              id="defaultRole"
-              class="field-input"
+            <app-select
+              inputId="defaultRole"
               formControlName="defaultRole"
-              [attr.aria-invalid]="errorsFor('defaultRole').length > 0"
-              [attr.aria-describedby]="describedBy('defaultRole', true)"
+              [invalid]="errorsFor('defaultRole').length > 0"
+              [describedBy]="describedBy('defaultRole', true)"
             >
               @for (role of defaultChoices(); track role) {
-                <option [value]="role">{{ role }}</option>
+                <app-option [value]="role" [label]="role" />
               }
-            </select>
+            </app-select>
             @for (message of errorsFor('defaultRole'); track message) {
               <p class="field-error" id="defaultRole-error">{{ message }}</p>
             }

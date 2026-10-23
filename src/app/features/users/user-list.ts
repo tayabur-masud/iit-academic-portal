@@ -7,6 +7,7 @@ import { problemMessage } from '../../core/http/problem';
 import { InfiniteScrollSentinel } from '../../shared/infinite-scroll/infinite-scroll-sentinel';
 import { UserApi } from './user-api';
 import { ACCOUNT_STATUSES, ROLE_FILTERS, RoleFilter, StatusFilter, UserAccount, statusLabel } from './user.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 /**
  * The Admin account directory: every portal account, searched by email or user ID and filtered by role and status, loaded in
@@ -15,7 +16,7 @@ import { ACCOUNT_STATUSES, ROLE_FILTERS, RoleFilter, StatusFilter, UserAccount, 
  */
 @Component({
   selector: 'app-user-list',
-  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel],
+  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel, SearchableSelect, SelectOption],
   templateUrl: './user-list.html',
 })
 export class UserList {

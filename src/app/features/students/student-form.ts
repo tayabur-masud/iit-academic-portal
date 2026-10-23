@@ -27,6 +27,7 @@ import {
   StudentProfile,
   isCatalogField,
 } from './student.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 /** The choice that reveals a text box for a name that is not in the catalog. */
 export const NOT_LISTED = '__not-listed__';
@@ -62,7 +63,7 @@ export function fieldId(key: string): string {
  */
 @Component({
   selector: 'app-student-form',
-  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp, GraduationEligibility],
+  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp, GraduationEligibility, SearchableSelect, SelectOption],
   templateUrl: './student-form.html',
 })
 export class StudentForm {

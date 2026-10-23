@@ -14,6 +14,7 @@ import {
   INSTITUTION_TYPES,
   RESOURCES,
 } from '../configuration.models';
+import { SearchableSelect, SelectOption } from '../../../shared/searchable-select/searchable-select';
 
 /**
  * Search and browse one configuration resource: catalogs, batches, or a geography level. Cursor loading, a status
@@ -22,7 +23,7 @@ import {
  */
 @Component({
   selector: 'app-catalog-list',
-  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel],
+  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel, SearchableSelect, SelectOption],
   templateUrl: './catalog-list.html',
 })
 export class CatalogList {

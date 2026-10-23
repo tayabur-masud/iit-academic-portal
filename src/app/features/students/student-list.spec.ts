@@ -4,6 +4,7 @@ import { HttpTestingController, TestRequest } from '@angular/common/http/testing
 import { httpMock, problem, provideAuthTesting, settle } from '../../../testing/auth-testing';
 import { StudentListItem, StudentPage } from './student.models';
 import { StudentList } from './student-list';
+import { chooseOption, optionLabels, selectedValue } from '../../../testing/select-testing';
 
 const ROOT = '/api/admin/students';
 
@@ -91,9 +92,7 @@ describe('StudentList', () => {
     await open();
     await respond(listRequest(), [row('a1', 'Ayesha')], 3);
 
-    const select = page.querySelector<HTMLSelectElement>('#degree')!;
-    select.value = 'emit';
-    select.dispatchEvent(new Event('change'));
+    chooseOption(page, '#degree', 'emit');
     await respond(listRequest((r) => r.params.get('degreeId') === 'emit' && r.params.get('page') === '1'), []);
 
     expect(page.textContent).toContain('No admissions match');
@@ -103,19 +102,15 @@ describe('StudentList', () => {
     await open();
     await respond(listRequest(), [row('a1', 'Ayesha')]);
 
-    const batch = page.querySelector<HTMLSelectElement>('#batch')!;
-    expect(Array.from(batch.options).map((o) => o.textContent?.trim())).toEqual(['All', 'EMIT Batch 7', 'PGDIT Batch 1']);
-    batch.value = 'pb1';
-    batch.dispatchEvent(new Event('change'));
+    expect(optionLabels(page, '#batch')).toEqual(['All', 'EMIT Batch 7', 'PGDIT Batch 1']);
+    chooseOption(page, '#batch', 'pb1');
     await respond(listRequest((r) => r.params.get('batchId') === 'pb1' && r.params.get('page') === '1'), [row('a1', 'Ayesha')]);
 
-    const degree = page.querySelector<HTMLSelectElement>('#degree')!;
-    degree.value = 'emit';
-    degree.dispatchEvent(new Event('change'));
+    chooseOption(page, '#degree', 'emit');
     await respond(listRequest((r) => r.params.get('degreeId') === 'emit' && !r.params.has('batchId')), []);
 
-    expect(Array.from(page.querySelector<HTMLSelectElement>('#batch')!.options).map((o) => o.textContent?.trim())).toEqual(['All', 'EMIT Batch 7']);
-    expect(page.querySelector<HTMLSelectElement>('#batch')!.value).toBe('');
+    expect(optionLabels(page, '#batch')).toEqual(['All', 'EMIT Batch 7']);
+    expect(selectedValue(page, '#batch')).toBe('');
   });
 
   it('shows a failed load with a retry', async () => {

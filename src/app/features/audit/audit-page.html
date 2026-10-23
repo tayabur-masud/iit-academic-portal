@@ -46,11 +46,10 @@
 
       <div class="field mb-0">
         <label class="field-label" for="category">Category</label>
-        <select id="category" class="field-input" formControlName="category" [attr.aria-invalid]="errorsFor('category').length > 0">
-          <option value="">Any</option>
-          <option value="security">Security</option>
-          <option value="business">Business</option>
-        </select>
+        <app-select inputId="category" formControlName="category" [invalid]="errorsFor('category').length > 0" emptyLabel="Any">
+          <app-option value="security" label="Security" />
+          <app-option value="business" label="Business" />
+        </app-select>
         @for (message of errorsFor('category'); track message) {
           <p class="field-error" id="category-error">{{ message }}</p>
         }
@@ -58,12 +57,11 @@
 
       <div class="field mb-0">
         <label class="field-label" for="outcome">Outcome</label>
-        <select id="outcome" class="field-input" formControlName="outcome" [attr.aria-invalid]="errorsFor('outcome').length > 0">
-          <option value="">Any</option>
-          <option value="success">Success</option>
-          <option value="failure">Failure</option>
-          <option value="denied">Denied</option>
-        </select>
+        <app-select inputId="outcome" formControlName="outcome" [invalid]="errorsFor('outcome').length > 0" emptyLabel="Any">
+          <app-option value="success" label="Success" />
+          <app-option value="failure" label="Failure" />
+          <app-option value="denied" label="Denied" />
+        </app-select>
         @for (message of errorsFor('outcome'); track message) {
           <p class="field-error" id="outcome-error">{{ message }}</p>
         }

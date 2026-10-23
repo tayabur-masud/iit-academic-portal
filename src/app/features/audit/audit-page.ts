@@ -18,6 +18,7 @@ import {
   hasFilters,
   toUtcInstant,
 } from './audit.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 /** Query parameter the service reports a problem under, mapped to the form field that holds it. */
 const FIELD_FOR_PARAMETER: Record<string, keyof AuditFilters> = {
@@ -40,7 +41,7 @@ const FILTER_FIELDS: (keyof AuditFilters)[] = [
 /** Admin-only search of audit history. The service re-checks the Admin role on every request. */
 @Component({
   selector: 'app-audit-page',
-  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel, UtcTimestamp],
+  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel, UtcTimestamp, SearchableSelect, SelectOption],
   templateUrl: './audit-page.html',
 })
 export class AuditPage implements OnInit {

@@ -33,64 +33,59 @@
 
       <div class="field mb-0">
         <label class="field-label" for="status">Status</label>
-        <select id="status" class="field-input" [formControl]="status" (change)="applyFilters()">
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="all">All</option>
-        </select>
+        <app-select inputId="status" [formControl]="status" (valueChange)="applyFilters()">
+          <app-option value="active" label="Active" />
+          <app-option value="inactive" label="Inactive" />
+          <app-option value="all" label="All" />
+        </app-select>
       </div>
 
       @if (d.hasType) {
         <div class="field mb-0">
           <label class="field-label" for="type-filter">Type</label>
-          <select id="type-filter" class="field-input" [formControl]="type" (change)="applyFilters()">
-            <option value="">All types</option>
+          <app-select inputId="type-filter" [formControl]="type" (valueChange)="applyFilters()" emptyLabel="All types">
             @for (option of types(); track option) {
-              <option [value]="option">{{ option }}</option>
+              <app-option [value]="option" [label]="option" />
             }
-          </select>
+          </app-select>
         </div>
       }
 
       @if (d.parentFilter === 'divisionId' || d.cascadeFrom) {
         <div class="field mb-0">
           <label class="field-label" for="division-filter">Division</label>
-          <select id="division-filter" class="field-input" [formControl]="division" (change)="divisionChanged()">
-            <option value="">All divisions</option>
+          <app-select inputId="division-filter" [formControl]="division" (valueChange)="divisionChanged()" emptyLabel="All divisions">
             @for (division of divisions(); track division.id) {
-              <option [value]="division.id">{{ division.name }}</option>
+              <app-option [value]="division.id" [label]="division.name" />
             }
-          </select>
+          </app-select>
         </div>
       }
 
       @if (d.parentFilter === 'degreeId') {
         <div class="field mb-0">
           <label class="field-label" for="degree-filter">Degree</label>
-          <select id="degree-filter" class="field-input" [formControl]="degree" (change)="applyFilters()">
-            <option value="">All degrees</option>
+          <app-select inputId="degree-filter" [formControl]="degree" (valueChange)="applyFilters()" emptyLabel="All degrees">
             @for (option of degrees(); track option.id) {
-              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+              <app-option [value]="option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
             }
-          </select>
+          </app-select>
         </div>
       }
 
       @if (d.cascadeFrom) {
         <div class="field mb-0">
           <label class="field-label" for="district-filter">District</label>
-          <select
-            id="district-filter"
-            class="field-input"
+          <app-select
+            inputId="district-filter"
             [formControl]="district"
-            [attr.aria-disabled]="!division.value"
-            (change)="applyFilters()"
+            (valueChange)="applyFilters()"
+            [emptyLabel]="division.value ? 'All districts' : 'Choose a division first'"
           >
-            <option value="">{{ division.value ? 'All districts' : 'Choose a division first' }}</option>
             @for (district of districts(); track district.id) {
-              <option [value]="district.id">{{ district.name }}</option>
+              <app-option [value]="district.id" [label]="district.name" />
             }
-          </select>
+          </app-select>
         </div>
       }
     </div>
