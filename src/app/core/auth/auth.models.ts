@@ -7,6 +7,11 @@ export type Role = 'Admin' | 'Student' | 'Teacher' | 'Coordinator';
 export interface SessionContext {
   availableRoles: Role[];
   activeRole: Role | null;
+  /**
+   * The signed-in account's name for the account menu: the active role's profile name, another of its profile names, or its email.
+   * The service sends it with every session response, so it follows a role switch.
+   */
+  displayName?: string | null;
 }
 
 export interface PasswordResetCompletion {

@@ -33,6 +33,25 @@ interface NavItem {
   exact: boolean;
 }
 
+/** Titles left out of the avatar's initials, so "Dr Rezvi Shahariar" shows RS. */
+const TITLES = new Set(['dr', 'prof', 'professor', 'mr', 'mrs', 'ms', 'engr']);
+
+/** Up to two initials for the avatar: the first and last words of a name, or the first letter of an email. */
+export function initialsOf(name: string | null | undefined): string {
+  const text = name?.trim() ?? '';
+  if (!text) {
+    return '';
+  }
+  if (text.includes('@')) {
+    return text.charAt(0).toUpperCase();
+  }
+  const words = text.split(/\s+/).filter((word) => !TITLES.has(word.replace(/\.$/, '').toLowerCase()));
+  const parts = words.length > 0 ? words : text.split(/\s+/);
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+  return (first + last).toUpperCase();
+}
+
 /** Pages that belong to one role only, listed under its module. */
 const ROLE_PAGES: Partial<Record<Role, NavItem[]>> = {
   Admin: [
@@ -82,6 +101,15 @@ export class Shell {
   private readonly router = inject(Router);
 
   @ViewChild('accountMenu') private accountMenu?: ElementRef<HTMLDetailsElement>;
+
+  /** The account menu's greeting: "Welcome, <name>" with the session's display name, or "Welcome" if the service sent none. */
+  protected readonly greeting = computed(() => {
+    const name = this.session.displayName();
+    return name ? `Welcome, ${name}` : 'Welcome';
+  });
+  protected readonly accountInitials = computed(
+    () => initialsOf(this.session.displayName()) || (this.session.activeRole()?.charAt(0) ?? 'U'),
+  );
 
   protected readonly navOpen = signal(false);
   protected readonly switching = signal(false);

@@ -22,6 +22,7 @@ export class AuthSession {
   readonly isAuthenticated = computed(() => !!this.state());
   readonly activeRole = computed(() => this.state()?.activeRole ?? null);
   readonly availableRoles = computed(() => this.state()?.availableRoles ?? []);
+  readonly displayName = computed(() => this.state()?.displayName ?? null);
 
   async ensureLoaded(): Promise<SessionContext | null> {
     if (this.state() === undefined) {

@@ -49,8 +49,12 @@ export function problem(status: number, detail: string, errors?: Record<string, 
   return [{ status, title: 'Problem', detail, errors }, { status, statusText: 'Problem' }] as const;
 }
 
-export function context(availableRoles: SessionContext['availableRoles'], activeRole: SessionContext['activeRole']): SessionContext {
-  return { availableRoles, activeRole };
+export function context(
+  availableRoles: SessionContext['availableRoles'],
+  activeRole: SessionContext['activeRole'],
+  displayName?: string | null,
+): SessionContext {
+  return displayName === undefined ? { availableRoles, activeRole } : { availableRoles, activeRole, displayName };
 }
 
 export function httpMock(): HttpTestingController {

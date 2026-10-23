@@ -12,7 +12,7 @@ import {
   provideAuthTesting,
   settle,
 } from '../../../testing/auth-testing';
-import { Shell } from './shell';
+import { Shell, initialsOf } from './shell';
 
 describe('Shell', () => {
   let fixture: ComponentFixture<Shell>;
@@ -44,18 +44,22 @@ describe('Shell', () => {
   }
 
   function accountSection(): HTMLElement {
-    return page.querySelector<HTMLElement>('aside section[aria-label="Your account"]')!;
+    return page.querySelector<HTMLElement>('header section[aria-label="Your account"]')!;
   }
 
-  it('keeps the active role and sign-out at the bottom of the menu, not in the header', async () => {
+  it('keeps the account menu (active role, My Profile, sign-out) at the right of the header and the theme at the bottom of the sidebar', async () => {
     await render(context(['Teacher', 'Coordinator'], 'Teacher'));
 
-    const sidebar = page.querySelector('aside')!;
-    expect(sidebar.lastElementChild).toBe(accountSection());
+    const header = page.querySelector('header')!;
+    expect(header.lastElementChild).toBe(accountSection());
     expect(roleInputs()).toHaveLength(2);
     expect(accountSection().textContent).toContain('Sign out');
-    expect(page.querySelector('header')?.textContent).not.toContain('Sign out');
-    expect(page.querySelector('header input[name="active-role"]')).toBeNull();
+    expect(accountSection().textContent).toContain('My Profile');
+    const sidebar = page.querySelector('aside')!;
+    expect(sidebar.textContent).not.toContain('Sign out');
+    expect(sidebar.querySelector('input[name="active-role"]')).toBeNull();
+    expect(sidebar.lastElementChild?.querySelector('[role=group][aria-labelledby="theme-label"]')).not.toBeNull();
+    expect(header.querySelector('[aria-labelledby="theme-label"]')).toBeNull();
   });
 
   it('opens account actions from a profile dropdown and closes on Escape or an outside click', async () => {
@@ -93,10 +97,12 @@ describe('Shell', () => {
     expect(TestBed.inject(Router).url).toBe('/login');
   });
 
-  it('identifies the active role of a single-role account without offering a switch', async () => {
+  it('shows a single-role account no role or role switch in the menu (the role is only read out on the trigger)', async () => {
     await render(context(['Student'], 'Student'));
 
-    expect(page.querySelector('.badge')?.textContent).toContain('Role: Student');
+    expect(page.querySelector('details.account-dropdown .badge')).toBeNull();
+    expect(page.querySelector('.account-dropdown-panel')?.textContent).not.toContain('Student');
+    expect(page.querySelector('.account-dropdown-panel .account-dropdown-divider')).toBeNull();
     expect(roleInputs()).toHaveLength(0);
     expect(page.querySelector('nav')?.textContent).toContain('Dashboard');
   });
@@ -213,18 +219,13 @@ describe('Shell', () => {
     expect(TestBed.inject(AuthSession).activeRole()).toBe('Teacher');
   });
 
-  it('offers Light, Dark, and System themes as labelled toggle buttons at the right of the header', async () => {
+  it('offers Light, Dark, and System as labelled toggle buttons at the bottom of the sidebar that switch the page theme', async () => {
     await render(context(['Student'], 'Student'));
 
-    const group = page.querySelector<HTMLElement>('header [role=group][aria-label="Theme"]')!;
-    expect(page.querySelector('header')!.lastElementChild).toBe(group);
-    expect(page.querySelector('details.account-dropdown [aria-label="Theme"]')).toBeNull();
-    const option = (label: string) => group.querySelector<HTMLButtonElement>(`button[aria-label="${label} theme"]`)!;
-    expect(Array.from(group.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))).toEqual([
-      'Light theme',
-      'Dark theme',
-      'System theme',
-    ]);
+    const group = page.querySelector<HTMLElement>('aside [role=group][aria-labelledby="theme-label"]')!;
+    expect(page.querySelector('#theme-label')?.textContent?.trim()).toBe('Theme');
+    const option = (label: string) => Array.from(group.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent?.trim() === label)!;
+    expect(Array.from(group.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Light', 'Dark', 'System']);
 
     option('Dark').click();
     fixture.detectChanges();
@@ -248,5 +249,86 @@ describe('Shell', () => {
     fixture.detectChanges();
     expect(button.getAttribute('aria-label')).toBe('Close menu');
     expect(button.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('greets the signed-in person by name on the header account menu, with initials and the full greeting as a tooltip', async () => {
+    await render(context(['Admin'], 'Admin', 'Farhana Akter'));
+
+    const trigger = page.querySelector('header details.account-dropdown summary')!;
+    const label = trigger.querySelector<HTMLElement>('.account-dropdown-label')!;
+    expect(label.textContent?.trim()).toBe('Welcome, Farhana Akter');
+    expect(label.title).toBe('Welcome, Farhana Akter');
+    expect(trigger.querySelector(':scope > .sr-only')?.textContent?.trim()).toBe('Welcome, Farhana Akter, role Admin');
+    expect(page.querySelector('.account-dropdown-greeting')?.textContent?.trim()).toBe('Welcome, Farhana Akter');
+    expect(trigger.querySelector('.account-dropdown-avatar')?.textContent?.trim()).toBe('FA');
+    expect(trigger.querySelector('.account-dropdown-role')?.textContent).toContain('Role: Admin');
+    expect(trigger.textContent).not.toContain('Account');
+  });
+
+  it('gives a long name a tooltip with the full name (the label itself is cut with an ellipsis by .account-dropdown-label)', async () => {
+    const long = 'Mohammad Abdullah Al Mamun Chowdhury Bin Rahman Talukder';
+    await render(context(['Teacher'], 'Teacher', long));
+
+    const label = page.querySelector<HTMLElement>('.account-dropdown-label')!;
+    expect(label.title).toBe(`Welcome, ${long}`);
+    expect(page.querySelector('.account-dropdown-avatar')?.textContent?.trim()).toBe('MT');
+  });
+
+  it('says just "Welcome" with the role letter when the session has no name', async () => {
+    await render(context(['Student'], 'Student'));
+
+    expect(page.querySelector('.account-dropdown-label')?.textContent?.trim()).toBe('Welcome');
+    expect(page.querySelector('.account-dropdown-avatar')?.textContent?.trim()).toBe('S');
+  });
+
+  it('shows the new role profile name after a role switch', async () => {
+    await render(context(['Admin', 'Teacher'], 'Admin', 'Farhana Akter'));
+
+    await chooseRole('Teacher');
+    http.expectOne('/api/auth/sessions/current/active-role').flush(context(['Admin', 'Teacher'], 'Teacher', 'Dr Farhana Akter'));
+    await settle();
+    fixture.detectChanges();
+
+    expect(page.querySelector('.account-dropdown-label')?.textContent?.trim()).toBe('Welcome, Dr Farhana Akter');
+    expect(page.querySelector('.account-dropdown-avatar')?.textContent?.trim()).toBe('FA');
+  });
+
+  it('shows no role under the name for a single-role account, but still reads it out', async () => {
+    await render(context(['Student'], 'Student', 'Ayesha Rahman'));
+
+    const role = page.querySelector<HTMLElement>('.account-dropdown-role')!;
+    expect(role.classList).toContain('sr-only');
+    expect(role.textContent?.trim()).toBe('Role: Student');
+    expect(page.querySelector('.account-dropdown-label')?.textContent?.trim()).toBe('Welcome, Ayesha Rahman');
+  });
+
+  it('shows the active role under the name for a multi-role account, and the new one after a switch', async () => {
+    await render(context(['Admin', 'Teacher'], 'Admin', 'Farhana Akter'));
+
+    const role = () => page.querySelector<HTMLElement>('.account-dropdown-role')!;
+    expect(role().classList).not.toContain('sr-only');
+    expect(role().textContent?.trim()).toBe('Role: Admin');
+    expect(role().querySelector('.sr-only')?.textContent).toBe('Role: ');
+
+    await chooseRole('Teacher');
+    http.expectOne('/api/auth/sessions/current/active-role').flush(context(['Admin', 'Teacher'], 'Teacher', 'Dr Farhana Akter'));
+    await settle();
+    fixture.detectChanges();
+
+    expect(role().textContent?.trim()).toBe('Role: Teacher');
+  });
+});
+
+describe('initialsOf', () => {
+  it('takes the first and last words, skips titles, and uses the first letter of an email', () => {
+    expect(initialsOf('Farhana Akter')).toBe('FA');
+    expect(initialsOf('Dr Rezvi Shahariar')).toBe('RS');
+    expect(initialsOf('Prof. Kazi Muheymin-Us-Sakib')).toBe('KM');
+    expect(initialsOf('Mohammad Selim Mia')).toBe('MM');
+    expect(initialsOf('Ayesha')).toBe('A');
+    expect(initialsOf('Dr')).toBe('D');
+    expect(initialsOf('student.personal@example.test')).toBe('S');
+    expect(initialsOf('  ')).toBe('');
+    expect(initialsOf(null)).toBe('');
   });
 });

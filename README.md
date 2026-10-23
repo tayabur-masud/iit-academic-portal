@@ -44,7 +44,7 @@ default role (Teacher), and the role switcher at the bottom of the menu changes 
 | `src/app/features/notifications/` | Admin-only notification administration under `/admin/notifications` (lazy-loaded): history with combined filters and infinite loading, a detail screen with the exact content of ordinary messages (security content is never stored and is shown as withheld), a confirmed resend of failed notifications, the eight email templates (`/templates`) with an editor and a synthetic-only preview, and the single feedback-reminder lead time (`/settings`) |
 | `src/app/features/audit/` | Admin-only audit history at `/admin/audit` (search with numbered pages and a total count) and `/admin/audit/:eventId` (detail); filters and page position are remembered in memory while an event is open |
 | `src/app/features/profile/` | My Profile at `/profile` (lazy-loaded, every role): the account email, the active role, and that role's profile from `GET /api/profile` (Staff for Admin, Student with addresses, guardian, and academic history, Teacher for Teacher and Coordinator), view-only, with loading, error, and "no profile yet" states. It is a shared page (`SHARED_PAGES`), so a role switch stays on it and it reloads for the new role |
-| `src/app/layout/shell/` | Signed-in shell: header (icon menu button on mobile, Light / Dark / System theme switch at the right), sidebar navigation with an icon per item, and an account section at the bottom of the sidebar (active role or role switcher, My Profile, sign-out) |
+| `src/app/layout/shell/` | Signed-in shell: header (icon menu button on mobile, and at the right the account menu: "Welcome, <name>" beside the initials, with the active role under it only for multi-role accounts, from the session's `displayName`, which is the active role's profile name, another profile name, or the email; avatar only on phones; it opens the role switcher for multi-role accounts, My Profile, and sign-out), sidebar navigation with an icon per item, and the Light / Dark / System theme choice at the bottom of the sidebar |
 | `src/app/pages/` | Role landing pages and the unauthorized, no-role, and not-found states |
 | `src/app/shared/pager/` | `<app-pager>`: the one numbered pager every paged table uses ("Showing X to Y of N", an "Items per page" choice of 10, 25, 50, or 100, Previous, page numbers with an ellipsis, Next), `pageList` that decides which numbers to show, and `PagerPreferences`, which keeps the chosen page size in memory for all tables |
 | `src/app/shared/utc-timestamp/` | `<app-utc-timestamp>`: every audit time is shown in UTC with an explicit "UTC" label inside a `time` element |
@@ -82,8 +82,8 @@ Tailwind runs through PostCSS (`.postcssrc.json`). Its theme is the design syste
   experience.
 - State-changing API calls carry an `X-CSRF-Token` header obtained from `/api/auth/anti-forgery-token`. The
   token is refetched after sign-in and sign-out because the service binds it to the signed-in identity.
-- Sessions end after three hours without activity. **Sign out** stays at the bottom of the sidebar (in the menu on
-  mobile) so users on shared devices can end a session at any time.
+- Sessions end after three hours without activity. **Sign out** is in the header account menu on every screen size, so
+  users on shared devices can end a session at any time.
 - The reset page removes the recovery proof from the address bar as soon as it loads.
 - Configuration and audit history are shown only to the active Admin role. Its navigation item is hidden for other roles, but the
   service decides on every request; a 403 shows a message and no results.
