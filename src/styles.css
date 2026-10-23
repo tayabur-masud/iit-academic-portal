@@ -680,7 +680,7 @@
     --ng-icon__color: var(--color-brand-accent);
   }
 
-  /* Sidebar account menu (opens upward); native details/summary preserves disclosure semantics and keyboard activation. */
+  /* Header account menu (opens downward, right-aligned); native details/summary preserves disclosure semantics and keyboard activation. */
   .account-dropdown {
     position: relative;
   }
@@ -707,8 +707,9 @@
     @apply flex min-w-0 flex-col;
   }
 
+  /* The signed-in person's name; a long name is cut with an ellipsis and shown in full as a tooltip. */
   .account-dropdown-label {
-    @apply text-compact font-semibold text-text-primary;
+    @apply truncate text-compact font-semibold text-text-primary;
   }
 
   .account-dropdown-role {
@@ -733,10 +734,17 @@
 
   .account-dropdown-panel {
     position: absolute;
-    inset-inline: 0;
-    bottom: calc(100% + 0.5rem);
+    right: 0;
+    top: calc(100% + 0.5rem);
     z-index: 50;
+    width: 16rem;
+    max-width: calc(100vw - 2rem);
     @apply rounded-md bg-surface-raised p-2 shadow-overlay;
+  }
+
+  /* The greeting at the top of the open menu, on narrow screens where the trigger shows only the avatar. */
+  .account-dropdown-greeting {
+    @apply m-0 mb-1 truncate border-b border-divider px-2 pt-1 pb-2 text-compact font-semibold text-text-primary;
   }
 
   .account-role-group {
@@ -773,24 +781,28 @@
     min-height: var(--control-height-lg);
   }
 
-  .account-dropdown-item ng-icon,
-  .theme-option ng-icon {
+  .account-dropdown-item ng-icon {
     @apply flex-none;
     --ng-icon__size: 1.25rem;
   }
 
-  /* Light / Dark / System choice in the header: a segmented group of icon-only toggle buttons (aria-pressed, aria-label). */
+  .theme-option ng-icon {
+    @apply flex-none;
+    --ng-icon__size: 1rem;
+  }
+
+  /* Light / Dark / System choice at the bottom of the sidebar: a segmented group of labelled toggle buttons (aria-pressed). */
   .theme-switch {
-    @apply flex flex-none gap-0.5 rounded-md bg-surface-hover p-0.5 ring-1 ring-border ring-inset;
+    @apply grid grid-cols-3 gap-0.5 rounded-md bg-surface-hover p-0.5 ring-1 ring-border ring-inset;
   }
 
   .theme-option {
-    @apply flex size-9 cursor-pointer items-center justify-center rounded-sm text-text-secondary hover:text-text-primary aria-pressed:bg-surface aria-pressed:text-brand-accent aria-pressed:shadow-xs dark:aria-pressed:bg-gray-700;
+    @apply flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-sm px-1 text-helper font-medium text-text-secondary hover:text-text-primary aria-pressed:bg-surface aria-pressed:text-brand-accent aria-pressed:shadow-xs dark:aria-pressed:bg-gray-700;
   }
 
   @media (pointer: coarse) {
     .theme-option {
-      @apply size-11;
+      @apply min-h-11;
     }
   }
 

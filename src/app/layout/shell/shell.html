@@ -1,4 +1,4 @@
-<!-- Full-height shell: only <main> scrolls, so the sidebar account section stays in view on wide screens. <main> is positioned so hidden (sr-only) text stays inside its scroll area and cannot add a second page scrollbar. -->
+<!-- Full-height shell: only <main> scrolls, so the header account menu and the sidebar theme choice stay in view on wide screens. <main> is positioned so hidden (sr-only) text stays inside its scroll area and cannot add a second page scrollbar. -->
 <div class="flex h-dvh flex-col bg-background">
   <a class="skip-link" href="#main">Skip to main content</a>
 
@@ -23,20 +23,61 @@
       class="h-9 w-auto flex-none dark:rounded-sm dark:bg-white dark:p-0.5"
     />
     <span class="hidden text-base font-semibold tracking-tight whitespace-nowrap text-text-primary sm:inline">IIT Academic Portal</span>
-    <div role="group" aria-label="Theme" class="theme-switch ml-auto">
-      @for (option of themeOptions; track option.mode) {
-        <button
-          type="button"
-          class="theme-option"
-          [attr.aria-label]="option.label + ' theme'"
-          [attr.aria-pressed]="theme.mode() === option.mode"
-          [title]="option.label + ' theme'"
-          (click)="theme.setMode(option.mode)"
-        >
-          <ng-icon [name]="option.icon" />
-        </button>
-      }
-    </div>
+    <!-- The signed-in person and their account menu, at the right of the header; the menu opens downward. -->
+    <section aria-label="Your account" class="ml-auto">
+      <details #accountMenu class="account-dropdown">
+        <summary class="account-dropdown-trigger" aria-controls="account-dropdown-panel">
+          <!-- From sm: up the greeting shows beside the avatar, with the active role under it only for multi-role accounts (a single role
+               is read out but not shown). Below sm: both are read out, and the greeting starts the open menu. -->
+          <span class="account-dropdown-copy hidden text-right sm:flex">
+            <span class="account-dropdown-label" [title]="greeting()">{{ greeting() }}</span>
+            <span class="account-dropdown-role" [class.sr-only]="session.availableRoles().length < 2"
+              ><span class="sr-only">Role: </span>{{ session.activeRole() }}</span
+            >
+          </span>
+          <span class="sr-only sm:hidden">{{ greeting() }}, role {{ session.activeRole() }}</span>
+          <span class="account-dropdown-avatar" aria-hidden="true">{{ accountInitials() }}</span>
+          <span class="account-dropdown-chevron" aria-hidden="true"></span>
+        </summary>
+        <div id="account-dropdown-panel" class="account-dropdown-panel">
+          <p class="account-dropdown-greeting sm:hidden" aria-hidden="true">{{ greeting() }}</p>
+          @if (session.availableRoles().length > 1) {
+            <fieldset class="account-role-group" [disabled]="switching()" [attr.aria-busy]="switching()">
+              <legend>Active role</legend>
+              @for (role of session.availableRoles(); track role) {
+                <label class="account-role-option">
+                  <input
+                    type="radio"
+                    name="active-role"
+                    [value]="role"
+                    [checked]="role === session.activeRole()"
+                    (change)="switchRole($event)"
+                  />
+                  <span>{{ role }}</span>
+                </label>
+              }
+            </fieldset>
+            <div class="account-dropdown-divider" aria-hidden="true"></div>
+          }
+          <a
+            class="account-dropdown-item"
+            routerLink="/profile"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+            (click)="closeAccountMenu()"
+            ><ng-icon name="heroUserCircle" />My Profile</a
+          >
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm account-dropdown-sign-out mt-1 w-full"
+            [disabled]="signingOut()"
+            (click)="signOut()"
+          >
+            <ng-icon name="heroArrowLeftStartOnRectangle" />Sign out
+          </button>
+        </div>
+      </details>
+    </section>
   </header>
 
   <div class="flex min-h-0 flex-1 flex-col md:flex-row">
@@ -63,56 +104,21 @@
         </ul>
       </nav>
 
-      <!-- Account dropdown stays pinned to the bottom of the sidebar. -->
-      <section aria-label="Your account" class="flex flex-col gap-2 border-t border-divider p-3">
-        <details #accountMenu class="account-dropdown">
-          <summary class="account-dropdown-trigger w-full" aria-controls="account-dropdown-panel">
-            <span class="account-dropdown-avatar" aria-hidden="true">{{ session.activeRole()?.charAt(0) ?? 'U' }}</span>
-            <span class="account-dropdown-copy flex-1">
-              <span class="account-dropdown-label">Account</span>
-              <span class="account-dropdown-role">Role: {{ session.activeRole() }}</span>
-            </span>
-            <span class="account-dropdown-chevron" aria-hidden="true"></span>
-          </summary>
-          <div id="account-dropdown-panel" class="account-dropdown-panel">
-            @if (session.availableRoles().length > 1) {
-              <fieldset class="account-role-group" [disabled]="switching()" [attr.aria-busy]="switching()">
-                <legend>Active role</legend>
-                @for (role of session.availableRoles(); track role) {
-                  <label class="account-role-option">
-                    <input
-                      type="radio"
-                      name="active-role"
-                      [value]="role"
-                      [checked]="role === session.activeRole()"
-                      (change)="switchRole($event)"
-                    />
-                    <span>{{ role }}</span>
-                  </label>
-                }
-              </fieldset>
-            } @else if (session.activeRole(); as role) {
-              <span class="badge mx-2 self-start">Role: {{ role }}</span>
-            }
-            <div class="account-dropdown-divider" aria-hidden="true"></div>
-            <a
-              class="account-dropdown-item"
-              routerLink="/profile"
-              routerLinkActive="active"
-              ariaCurrentWhenActive="page"
-              (click)="closeAccountMenu()"
-              ><ng-icon name="heroUserCircle" />My Profile</a
-            >
+      <!-- The theme choice stays pinned to the bottom of the sidebar (in the menu drawer on mobile). -->
+      <section aria-labelledby="theme-label" class="border-t border-divider p-3">
+        <p id="theme-label" class="mb-2 px-1 text-helper font-medium text-text-secondary">Theme</p>
+        <div role="group" aria-labelledby="theme-label" class="theme-switch">
+          @for (option of themeOptions; track option.mode) {
             <button
               type="button"
-              class="btn btn-secondary btn-sm account-dropdown-sign-out mt-1 w-full"
-              [disabled]="signingOut()"
-              (click)="signOut()"
+              class="theme-option"
+              [attr.aria-pressed]="theme.mode() === option.mode"
+              (click)="theme.setMode(option.mode)"
             >
-              <ng-icon name="heroArrowLeftStartOnRectangle" />Sign out
+              <ng-icon [name]="option.icon" />{{ option.label }}
             </button>
-          </div>
-        </details>
+          }
+        </div>
       </section>
     </aside>
 
