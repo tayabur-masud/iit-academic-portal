@@ -9,6 +9,7 @@ import { fieldErrors, problemMessage } from '../../core/http/problem';
 import { UtcTimestamp } from '../../shared/utc-timestamp/utc-timestamp';
 import { UserApi } from './user-api';
 import { UserAccount, statusLabel } from './user.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 /**
  * One account's detail and the access changes an Admin may make: the registered email, the default role among the assigned roles,
@@ -18,7 +19,7 @@ import { UserAccount, statusLabel } from './user.models';
  */
 @Component({
   selector: 'app-user-maintenance',
-  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp],
+  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp, SearchableSelect, SelectOption],
   templateUrl: './user-maintenance.html',
 })
 export class UserMaintenance {

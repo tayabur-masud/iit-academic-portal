@@ -7,6 +7,7 @@ import { STUB_ROUTES, TEST_CSRF_TOKEN, httpMock, problem, provideAuthTesting, se
 import { ConfigurationItem } from '../configuration/configuration.models';
 import { StudentAdmission, StudentAdmissionCreated, StudentProfile } from './student.models';
 import { StudentForm } from './student-form';
+import { chooseOption, optionGroups, optionLabels, selectedValue } from '../../../testing/select-testing';
 
 @Component({ selector: 'app-student-destination', template: '' })
 class Destination {}
@@ -140,9 +141,7 @@ describe('StudentForm', () => {
   }
 
   function choose(selector: string, value: string): void {
-    const select = page.querySelector<HTMLSelectElement>(selector)!;
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    chooseOption(page, selector, value);
   }
 
   function button(text: string): HTMLButtonElement {
@@ -202,9 +201,9 @@ describe('StudentForm', () => {
       choose('#degreeId', 'emit');
       fixture.detectChanges();
 
-      const batches = Array.from(page.querySelectorAll<HTMLOptionElement>('#batchId option')).map((o) => o.textContent?.trim());
+      const batches = optionLabels(page, '#batchId');
       expect(batches).toEqual(['Select a batch', 'EMIT Batch 7']);
-      expect(Array.from(page.querySelectorAll('#degreeId option')).map((o) => o.textContent?.trim())).not.toContain('Retired (inactive)');
+      expect(optionLabels(page, '#degreeId')).not.toContain('Retired (inactive)');
     });
 
     it('cascades division, district, and an upazila for an address and sends the district with only the upazila', async () => {
@@ -271,10 +270,9 @@ describe('StudentForm', () => {
       });
       await render();
 
-      const select = page.querySelector<HTMLSelectElement>('#permanentAddress-locality')!;
       expect(page.querySelector('label[for="permanentAddress-locality"]')?.textContent).toContain('Upazila or city corporation');
-      expect(Array.from(select.querySelectorAll('optgroup')).map((g) => g.label)).toEqual(['Upazilas', 'City corporations']);
-      expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
+      expect(optionGroups(page, '#permanentAddress-locality')).toEqual(['Upazilas', 'City corporations']);
+      expect(optionLabels(page, '#permanentAddress-locality')).toEqual([
         'Select an upazila or city corporation',
         'Kaliakair',
         'Gazipur City Corporation',
@@ -308,8 +306,8 @@ describe('StudentForm', () => {
       choose('#mailing-districtId', 'dist2');
       respondLocalities([], [item('cc2', 'Narayanganj City Corporation', { districtId: 'dist2' })]);
       await render();
-      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-locality')?.value).toBe('');
-      expect(Array.from(page.querySelectorAll<HTMLOptionElement>('#mailingAddress-locality option')).map((o) => o.textContent?.trim())).toEqual([
+      expect(selectedValue(page, '#mailingAddress-locality')).toBe('');
+      expect(optionLabels(page, '#mailingAddress-locality')).toEqual([
         'Select an upazila or city corporation',
         'Narayanganj City Corporation',
       ]);
@@ -317,8 +315,8 @@ describe('StudentForm', () => {
       choose('#mailingAddress-locality', 'city:cc2');
       choose('#mailing-divisionId', '');
       await render();
-      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-locality')?.value).toBe('');
-      expect(page.querySelector<HTMLSelectElement>('#mailing-districtId')?.value).toBe('');
+      expect(selectedValue(page, '#mailingAddress-locality')).toBe('');
+      expect(selectedValue(page, '#mailing-districtId')).toBe('');
     });
 
     it('shows a mixed or cross-district locality refused by the service on the one locality selector', async () => {
@@ -345,7 +343,7 @@ describe('StudentForm', () => {
 
       button('Add academic-history entry').click();
       await render();
-      const categories = Array.from(page.querySelectorAll<HTMLOptionElement>('#academicHistory-0-category option')).map((o) => o.textContent?.trim());
+      const categories = optionLabels(page, '#academicHistory-0-category');
       expect(categories).toEqual(['Select a category', 'SSC / O-Level', 'HSC / A-Level', 'Bachelor / Graduation', 'Master', 'PGDIT', 'Other']);
       choose('#academicHistory-0-category', 'SscOLevel');
       fixture.detectChanges();
@@ -385,7 +383,7 @@ describe('StudentForm', () => {
       choose('#academicHistory-1-category', 'Master');
       fixture.detectChanges();
 
-      const options = (selector: string) => Array.from(page.querySelectorAll<HTMLOptionElement>(`${selector} option`)).map((o) => o.textContent?.trim());
+      const options = (selector: string) => optionLabels(page, `${selector}`);
       expect(options('#academicHistory-0-schoolOrCollegeId')).toEqual([
         'Not given',
         'Motijheel Model High School',
@@ -504,7 +502,7 @@ describe('StudentForm', () => {
       expect(page.textContent).toContain('PGDIT · PGDIT Batch 1');
       expect(page.querySelector<HTMLInputElement>('#applicantName')?.value).toBe('Ayesha Rahman');
       expect(page.querySelector<HTMLInputElement>('#academicHistory-0-board')?.value).toBe('Dhaka Board (old)');
-      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-locality')?.value).toBe('upazila:up1');
+      expect(selectedValue(page, '#mailingAddress-locality')).toBe('upazila:up1');
     });
 
     it('warns when the email belongs to a staff account', async () => {
@@ -576,9 +574,9 @@ describe('StudentForm', () => {
       };
       await openExisting(loaded);
 
-      expect(page.querySelector<HTMLSelectElement>('#permanentAddress-locality')?.value).toBe('city:cc1');
-      expect(page.querySelector<HTMLSelectElement>('#permanent-districtId')?.value).toBe('dist1');
-      expect(page.querySelector<HTMLSelectElement>('#permanent-divisionId')?.value).toBe('div1');
+      expect(selectedValue(page, '#permanentAddress-locality')).toBe('city:cc1');
+      expect(selectedValue(page, '#permanent-districtId')).toBe('dist1');
+      expect(selectedValue(page, '#permanent-divisionId')).toBe('div1');
     });
 
     it('shows the account, the other programs, and the current values without an email field', async () => {
@@ -593,8 +591,8 @@ describe('StudentForm', () => {
       expect(page.textContent).toContain('Pending setup');
       expect(page.querySelector('a[href="/admin/students/a0"]')?.textContent).toContain('PGDIT · PGDIT Batch 0');
       expect(page.querySelector('a[href="/admin/users/u1"]')).not.toBeNull();
-      expect(page.querySelector<HTMLSelectElement>('#batchId')?.value).toBe('pb1');
-      expect(page.querySelector<HTMLSelectElement>('#mailingAddress-locality')?.value).toBe('upazila:up1');
+      expect(selectedValue(page, '#batchId')).toBe('pb1');
+      expect(selectedValue(page, '#mailingAddress-locality')).toBe('upazila:up1');
       expect(page.querySelector('app-graduation-eligibility')).not.toBeNull();
     });
 
@@ -638,9 +636,9 @@ describe('StudentForm', () => {
     it('keeps an inactive hall the admission already has selectable', async () => {
       await openExisting(admission({ assignedHallId: 'hall2', assignedHallName: 'Closed Hall' }));
 
-      const options = Array.from(page.querySelectorAll<HTMLOptionElement>('#assignedHallId option')).map((o) => o.textContent?.trim());
+      const options = optionLabels(page, '#assignedHallId');
       expect(options).toContain('Closed Hall (inactive)');
-      expect(page.querySelector<HTMLSelectElement>('#assignedHallId')?.value).toBe('hall2');
+      expect(selectedValue(page, '#assignedHallId')).toBe('hall2');
     });
 
     it('explains a refused write by a non-Admin role', async () => {

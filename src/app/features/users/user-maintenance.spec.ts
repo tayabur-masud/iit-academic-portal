@@ -4,6 +4,7 @@ import { HttpTestingController, TestRequest } from '@angular/common/http/testing
 import { TEST_CSRF_TOKEN, httpMock, problem, provideAuthTesting, settle } from '../../../testing/auth-testing';
 import { CredentialSetupReissue, UserAccount } from './user.models';
 import { UserMaintenance } from './user-maintenance';
+import { chooseOption } from '../../../testing/select-testing';
 
 const ROOT = '/api/admin/users';
 
@@ -130,16 +131,14 @@ describe('UserMaintenance', () => {
     await open();
 
     expect(section('roles-title').textContent).toContain('only the Student role');
-    expect(section('roles-title').querySelector('select, input[type=checkbox]')).toBeNull();
+    expect(section('roles-title').querySelector('select, app-select, input[type=checkbox]')).toBeNull();
   });
 
   it('lets an Admin who also holds Coordinator choose a default role but never sends Coordinator', async () => {
     await open(account({ userId: 'u-2', email: 'a@iit.test', roles: ['Admin', 'Coordinator'], defaultRole: 'Admin' }));
 
     expect(section('roles-title').textContent).toContain('Coordinator follows batch-coordinator assignments');
-    const select = page.querySelector<HTMLSelectElement>('#defaultRole')!;
-    select.value = 'Coordinator';
-    select.dispatchEvent(new Event('change'));
+    chooseOption(page, '#defaultRole', 'Coordinator');
     section('roles-title').querySelector('form')!.dispatchEvent(new Event('submit'));
     const request = await writeRequest('PUT', '/u-2/roles');
 

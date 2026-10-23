@@ -16,6 +16,7 @@ import {
   ResourceDescriptor,
   descriptorFor,
 } from '../configuration.models';
+import { SearchableSelect, SelectOption } from '../../../shared/searchable-select/searchable-select';
 
 const FIELDS = [
   'name',
@@ -47,7 +48,7 @@ const CREDIT_PATTERN = /^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/;
  */
 @Component({
   selector: 'app-catalog-form',
-  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp],
+  imports: [ReactiveFormsModule, RouterLink, UtcTimestamp, SearchableSelect, SelectOption],
   templateUrl: './catalog-form.html',
 })
 export class CatalogForm {

@@ -138,19 +138,18 @@
 
         <div class="field">
           <label class="field-label" for="designationId">Designation</label>
-          <select
-            id="designationId"
-            class="field-input"
+          <app-select
+            inputId="designationId"
             formControlName="designationId"
             required
-            [attr.aria-invalid]="errorsFor('designationId').length > 0"
-            [attr.aria-describedby]="describedBy('designationId')"
+            [invalid]="errorsFor('designationId').length > 0"
+            [describedBy]="describedBy('designationId')"
+            emptyLabel="Select a designation"
           >
-            <option value="">Select a designation</option>
             @for (option of designationChoices(); track option.id) {
-              <option [value]="option.id">{{ option.name }}{{ option.isActive ? '' : ' (inactive)' }}</option>
+              <app-option [value]="option.id" [label]="option.name + (option.isActive ? '' : ' (inactive)')" [keywords]="option.code" />
             }
-          </select>
+          </app-select>
           @for (message of errorsFor('designationId'); track message) {
             <p class="field-error" id="designationId-error">{{ message }}</p>
           }

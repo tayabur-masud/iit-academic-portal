@@ -7,6 +7,7 @@ import { problemMessage } from '../../core/http/problem';
 import { InfiniteScrollSentinel } from '../../shared/infinite-scroll/infinite-scroll-sentinel';
 import { TeacherApi } from './teacher-api';
 import { ACCOUNT_STATUSES, Teacher, TeacherStatusFilter, statusLabel } from './teacher.models';
+import { SearchableSelect, SelectOption } from '../../shared/searchable-select/searchable-select';
 
 /**
  * The Admin teacher directory: search by name, email, or staff ID and filter by account status while loading bounded batches as
@@ -14,7 +15,7 @@ import { ACCOUNT_STATUSES, Teacher, TeacherStatusFilter, statusLabel } from './t
  */
 @Component({
   selector: 'app-teacher-list',
-  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel],
+  imports: [ReactiveFormsModule, RouterLink, InfiniteScrollSentinel, SearchableSelect, SelectOption],
   templateUrl: './teacher-list.html',
 })
 export class TeacherList {

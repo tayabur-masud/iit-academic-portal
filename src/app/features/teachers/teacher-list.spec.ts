@@ -4,6 +4,7 @@ import { HttpTestingController, TestRequest } from '@angular/common/http/testing
 import { httpMock, problem, provideAuthTesting, settle } from '../../../testing/auth-testing';
 import { Teacher, TeacherPage } from './teacher.models';
 import { TeacherList } from './teacher-list';
+import { chooseOption } from '../../../testing/select-testing';
 
 const ROOT = '/api/admin/teachers';
 
@@ -111,9 +112,7 @@ describe('TeacherList', () => {
     await open();
     await respond(listRequest(), [teacher('1', 'Ada')], { totalCount: 80, totalPages: 4 });
 
-    const select = page.querySelector<HTMLSelectElement>('#status')!;
-    select.value = 'Deactivated';
-    select.dispatchEvent(new Event('change'));
+    chooseOption(page, '#status', 'Deactivated');
     await respond(listRequest((r) => r.params.get('status') === 'Deactivated' && r.params.get('page') === '1'), [
       teacher('9', 'Gone', { accountStatus: 'Deactivated', isActive: false }),
     ]);

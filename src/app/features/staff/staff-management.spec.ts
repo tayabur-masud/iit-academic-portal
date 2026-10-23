@@ -8,6 +8,7 @@ import { ConfigurationItem } from '../configuration/configuration.models';
 import { StaffForm } from './staff-form';
 import { StaffList } from './staff-list';
 import { StaffProfile } from './staff.models';
+import { chooseOption, optionLabels, selectedValue } from '../../../testing/select-testing';
 
 @Component({ template: '' })
 class Destination {}
@@ -211,9 +212,7 @@ describe('Staff Management', () => {
     }
 
     function choose(selector: string, value: string): void {
-      const select = element.querySelector<HTMLSelectElement>(selector)!;
-      select.value = value;
-      select.dispatchEvent(new Event('change'));
+      chooseOption(element, selector, value);
     }
 
     function confirm(): void {
@@ -237,7 +236,7 @@ describe('Staff Management', () => {
     }
 
     function options(selector: string): string[] {
-      return Array.from(element.querySelectorAll<HTMLOptionElement>(`${selector} option`)).map((o) => o.textContent!.trim());
+      return optionLabels(element, `${selector}`);
     }
 
     it('creates by email with no account picker, and offers only active designations', async () => {
@@ -357,7 +356,7 @@ describe('Staff Management', () => {
       await open('s1', staff({ designationId: 'd0', designationName: 'Retired Post' }));
 
       expect(options('#designationId')).toContain('Retired Post (inactive)');
-      expect(element.querySelector<HTMLSelectElement>('#designationId')?.value).toBe('d0');
+      expect(selectedValue(element, '#designationId')).toBe('d0');
     });
 
     it('shows the service field errors and a refused account', async () => {

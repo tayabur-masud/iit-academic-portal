@@ -4,6 +4,7 @@ import { HttpTestingController, TestRequest } from '@angular/common/http/testing
 import { httpMock, problem, provideAuthTesting, settle } from '../../../../testing/auth-testing';
 import { ConfigurationItem, ConfigurationPage } from '../configuration.models';
 import { CatalogList } from './catalog-list';
+import { chooseOption, optionLabels, selectedValue } from '../../../../testing/select-testing';
 
 const ROOT = '/api/admin/configuration';
 
@@ -88,10 +89,8 @@ describe('CatalogList', () => {
     expect(rows()[1]).toContain('Inactive');
     expect(page.querySelector('a.btn-primary')?.textContent).toContain('New course');
 
-    const degree = page.querySelector<HTMLSelectElement>('#degree-filter')!;
-    expect(Array.from(degree.options).map((o) => o.textContent?.trim())).toEqual(['All degrees', 'EMIT', 'PGDIT (inactive)']);
-    degree.value = 'd1';
-    degree.dispatchEvent(new Event('change'));
+    expect(optionLabels(page, '#degree-filter')).toEqual(['All degrees', 'EMIT', 'PGDIT (inactive)']);
+    chooseOption(page, '#degree-filter', 'd1');
     await respond(listRequest('courses', (r) => r.params.get('degreeId') === 'd1'), []);
 
     expect(page.textContent).toContain('No courses match');
@@ -102,30 +101,24 @@ describe('CatalogList', () => {
     await respond(listRequest('degrees'), [item('d1', 'EMIT')]);
     await respond(listRequest('courses', (r) => !r.params.has('type')), []);
 
-    const type = page.querySelector<HTMLSelectElement>('#type-filter')!;
     expect(page.querySelector('label[for="type-filter"]')?.textContent?.trim()).toBe('Type');
-    expect(Array.from(type.options).map((o) => o.textContent?.trim())).toEqual(['All types', 'Mandatory', 'Elective']);
-    type.value = 'Elective';
-    type.dispatchEvent(new Event('change'));
+    expect(optionLabels(page, '#type-filter')).toEqual(['All types', 'Mandatory', 'Elective']);
+    chooseOption(page, '#type-filter', 'Elective');
     await respond(listRequest('courses', (r) => r.params.get('type') === 'Elective' && !r.params.has('degreeId')), []);
 
-    const degree = page.querySelector<HTMLSelectElement>('#degree-filter')!;
-    degree.value = 'd1';
-    degree.dispatchEvent(new Event('change'));
+    chooseOption(page, '#degree-filter', 'd1');
     await respond(listRequest('courses', (r) => r.params.get('type') === 'Elective' && r.params.get('degreeId') === 'd1'), []);
 
     button('Clear').click();
     await respond(listRequest('courses', (r) => !r.params.has('type') && !r.params.has('degreeId')), []);
-    expect(type.value).toBe('');
+    expect(selectedValue(page, '#type-filter')).toBe('');
   });
 
   it('offers institution types as the type filter and no type filter on an untyped catalog', async () => {
     await open('institutions');
     await respond(listRequest('institutions', (r) => !r.params.has('type')), []);
-    const type = page.querySelector<HTMLSelectElement>('#type-filter')!;
-    expect(Array.from(type.options).map((o) => o.textContent?.trim())).toEqual(['All types', 'School', 'College', 'University']);
-    type.value = 'College';
-    type.dispatchEvent(new Event('change'));
+    expect(optionLabels(page, '#type-filter')).toEqual(['All types', 'School', 'College', 'University']);
+    chooseOption(page, '#type-filter', 'College');
     await respond(listRequest('institutions', (r) => r.params.get('type') === 'College'), []);
     TestBed.resetTestingModule();
 
@@ -189,9 +182,7 @@ describe('CatalogList', () => {
     const input = page.querySelector<HTMLInputElement>('#search')!;
     input.value = '  bit ';
     input.dispatchEvent(new Event('input'));
-    const status = page.querySelector<HTMLSelectElement>('#status')!;
-    status.value = 'inactive';
-    status.dispatchEvent(new Event('change'));
+    chooseOption(page, '#status', 'inactive');
     const request = listRequest('degrees', (r) => r.params.get('status') === 'inactive');
     expect(request.request.params.get('search')).toBe('bit');
     expect(request.request.params.has('cursor')).toBe(false);
@@ -266,16 +257,12 @@ describe('CatalogList', () => {
     await respond(listRequest('geography/divisions', (r) => r.params.get('status') === 'all'), [item('v1', 'Dhaka')]);
     await respond(listRequest('geography/districts', (r) => r.params.get('status') === 'all' && !r.params.has('divisionId')), [item('g1', 'Gazipur')]);
 
-    const division = page.querySelector<HTMLSelectElement>('#division-filter')!;
-    division.value = 'v1';
-    division.dispatchEvent(new Event('change'));
+    chooseOption(page, '#division-filter', 'v1');
     await settle();
     await respond(listRequest('geography/districts', (r) => r.params.get('divisionId') === 'v1'), [item('g1', 'Gazipur')]);
     await respond(listRequest('geography/upazilas'), [item('u1', 'Sadar', { districtId: 'g1' })]);
 
-    const district = page.querySelector<HTMLSelectElement>('#district-filter')!;
-    district.value = 'g1';
-    district.dispatchEvent(new Event('change'));
+    chooseOption(page, '#district-filter', 'g1');
     const request = listRequest('geography/upazilas', (r) => r.params.get('districtId') === 'g1');
     await respond(request, [item('u1', 'Sadar', { districtId: 'g1' })]);
     expect(rows()[0]).toContain('Sadar');
@@ -295,16 +282,12 @@ describe('CatalogList', () => {
     expect(rows()[0]).toContain('Gazipur');
     expect(page.querySelector('#type-filter')).toBeNull();
 
-    const division = page.querySelector<HTMLSelectElement>('#division-filter')!;
-    division.value = 'v1';
-    division.dispatchEvent(new Event('change'));
+    chooseOption(page, '#division-filter', 'v1');
     await settle();
     await respond(listRequest('geography/districts', (r) => r.params.get('divisionId') === 'v1'), [item('g1', 'Gazipur')]);
     await respond(listRequest('geography/city-corporations', (r) => !r.params.has('districtId')), []);
 
-    const district = page.querySelector<HTMLSelectElement>('#district-filter')!;
-    district.value = 'g1';
-    district.dispatchEvent(new Event('change'));
+    chooseOption(page, '#district-filter', 'g1');
     await respond(listRequest('geography/city-corporations', (r) => r.params.get('districtId') === 'g1'), []);
     expect(page.textContent).toContain('No city corporations match');
   });
